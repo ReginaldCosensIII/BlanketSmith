@@ -1,3 +1,4 @@
+
 import React, { useState, useReducer, useCallback, useMemo, ChangeEvent, useRef, useEffect } from 'react';
 import { HashRouter, Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { AnyProject, PatternType, PixelGridData, ProjectState, ProjectAction, YarnColor } from './types';
@@ -114,10 +115,16 @@ const Sidebar: React.FC = () => (
   </aside>
 );
 
-const Footer: React.FC = () => {
+const Footer: React.FC<{ zoom: number, onZoomChange: (newZoom: number) => void }> = ({ zoom, onZoomChange }) => {
     const { state, dispatch } = useProject();
     const canUndo = state.historyIndex > 0;
     const canRedo = state.historyIndex < state.history.length - 1;
+
+    const handleZoomIn = () => onZoomChange(Math.min(zoom * 1.25, 100));
+    const handleZoomOut = () => onZoomChange(Math.max(zoom / 1.25, 0.1));
+    const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        onZoomChange(Number(e.target.value) / 100);
+    };
 
     return (
         <footer className="bg-gray-100 p-2 flex justify-between items-center z-20 border-t">
@@ -129,14 +136,27 @@ const Footer: React.FC = () => {
                     <Icon name="redo" className="w-4 h-4"/> Redo
                 </Button>
             </div>
+            <div className="flex items-center gap-2">
+                <Button variant="secondary" onClick={handleZoomOut} className="p-2"><Icon name="zoom-out" className="w-4 h-4"/></Button>
+                <input 
+                    type="range" 
+                    min="10" 
+                    max="1000" 
+                    value={zoom * 100}
+                    onChange={handleSliderChange}
+                    className="w-24 md:w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                />
+                <Button variant="secondary" onClick={handleZoomIn} className="p-2"><Icon name="zoom-in" className="w-4 h-4"/></Button>
+                <span className="text-sm font-mono text-gray-600 w-16 text-center">{Math.round(zoom * 100)}%</span>
+            </div>
         </footer>
     );
 };
 
 // --- PAGES / TOOLS ---
 
-const PixelGraphPage: React.FC = () => {
-    type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column';
+const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) => void; }> = ({ zoom, onZoomChange }) => {
+    type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column' | 'eyedropper';
 
     const { state, dispatch } = useProject();
     const [selectedColorId, setSelectedColorId] = useState<string | null>(null);
@@ -146,8 +166,8 @@ const PixelGraphPage: React.FC = () => {
     const imageUploadRef = useRef<HTMLInputElement>(null);
 
     const [activeTool, setActiveTool] = useState<Tool>('brush');
-    const [replaceFromColor, setReplaceFromColor] = useState<string | null>(null);
-    const [replaceToColor, setReplaceToColor] = useState<string | null>(null);
+    const [replaceFromColor, setReplaceFromColor] = useState<string | null | undefined>(undefined);
+    const [replaceToColor, setReplaceToColor] = useState<string | null | undefined>(undefined);
     const [replaceTarget, setReplaceTarget] = useState<'from' | 'to' | null>(null);
     const [brushSize, setBrushSize] = useState(1);
     const [rowFillSize, setRowFillSize] = useState(1);
@@ -187,22 +207,41 @@ const PixelGraphPage: React.FC = () => {
     };
     
     const handleFillCanvas = () => {
-        if (!projectData || selectedColorId === null) return;
+        if (!projectData) return;
         const newGrid = Array(projectData.width * projectData.height).fill(selectedColorId);
         updateGrid(newGrid);
     };
 
     const handleReplace = () => {
-        if (!projectData || !replaceFromColor || !replaceToColor) return;
+        if (!projectData || replaceFromColor === undefined || replaceToColor === undefined) return;
         const newGrid = projectData.grid.map(cellId => (cellId === replaceFromColor ? replaceToColor : cellId));
-        updateGrid(newGrid);
-        setReplaceFromColor(null);
-        setReplaceToColor(null);
+        updateGrid(newGrid as (string | null)[]);
+        setReplaceFromColor(undefined);
+        setReplaceToColor(undefined);
     };
     
     const handleCanvasClick = (gridX: number, gridY: number) => {
-        if (!projectData || selectedColorId === null) return;
+        if (!projectData) return;
         const { width, height, grid } = projectData;
+        const index = gridY * width + gridX;
+        const clickedColorId = grid[index];
+
+        if (activeTool === 'eyedropper') {
+            setSelectedColorId(clickedColorId);
+            setActiveTool('brush');
+            return;
+        }
+
+        if (activeTool === 'replace' && replaceTarget) {
+            if (replaceTarget === 'from') setReplaceFromColor(clickedColorId);
+            if (replaceTarget === 'to') setReplaceToColor(clickedColorId);
+            setReplaceTarget(null);
+            return;
+        }
+        
+        // For filling tools, a color must be selected
+        if (selectedColorId === null) return;
+        
         let newGrid = [...grid];
         let changed = false;
 
@@ -213,9 +252,9 @@ const PixelGraphPage: React.FC = () => {
                 const currentY = startY + i;
                 if (currentY >= 0 && currentY < height) {
                     for (let x = 0; x < width; x++) {
-                        const index = currentY * width + x;
-                        if (newGrid[index] !== selectedColorId) {
-                            newGrid[index] = selectedColorId;
+                        const idx = currentY * width + x;
+                        if (newGrid[idx] !== selectedColorId) {
+                            newGrid[idx] = selectedColorId;
                             changed = true;
                         }
                     }
@@ -228,9 +267,9 @@ const PixelGraphPage: React.FC = () => {
                 const currentX = startX + i;
                 if (currentX >= 0 && currentX < width) {
                     for (let y = 0; y < height; y++) {
-                        const index = y * width + currentX;
-                         if (newGrid[index] !== selectedColorId) {
-                            newGrid[index] = selectedColorId;
+                        const idx = y * width + currentX;
+                         if (newGrid[idx] !== selectedColorId) {
+                            newGrid[idx] = selectedColorId;
                             changed = true;
                         }
                     }
@@ -339,13 +378,15 @@ const PixelGraphPage: React.FC = () => {
         }
     };
 
-    const ToolButton = ({ tool, label }: { tool: Tool, label: string }) => (
+    const ToolButton = ({ tool, label, icon }: { tool: Tool, label: string, icon?: string }) => (
         <Button
             variant={activeTool === tool ? 'primary' : 'secondary'}
             onClick={() => setActiveTool(tool)}
-            className="text-xs justify-center"
+            className="text-xs justify-center flex-col h-14"
+            title={label}
         >
-            {label}
+            {icon && <Icon name={icon} className="w-5 h-5 mb-1" />}
+            <span>{label}</span>
         </Button>
     );
 
@@ -374,6 +415,8 @@ const PixelGraphPage: React.FC = () => {
                     brushSize={brushSize}
                     rowFillSize={rowFillSize}
                     colFillSize={colFillSize}
+                    zoom={zoom}
+                    onZoomChange={onZoomChange}
                 />
 
                 {/* Mobile Toggle Button */}
@@ -385,8 +428,8 @@ const PixelGraphPage: React.FC = () => {
                 </div>
             </main>
 
-            <aside className={`w-72 bg-white border-l p-4 flex flex-col transition-transform duration-300 ease-in-out fixed inset-y-0 right-0 z-40 lg:static lg:z-auto lg:translate-x-0 ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}`}>
-                <div className="flex justify-between items-center mb-4 flex-shrink-0">
+            <aside className={`w-72 bg-white border-l flex flex-col transition-transform duration-300 ease-in-out fixed inset-y-0 right-0 z-40 lg:static lg:z-auto lg:translate-x-0 ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}`}>
+                <div className="p-4 flex justify-between items-center mb-0 flex-shrink-0 border-b">
                     <h3 className="font-bold text-lg text-gray-800">Tools & Info</h3>
                     <button 
                         onClick={() => setIsPanelOpen(false)} 
@@ -397,7 +440,7 @@ const PixelGraphPage: React.FC = () => {
                     </button>
                 </div>
 
-                <div className="flex-1 overflow-y-auto -mr-4 pr-4 space-y-4">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     <div className="space-y-4 pb-4 border-b">
                         <div>
                             <Button variant="secondary" className="w-full" onClick={() => imageUploadRef.current?.click()}>
@@ -439,11 +482,12 @@ const PixelGraphPage: React.FC = () => {
                     <div className="pb-4 border-b">
                         <h4 className="font-semibold mb-2 text-gray-700">Advanced Tools</h4>
                         <div className="grid grid-cols-3 gap-2 mb-2">
-                            <ToolButton tool="brush" label="Brush" />
-                            <ToolButton tool="fill-row" label="Fill Row" />
-                            <ToolButton tool="fill-column" label="Fill Col" />
-                            <ToolButton tool="fill" label="Fill All" />
-                            <ToolButton tool="replace" label="Replace" />
+                            <ToolButton tool="brush" label="Brush" icon="edit"/>
+                            <ToolButton tool="fill-row" label="Fill Row"/>
+                            <ToolButton tool="fill-column" label="Fill Col"/>
+                            <ToolButton tool="fill" label="Fill All"/>
+                            <ToolButton tool="replace" label="Replace"/>
+                            <ToolButton tool="eyedropper" label="Picker" icon="eyedropper" />
                         </div>
                         {activeTool === 'brush' && (
                             <div className="p-2 border rounded-md bg-gray-50 space-y-2">
@@ -464,31 +508,40 @@ const PixelGraphPage: React.FC = () => {
                         )}
                         {activeTool === 'fill' && (
                             <div className="p-2 border rounded-md bg-gray-50">
-                                <Button onClick={handleFillCanvas} disabled={selectedColorId === null} className="w-full">Fill with Selected</Button>
+                                <Button onClick={handleFillCanvas} className="w-full" disabled={selectedColorId === undefined}>Fill with Selected</Button>
                             </div>
                         )}
                         {activeTool === 'replace' && (
                             <div className="p-2 border rounded-md bg-gray-50 space-y-2">
+                                <p className="text-xs text-center text-gray-600 pb-2">Activate a box, then pick a color from the palette or the canvas.</p>
                                 <div className="flex items-center justify-around">
                                     <div className="text-center">
                                         <span className="text-xs font-medium text-gray-700">From</span>
                                         <div
                                             onClick={() => setReplaceTarget('from')}
-                                            className={`w-10 h-10 rounded-md cursor-pointer border-2 ${replaceTarget === 'from' ? 'border-indigo-600 ring-2' : 'border-gray-300'}`}
+                                            className={`relative w-10 h-10 rounded-md cursor-pointer border-2 flex items-center justify-center ${replaceTarget === 'from' ? 'border-indigo-600 ring-2' : 'border-gray-300'}`}
                                             style={{ backgroundColor: replaceFromColor ? yarnColorMap.get(replaceFromColor)?.hex : '#eee' }}
-                                        />
+                                        >
+                                            {replaceFromColor === null && (
+                                                <div className="w-8 h-1 bg-red-500 transform rotate-45 absolute"></div>
+                                            )}
+                                        </div>
                                     </div>
                                     <span className="text-gray-500 pt-4">→</span>
                                     <div className="text-center">
                                         <span className="text-xs font-medium text-gray-700">To</span>
                                         <div
                                             onClick={() => setReplaceTarget('to')}
-                                            className={`w-10 h-10 rounded-md cursor-pointer border-2 ${replaceTarget === 'to' ? 'border-indigo-600 ring-2' : 'border-gray-300'}`}
+                                            className={`relative w-10 h-10 rounded-md cursor-pointer border-2 flex items-center justify-center ${replaceTarget === 'to' ? 'border-indigo-600 ring-2' : 'border-gray-300'}`}
                                             style={{ backgroundColor: replaceToColor ? yarnColorMap.get(replaceToColor)?.hex : '#eee' }}
-                                        />
+                                        >
+                                            {replaceToColor === null && (
+                                                <div className="w-8 h-1 bg-red-500 transform rotate-45 absolute"></div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
-                                <Button onClick={handleReplace} disabled={!replaceFromColor || !replaceToColor} className="w-full">Apply Replacement</Button>
+                                <Button onClick={handleReplace} disabled={replaceFromColor === undefined || replaceToColor === undefined} className="w-full">Apply Replacement</Button>
                             </div>
                         )}
                         {activeTool === 'fill-row' && (
@@ -541,7 +594,7 @@ const PixelGraphPage: React.FC = () => {
                                 />
                             ))}
                             <div onClick={() => handlePaletteClick(null)}
-                                className={`w-10 h-10 rounded-full cursor-pointer border-2 flex items-center justify-center bg-gray-100 ${selectedColorId === null && activeTool !== 'replace' ? 'border-indigo-600 ring-2 ring-offset-2 ring-indigo-500' : 'border-gray-200'}`}
+                                className={`relative w-10 h-10 rounded-full cursor-pointer border-2 flex items-center justify-center bg-gray-100 ${selectedColorId === null && activeTool !== 'replace' ? 'border-indigo-600 ring-2 ring-offset-2 ring-indigo-500' : 'border-gray-200'}`}
                                 title="Eraser">
                                 <div className="w-8 h-1 bg-red-500 transform rotate-45 absolute"></div>
                             </div>
@@ -726,11 +779,14 @@ const PlaceholderPage: React.FC<{title: string}> = ({title}) => (
 const MainLayout: React.FC = () => {
     const { state } = useProject();
     const location = useLocation();
+    const [zoom, setZoom] = useState(1);
 
-    // Editor pages handle their own scrolling internally. The main content area
-    // should not scroll, to prevent interference (e.g., `overflow-y-auto`
-    // adds `overflow-x: hidden`, which breaks the editor's horizontal scroll).
-    // Other pages like Projects might need vertical scrolling.
+    useEffect(() => {
+        if (!state.project) {
+            setZoom(1);
+        }
+    }, [state.project]);
+
     const isEditorPage = ['/', '/c2c', '/stripes', '/granny'].includes(location.pathname);
     const mainContainerClasses = isEditorPage ? 'flex-1 overflow-hidden' : 'flex-1 overflow-y-auto';
 
@@ -742,14 +798,14 @@ const MainLayout: React.FC = () => {
                 <div className="flex-1 flex flex-col overflow-hidden">
                     <main className={mainContainerClasses}>
                         <Routes>
-                            <Route path="/" element={<PixelGraphPage />} />
+                            <Route path="/" element={<PixelGraphPage zoom={zoom} onZoomChange={setZoom} />} />
                             <Route path="/c2c" element={<PlaceholderPage title="C2C Pattern Generator" />} />
                             <Route path="/stripes" element={<PlaceholderPage title="Stripe Generator" />} />
                             <Route path="/granny" element={<PlaceholderPage title="Granny Square Planner" />} />
                             <Route path="/projects" element={<ProjectsPage />} />
                         </Routes>
                     </main>
-                    {state.project && <Footer/>}
+                    {state.project && isEditorPage && <Footer zoom={zoom} onZoomChange={setZoom} />}
                 </div>
             </div>
         </div>

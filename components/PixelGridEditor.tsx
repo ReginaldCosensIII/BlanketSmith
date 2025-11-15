@@ -1,7 +1,8 @@
+
 import React, { useState, useRef, useLayoutEffect, useCallback } from 'react';
 import { PixelGridData, YarnColor } from '../types';
 
-type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column';
+type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column' | 'eyedropper';
 
 interface PixelGridEditorProps {
   data: PixelGridData;
@@ -14,16 +15,18 @@ interface PixelGridEditorProps {
   brushSize: number;
   rowFillSize: number;
   colFillSize: number;
+  zoom: number;
+  onZoomChange: (newZoom: number) => void;
 }
 
 const RULER_SIZE = 2; // Units for ruler size
 
-const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, selectedColorId, onGridChange, showGridLines, activeTool, onCanvasClick, brushSize, rowFillSize, colFillSize }) => {
+const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, selectedColorId, onGridChange, showGridLines, activeTool, onCanvasClick, brushSize, rowFillSize, colFillSize, zoom, onZoomChange }) => {
   const { width, height, grid } = data;
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
+  const pinchDistRef = useRef<number | null>(null);
 
-  const [zoom, setZoom] = useState(1);
   const [isDrawing, setIsDrawing] = useState(false);
   const [paintedCells, setPaintedCells] = useState<Set<number>>(new Set());
   const [hoveredCell, setHoveredCell] = useState<{ x: number; y: number } | null>(null);
@@ -34,18 +37,15 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
     const container = containerRef.current;
     if (container) {
       const { clientWidth, clientHeight } = container;
-      // Account for rulers on all four sides
       const svgLogicalWidth = width + RULER_SIZE * 2;
       const svgLogicalHeight = height + RULER_SIZE * 2;
       
       const zoomX = clientWidth / svgLogicalWidth;
       const zoomY = clientHeight / svgLogicalHeight;
       
-      // Fit to screen with a 5% padding
       const initialZoom = Math.min(zoomX, zoomY) * 0.95; 
-      setZoom(Math.max(0.1, initialZoom));
+      onZoomChange(Math.max(0.1, initialZoom));
 
-      // After setting zoom, the SVG will resize. We then center the view.
       requestAnimationFrame(() => {
         if (containerRef.current) {
           const { scrollWidth, scrollHeight, clientWidth, clientHeight } = containerRef.current;
@@ -54,7 +54,7 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
         }
       });
     }
-  }, [width, height]);
+  }, [width, height, onZoomChange]);
   
   const getMousePosition = (e: React.MouseEvent | React.TouchEvent) => {
     if (!svgRef.current) return { x: 0, y: 0 };
@@ -68,13 +68,17 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
     };
   };
   
+  const getPinchDist = (e: TouchEvent) => {
+      const t1 = e.touches[0];
+      const t2 = e.touches[1];
+      return Math.sqrt(Math.pow(t1.clientX - t2.clientX, 2) + Math.pow(t1.clientY - t2.clientY, 2));
+  }
+
   const handlePaint = useCallback((e: React.MouseEvent | React.TouchEvent) => {
     const { x, y } = getMousePosition(e.nativeEvent as any);
-    // Grid is offset by top and left rulers
     const gridX = Math.floor(x - RULER_SIZE);
     const gridY = Math.floor(y - RULER_SIZE);
     
-    // Exit if cursor is way outside the grid
     if (gridX < -brushSize || gridX >= width + brushSize || gridY < -brushSize || gridY >= height + brushSize) return;
 
     const newPaintedCells = new Set<number>();
@@ -103,12 +107,18 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
   }, [grid, selectedColorId, paintedCells, width, height, brushSize]);
 
   const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+    if ('touches' in e.nativeEvent && e.nativeEvent.touches.length === 2) {
+        e.preventDefault();
+        pinchDistRef.current = getPinchDist(e.nativeEvent as TouchEvent);
+        setIsDrawing(false);
+        return;
+    }
     e.preventDefault();
     if (activeTool === 'brush') {
       setIsDrawing(true);
       setPaintedCells(new Set());
       handlePaint(e);
-    } else if (activeTool === 'fill-row' || activeTool === 'fill-column') {
+    } else { // For all other tools that use single clicks
       const { x, y } = getMousePosition(e.nativeEvent as any);
       const gridX = Math.floor(x - RULER_SIZE);
       const gridY = Math.floor(y - RULER_SIZE);
@@ -119,8 +129,42 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
   };
 
   const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
+     if ('touches' in e.nativeEvent && e.nativeEvent.touches.length === 2 && pinchDistRef.current !== null) {
+        e.preventDefault();
+        const container = containerRef.current;
+        if (!container) return;
+        
+        const newDist = getPinchDist(e.nativeEvent as TouchEvent);
+        if (newDist === 0) return;
+        
+        const scale = newDist / pinchDistRef.current;
+        const newZoom = Math.max(0.1, Math.min(zoom * scale, 100));
+
+        const rect = container.getBoundingClientRect();
+        const touch1 = e.nativeEvent.touches[0];
+        const touch2 = e.nativeEvent.touches[1];
+        const pinchCenterX = (touch1.clientX + touch2.clientX) / 2 - rect.left;
+        const pinchCenterY = (touch1.clientY + touch2.clientY) / 2 - rect.top;
+
+        const pointX = (container.scrollLeft + pinchCenterX) / zoom;
+        const pointY = (container.scrollTop + pinchCenterY) / zoom;
+
+        const newScrollLeft = pointX * newZoom - pinchCenterX;
+        const newScrollTop = pointY * newZoom - pinchCenterY;
+
+        onZoomChange(newZoom);
+        pinchDistRef.current = newDist;
+
+        requestAnimationFrame(() => {
+            if (containerRef.current) {
+                containerRef.current.scrollLeft = newScrollLeft;
+                containerRef.current.scrollTop = newScrollTop;
+            }
+        });
+        return;
+    }
+
     e.preventDefault();
-    
     const { x, y } = getMousePosition(e.nativeEvent as any);
     const gridX = Math.floor(x - RULER_SIZE);
     const gridY = Math.floor(y - RULER_SIZE);
@@ -141,6 +185,9 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
   };
   
   const handleMouseUp = () => {
+    if (pinchDistRef.current !== null) {
+        pinchDistRef.current = null;
+    }
     if (isDrawing && paintedCells.size > 0 && activeTool === 'brush') {
       const newGrid = [...grid];
       paintedCells.forEach(index => {
@@ -173,15 +220,13 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
         ? Math.min(zoom * 1.2, 100)
         : Math.max(zoom / 1.2, 0.1);
 
-    // Position of viewport center in SVG coords before zoom
     const pointX = (container.scrollLeft + viewportCenterX) / prevZoom;
     const pointY = (container.scrollTop + viewportCenterY) / prevZoom;
     
-    // Calculate new scroll position to keep that point under the viewport center
     const newScrollLeft = pointX * newZoom - viewportCenterX;
     const newScrollTop = pointY * newZoom - viewportCenterY;
 
-    setZoom(newZoom);
+    onZoomChange(newZoom);
     
     requestAnimationFrame(() => {
         if (containerRef.current) {
@@ -219,6 +264,9 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
     }
     if (activeTool === 'fill-row' || activeTool === 'fill-column') {
       return 'pointer';
+    }
+    if (activeTool === 'eyedropper' || activeTool === 'replace') {
+        return 'copy'; // Good cross-platform cursor for picking
     }
     return 'default';
   }
