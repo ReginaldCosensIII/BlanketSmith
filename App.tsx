@@ -82,17 +82,52 @@ const NavItem: React.FC<{ to: string; icon: string; label: string }> = ({ to, ic
 
 // --- LAYOUT COMPONENTS ---
 
-const Header: React.FC = () => {
+const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () => void; }> = ({ isSidebarVisible, onToggleSidebar }) => {
     const { state, saveCurrentProject } = useProject();
     const navigate = useNavigate();
+    const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     return (
         <header className="bg-white shadow-md p-2 flex justify-between items-center z-20">
-            <div className="flex items-center gap-2">
-                <div className="bg-indigo-600 p-2 rounded-lg">
-                    <Icon name="grid" className="w-6 h-6 text-white"/>
-                </div>
-                <h1 className="text-xl font-bold text-gray-800 hidden sm:block">BlanketGen</h1>
+            <div className="relative" ref={dropdownRef}>
+                <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded-lg p-1">
+                    <div className="bg-indigo-600 p-2 rounded-lg flex items-center justify-center w-10 h-10">
+                        <span className="text-white font-bold text-lg">BS</span>
+                    </div>
+                    <h1 className="text-xl font-bold text-gray-800 hidden sm:block">BlanketSmith</h1>
+                </button>
+                {isDropdownOpen && (
+                    <div className="absolute top-full mt-2 w-64 bg-white rounded-md shadow-lg border z-30">
+                        <div className="p-2">
+                           <div className="flex items-center justify-between p-2">
+                                <label htmlFor="sidebar-toggle" className="text-sm font-medium text-gray-700">Show Sidebar</label>
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked={isSidebarVisible}
+                                    id="sidebar-toggle"
+                                    onClick={(e) => { e.stopPropagation(); onToggleSidebar(); }}
+                                    className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${isSidebarVisible ? 'bg-indigo-600' : 'bg-gray-200'}`}
+                                >
+                                    <span
+                                        className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ease-in-out ${isSidebarVisible ? 'translate-x-6' : 'translate-x-1'}`}
+                                    />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
             {state.project && <div className="text-gray-600 font-semibold">{state.project.name}</div>}
             <div className="flex items-center gap-2">
@@ -164,6 +199,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
     const [isProcessing, setIsProcessing] = useState(false);
     const [showGridLines, setShowGridLines] = useState(true);
     const imageUploadRef = useRef<HTMLInputElement>(null);
+    const [maxImportColors, setMaxImportColors] = useState(16);
 
     const [activeTool, setActiveTool] = useState<Tool>('brush');
     const [replaceFromColor, setReplaceFromColor] = useState<string | null | undefined>(undefined);
@@ -207,7 +243,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
     };
     
     const handleFillCanvas = () => {
-        if (!projectData) return;
+        if (!projectData || selectedColorId === undefined) return;
         const newGrid = Array(projectData.width * projectData.height).fill(selectedColorId);
         updateGrid(newGrid);
     };
@@ -240,7 +276,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
         }
         
         // For filling tools, a color must be selected
-        if (selectedColorId === null) return;
+        if (selectedColorId === undefined) return;
         
         let newGrid = [...grid];
         let changed = false;
@@ -305,7 +341,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                     imageData,
                     projectData.width,
                     projectData.height,
-                    32, // num colors, placeholder
+                    maxImportColors,
                     project.yarnPalette
                 );
                 dispatch({ type: 'UPDATE_PROJECT_DATA', payload: newGridData });
@@ -447,6 +483,22 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                                 <Icon name="upload" className="w-4 h-4"/> Upload Image
                             </Button>
                             <input type="file" ref={imageUploadRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
+                        </div>
+
+                         <div className="space-y-2">
+                            <label htmlFor="max-colors" className="flex items-center justify-between text-sm font-medium text-gray-700">
+                                <span>Max Colors for Import</span>
+                                <span className="font-mono bg-white px-2 py-0.5 rounded border">{maxImportColors}</span>
+                            </label>
+                            <input
+                                id="max-colors"
+                                type="range"
+                                min="2"
+                                max="64"
+                                value={maxImportColors}
+                                onChange={(e) => setMaxImportColors(parseInt(e.target.value, 10))}
+                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                            />
                         </div>
                         
                         <div>
@@ -604,7 +656,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                     <div>
                         <h4 className="font-semibold mb-2 text-gray-700">Yarn Usage</h4>
                         <ul className="text-sm space-y-2">
-                        {projectData.palette.map(yarnId => {
+                        {projectData.palette.sort((a,b) => (yarnUsage.get(b) || 0) - (yarnUsage.get(a) || 0) ).map(yarnId => {
                             const yarn = project.yarnPalette.find(y => y.id === yarnId);
                             if (!yarn) return null;
                             return (
@@ -634,6 +686,7 @@ const ProjectsPage: React.FC = () => {
     const [projects, setProjects] = useState<AnyProject[]>(getProjects());
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newProjectName, setNewProjectName] = useState('');
+    const importFileRef = useRef<HTMLInputElement>(null);
     
     const throwSize = BLANKET_SIZES.find(s => s.name === 'Throw') || { width: 50, height: 60 };
     const [selectedSizeKey, setSelectedSizeKey] = useState('Throw');
@@ -679,11 +732,75 @@ const ProjectsPage: React.FC = () => {
         navigate('/');
     }
 
+    const handleExportProject = (project: AnyProject) => {
+        try {
+            const projectJson = JSON.stringify(project, null, 2);
+            const blob = new Blob([projectJson], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${project.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.bsmith.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Failed to export project:", error);
+            alert("Failed to export project.");
+        }
+    };
+
+    const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const text = e.target?.result;
+                if (typeof text !== 'string') throw new Error("File content is not a string");
+                const importedProject = JSON.parse(text) as AnyProject;
+                
+                if (!importedProject.id || !importedProject.name || !importedProject.type || !importedProject.data) {
+                    throw new Error("Invalid project file format.");
+                }
+
+                importedProject.id = `proj-${Date.now()}`;
+                importedProject.name = `${importedProject.name} (Imported)`;
+                importedProject.createdAt = new Date().toISOString();
+                importedProject.updatedAt = new Date().toISOString();
+                
+                saveProject(importedProject);
+                setProjects(getProjects());
+                alert("Project imported successfully!");
+            } catch (error) {
+                console.error("Failed to import project:", error);
+                alert("Failed to import project. The file may be corrupt or in the wrong format.");
+            } finally {
+                if(event.target) {
+                    event.target.value = '';
+                }
+            }
+        };
+        reader.readAsText(file);
+    };
+
+
     return (
         <div className="p-4 sm:p-6 lg:p-8">
+             <input
+                type="file"
+                ref={importFileRef}
+                className="hidden"
+                accept=".json,.bsmith"
+                onChange={handleFileImport}
+            />
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">My Projects</h2>
-                <Button onClick={() => setIsModalOpen(true)}>Create New Project</Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="secondary" onClick={() => importFileRef.current?.click()}>Import Project</Button>
+                    <Button onClick={() => setIsModalOpen(true)}>Create New Project</Button>
+                </div>
             </div>
             
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -697,7 +814,12 @@ const ProjectsPage: React.FC = () => {
                         </div>
                         <div className="p-2 border-t bg-gray-50 flex gap-2">
                             <Button variant="secondary" className="flex-1 text-xs" onClick={() => handleLoadProject(p)}>Open</Button>
-                             <Button variant="danger" className="p-2" onClick={() => handleDeleteProject(p.id)}><Icon name="trash" className="w-4 h-4"/></Button>
+                            <Button variant="secondary" className="p-2" onClick={() => handleExportProject(p)} title="Export Project">
+                                <Icon name="download" className="w-4 h-4"/>
+                            </Button>
+                            <Button variant="danger" className="p-2" onClick={() => handleDeleteProject(p.id)} title="Delete Project">
+                                <Icon name="trash" className="w-4 h-4"/>
+                            </Button>
                         </div>
                     </div>
                 ))}
@@ -780,6 +902,7 @@ const MainLayout: React.FC = () => {
     const { state } = useProject();
     const location = useLocation();
     const [zoom, setZoom] = useState(1);
+    const [isSidebarVisible, setIsSidebarVisible] = useState(true);
 
     useEffect(() => {
         if (!state.project) {
@@ -792,9 +915,9 @@ const MainLayout: React.FC = () => {
 
     return (
         <div className="h-screen w-screen bg-gray-100 flex flex-col">
-            <Header/>
+            <Header isSidebarVisible={isSidebarVisible} onToggleSidebar={() => setIsSidebarVisible(!isSidebarVisible)} />
             <div className="flex-1 flex overflow-hidden">
-                <Sidebar/>
+                {isSidebarVisible && <Sidebar/>}
                 <div className="flex-1 flex flex-col overflow-hidden">
                     <main className={mainContainerClasses}>
                         <Routes>

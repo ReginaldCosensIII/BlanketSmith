@@ -20,6 +20,7 @@ export const Icon: React.FC<{ name: string; className?: string }> = ({ name, cla
     'edit': <path strokeLinecap="round" strokeLinejoin="round" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.5L15.232 5.232z" />,
     'save': <path strokeLinecap="round" strokeLinejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />,
     'eyedropper': <path strokeLinecap="round" strokeLinejoin="round" d="M10.163 2.548c.3-.3.738-.3 1.038 0l4.473 4.473a.75.75 0 010 1.06l-4.472 4.473a.75.75 0 01-1.06 0L5.69 7.97a.75.75 0 010-1.06l4.473-4.473zM10.163 2.548L5.69 7.021m0 0L1.217 11.494a.75.75 0 000 1.06l4.473 4.473a.75.75 0 001.06 0l4.473-4.473m0 0l4.473 4.473 4.473-4.473a.75.75 0 000-1.06l-4.473-4.473-4.473 4.473z" />,
+    'download': <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />,
   };
 
   return (

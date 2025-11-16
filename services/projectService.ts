@@ -2,7 +2,7 @@
 import { AnyProject, PatternType, PixelGridData, YarnColor } from '../types';
 import { YARN_PALETTE } from '../constants';
 
-const PROJECTS_KEY = 'blanket_generator_projects';
+const PROJECTS_KEY = 'blanketsmith_projects';
 
 export const getProjects = (): AnyProject[] => {
   try {
@@ -85,18 +85,8 @@ export const createNewProject = (
   }
 };
 
-// Color utilities
-function hexToRgb(hex: string): [number, number, number] | null {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result
-    ? [
-        parseInt(result[1], 16),
-        parseInt(result[2], 16),
-        parseInt(result[3], 16),
-      ]
-    : null;
-}
 
+// Color utilities
 function colorDistance(rgb1: [number, number, number], rgb2: [number, number, number]): number {
   const [r1, g1, b1] = rgb1;
   const [r2, g2, b2] = rgb2;
@@ -117,57 +107,98 @@ export const findClosestYarnColor = (rgb: [number, number, number], yarnPalette:
   return closestColor;
 };
 
-// Image processing
+// --- NEW HYBRID IMAGE PROCESSING ---
 export const processImageToGrid = (
   imageData: ImageData,
   gridWidth: number,
   gridHeight: number,
-  numColors: number,
+  maxColors: number,
   yarnPalette: YarnColor[]
 ): Promise<Partial<PixelGridData>> => {
   return new Promise((resolve) => {
-    // This is a simplified quantization. A real implementation would use a better algorithm.
-    // For now, we'll just average colors in each grid cell.
-    const newGrid: (string | null)[] = Array(gridWidth * gridHeight).fill(null);
+    // --- STAGE 1: High-Fidelity Pattern Generation (Cell-by-cell averaging) ---
+    const highFidelityGrid: (string | null)[] = Array(gridWidth * gridHeight).fill(null);
     const cellWidth = imageData.width / gridWidth;
     const cellHeight = imageData.height / gridHeight;
-    const usedYarnSet = new Set<string>();
+    const colorUsageCount = new Map<string, number>();
 
     for (let y = 0; y < gridHeight; y++) {
       for (let x = 0; x < gridWidth; x++) {
+        // Calculate average color for the block
         const startX = Math.floor(x * cellWidth);
         const startY = Math.floor(y * cellHeight);
-        const endX = Math.floor((x + 1) * cellWidth);
-        const endY = Math.floor((y + 1) * cellHeight);
-        
-        let r = 0, g = 0, b = 0, count = 0;
-        
+        const endX = Math.min(imageData.width, Math.floor((x + 1) * cellWidth));
+        const endY = Math.min(imageData.height, Math.floor((y + 1) * cellHeight));
+
+        let r_sum = 0, g_sum = 0, b_sum = 0;
+        let pixel_count = 0;
+
         for (let iy = startY; iy < endY; iy++) {
           for (let ix = startX; ix < endX; ix++) {
             const i = (iy * imageData.width + ix) * 4;
-            r += imageData.data[i];
-            g += imageData.data[i + 1];
-            b += imageData.data[i + 2];
-            count++;
+            r_sum += imageData.data[i];
+            g_sum += imageData.data[i + 1];
+            b_sum += imageData.data[i + 2];
+            pixel_count++;
           }
         }
-        
-        if (count > 0) {
-          const avgR = Math.floor(r / count);
-          const avgG = Math.floor(g / count);
-          const avgB = Math.floor(b / count);
-          const closestYarn = findClosestYarnColor([avgR, avgG, avgB], yarnPalette);
-          newGrid[y * gridWidth + x] = closestYarn.id;
-          usedYarnSet.add(closestYarn.id);
+
+        if (pixel_count > 0) {
+          const avg_r = Math.round(r_sum / pixel_count);
+          const avg_g = Math.round(g_sum / pixel_count);
+          const avg_b = Math.round(b_sum / pixel_count);
+
+          const closestYarn = findClosestYarnColor([avg_r, avg_g, avg_b], yarnPalette);
+          const yarnId = closestYarn.id;
+          
+          highFidelityGrid[y * gridWidth + x] = yarnId;
+          colorUsageCount.set(yarnId, (colorUsageCount.get(yarnId) || 0) + 1);
         }
       }
     }
 
+    // --- STAGE 2: Intelligent Color Reduction ---
+    let finalGrid = highFidelityGrid;
+    const uniqueColorsUsed = Array.from(colorUsageCount.keys());
+
+    if (uniqueColorsUsed.length > maxColors) {
+        // Determine the final palette (top N most used colors)
+        const sortedColors = uniqueColorsUsed.sort((a, b) => (colorUsageCount.get(b) || 0) - (colorUsageCount.get(a) || 0));
+        const finalPaletteIds = new Set(sortedColors.slice(0, maxColors));
+        const finalPaletteYarns = yarnPalette.filter(y => finalPaletteIds.has(y.id));
+        
+        // Create a map to remap culled colors to their closest color in the final palette
+        const remapping = new Map<string, string>();
+        
+        for (const yarnId of uniqueColorsUsed) {
+            if (!finalPaletteIds.has(yarnId)) {
+                const originalYarn = yarnPalette.find(y => y.id === yarnId);
+                if (originalYarn && finalPaletteYarns.length > 0) {
+                    const closestInFinalPalette = findClosestYarnColor(originalYarn.rgb, finalPaletteYarns);
+                    remapping.set(yarnId, closestInFinalPalette.id);
+                }
+            }
+        }
+        
+        // Apply the remapping to the grid
+        finalGrid = highFidelityGrid.map(yarnId => {
+            if (yarnId && remapping.has(yarnId)) {
+                return remapping.get(yarnId)!;
+            }
+            return yarnId;
+        });
+    }
+
+    const finalUsedYarnSet = new Set<string>();
+    finalGrid.forEach(cell => {
+      if (cell) finalUsedYarnSet.add(cell);
+    });
+
     resolve({
       width: gridWidth,
       height: gridHeight,
-      grid: newGrid,
-      palette: Array.from(usedYarnSet),
+      grid: finalGrid,
+      palette: Array.from(finalUsedYarnSet),
     });
   });
 };

@@ -1,5 +1,5 @@
 {
-  "name": "Blanket Pattern Generator",
+  "name": "BlanketSmith",
   "description": "A powerful multi-tool web application for creating beautiful blanket patterns. Includes a Pixel Graph Generator from images, C2C converter, Stripe Pattern Generator, and a Granny Square Blanket Planner with yarn management and PDF/PNG export.",
   "requestFramePermissions": []
 }
