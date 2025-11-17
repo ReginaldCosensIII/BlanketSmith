@@ -5,7 +5,7 @@ import { createNewProject, getProjects, saveProject, deleteProject, processImage
 import { exportPixelGridToPDF } from './services/exportService';
 import { Icon, Button, Modal } from './components/ui/SharedComponents';
 import PixelGridEditor from './components/PixelGridEditor';
-import { BLANKET_SIZES } from './constants';
+import { BLANKET_SIZES, PIXEL_FONT } from './constants';
 
 // STATE MANAGEMENT (Context & Reducer)
 const ProjectContext = React.createContext<{
@@ -197,7 +197,7 @@ const Footer: React.FC<{ zoom: number, onZoomChange: (newZoom: number) => void }
 // --- PAGES / TOOLS ---
 
 const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) => void; }> = ({ zoom, onZoomChange }) => {
-    type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column' | 'eyedropper';
+    type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column' | 'eyedropper' | 'text';
 
     const { state, dispatch } = useProject();
     const [selectedColorId, setSelectedColorId] = useState<string | null>(null);
@@ -214,6 +214,8 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
     const [brushSize, setBrushSize] = useState(1);
     const [rowFillSize, setRowFillSize] = useState(1);
     const [colFillSize, setColFillSize] = useState(1);
+    const [textToolInput, setTextToolInput] = useState('Text');
+    const [textSize, setTextSize] = useState(1);
 
     const project = state.project?.type === 'pixel' ? state.project : null;
     const projectData = project?.data as PixelGridData | undefined;
@@ -281,13 +283,39 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
             return;
         }
         
-        // For filling tools, a color must be selected
         if (selectedColorId === undefined) return;
         
         let newGrid = [...grid];
         let changed = false;
 
-        if (activeTool === 'fill-row') {
+        if (activeTool === 'text') {
+            let currentX = gridX;
+            textToolInput.toUpperCase().split('').forEach(char => {
+                const charData = PIXEL_FONT[char];
+                if (charData) {
+                    charData.forEach((row, yOffset) => {
+                        row.forEach((pixel, xOffset) => {
+                            if (pixel === 1) {
+                                for (let scaleY = 0; scaleY < textSize; scaleY++) {
+                                    for (let scaleX = 0; scaleX < textSize; scaleX++) {
+                                        const finalX = currentX + (xOffset * textSize) + scaleX;
+                                        const finalY = gridY + (yOffset * textSize) + scaleY;
+                                        if (finalX >= 0 && finalX < width && finalY >= 0 && finalY < height) {
+                                            const idx = finalY * width + finalX;
+                                            if (newGrid[idx] !== selectedColorId) {
+                                                newGrid[idx] = selectedColorId;
+                                                changed = true;
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        });
+                    });
+                    currentX += (charData[0].length * textSize) + (1 * textSize);
+                }
+            });
+        } else if (activeTool === 'fill-row') {
             const offset = Math.floor((rowFillSize - 1) / 2);
             const startY = gridY - offset;
             for (let i = 0; i < rowFillSize; i++) {
@@ -464,6 +492,8 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                     brushSize={brushSize}
                     rowFillSize={rowFillSize}
                     colFillSize={colFillSize}
+                    textToolInput={textToolInput}
+                    textSize={textSize}
                     zoom={zoom}
                     onZoomChange={onZoomChange}
                 />
@@ -553,6 +583,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                             <ToolButton tool="fill" label="Fill All"/>
                             <ToolButton tool="replace" label="Replace"/>
                             <ToolButton tool="eyedropper" label="Picker" icon="eyedropper" />
+                            <ToolButton tool="text" label="Text" icon="text" />
                         </div>
                         {activeTool === 'brush' && (
                             <div className="p-2 border rounded-md bg-gray-50 space-y-2">
@@ -567,6 +598,31 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                                     max="10"
                                     value={brushSize}
                                     onChange={(e) => setBrushSize(parseInt(e.target.value, 10))}
+                                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
+                                />
+                            </div>
+                        )}
+                        {activeTool === 'text' && (
+                            <div className="p-2 border rounded-md bg-gray-50 space-y-2">
+                                <label htmlFor="text-tool-input" className="text-sm font-medium text-gray-700">Text to Place</label>
+                                <input
+                                    id="text-tool-input"
+                                    type="text"
+                                    value={textToolInput}
+                                    onChange={(e) => setTextToolInput(e.target.value)}
+                                    className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                />
+                                <label htmlFor="text-size" className="flex items-center justify-between text-sm font-medium text-gray-700">
+                                    <span>Text Size</span>
+                                    <span className="font-mono bg-white px-2 py-0.5 rounded">{textSize}x</span>
+                                </label>
+                                <input
+                                    id="text-size"
+                                    type="range"
+                                    min="1"
+                                    max="5"
+                                    value={textSize}
+                                    onChange={(e) => setTextSize(parseInt(e.target.value, 10))}
                                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                                 />
                             </div>

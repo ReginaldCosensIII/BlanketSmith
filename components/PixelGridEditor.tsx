@@ -1,8 +1,8 @@
-
 import React, { useState, useRef, useLayoutEffect, useCallback } from 'react';
 import { PixelGridData, YarnColor } from '../types';
+import { PIXEL_FONT } from '../constants';
 
-type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column' | 'eyedropper';
+type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column' | 'eyedropper' | 'text';
 
 interface PixelGridEditorProps {
   data: PixelGridData;
@@ -15,13 +15,15 @@ interface PixelGridEditorProps {
   brushSize: number;
   rowFillSize: number;
   colFillSize: number;
+  textToolInput: string;
+  textSize: number;
   zoom: number;
   onZoomChange: (newZoom: number) => void;
 }
 
 const RULER_SIZE = 2; // Units for ruler size
 
-const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, selectedColorId, onGridChange, showGridLines, activeTool, onCanvasClick, brushSize, rowFillSize, colFillSize, zoom, onZoomChange }) => {
+const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, selectedColorId, onGridChange, showGridLines, activeTool, onCanvasClick, brushSize, rowFillSize, colFillSize, textToolInput, textSize, zoom, onZoomChange }) => {
   const { width, height, grid } = data;
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -122,7 +124,8 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
       const { x, y } = getMousePosition(e.nativeEvent as any);
       const gridX = Math.floor(x - RULER_SIZE);
       const gridY = Math.floor(y - RULER_SIZE);
-      if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height) {
+      // For text, we allow clicking outside the grid to start the text box
+      if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height || activeTool === 'text') {
         onCanvasClick(gridX, gridY);
       }
     }
@@ -169,16 +172,10 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
     const gridX = Math.floor(x - RULER_SIZE);
     const gridY = Math.floor(y - RULER_SIZE);
 
-    if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height) {
-      if (!hoveredCell || hoveredCell.x !== gridX || hoveredCell.y !== gridY) {
-        setHoveredCell({ x: gridX, y: gridY });
-      }
-    } else {
-      if (hoveredCell !== null) {
-        setHoveredCell(null);
-      }
+    if (!hoveredCell || hoveredCell.x !== gridX || hoveredCell.y !== gridY) {
+      setHoveredCell({ x: gridX, y: gridY });
     }
-
+    
     if (isDrawing && activeTool === 'brush') {
       handlePaint(e);
     }
@@ -267,6 +264,9 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
     }
     if (activeTool === 'eyedropper' || activeTool === 'replace') {
         return 'copy'; // Good cross-platform cursor for picking
+    }
+    if (activeTool === 'text') {
+        return 'text';
     }
     return 'default';
   }
@@ -401,6 +401,39 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
                         }
                     }
                     
+                    if (activeTool === 'text') {
+                      const textElements: React.ReactNode[] = [];
+                      let currentX = hoveredCell.x;
+                      const startY = hoveredCell.y;
+
+                      textToolInput.toUpperCase().split('').forEach((char, charIndex) => {
+                          const charData = PIXEL_FONT[char];
+                          if (charData) {
+                              charData.forEach((row, y) => {
+                                  row.forEach((pixel, x) => {
+                                      if (pixel === 1) {
+                                          const pixelX = currentX + (x * textSize);
+                                          const pixelY = startY + (y * textSize);
+                                            textElements.push(
+                                                <rect
+                                                    key={`text-${charIndex}-${y}-${x}`}
+                                                    x={pixelX}
+                                                    y={pixelY}
+                                                    width={textSize}
+                                                    height={textSize}
+                                                    fill={color}
+                                                    fillOpacity={fillOpacity}
+                                                />
+                                            );
+                                      }
+                                  });
+                              });
+                              currentX += (charData[0].length * textSize) + (1 * textSize); // Advance X by scaled char width + scaled spacing
+                          }
+                      });
+                      return textElements;
+                    }
+
                     return null;
                 })()}
             </g>
