@@ -111,12 +111,18 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
     
     if (symmetryMode === 'vertical') {
         const mirroredX = width - 1 - gridX;
-        paintAt(mirroredX, gridY, newPaintedCells);
+        // Avoid double-painting the center line
+        if (mirroredX !== gridX) {
+            paintAt(mirroredX, gridY, newPaintedCells);
+        }
     }
     
     if (symmetryMode === 'horizontal') {
         const mirroredY = height - 1 - gridY;
-        paintAt(gridX, mirroredY, newPaintedCells);
+        // Avoid double-painting the center line
+        if (mirroredY !== gridY) {
+            paintAt(gridX, mirroredY, newPaintedCells);
+        }
     }
 
     if (newPaintedCells.size > 0) {
@@ -388,16 +394,21 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
                     const color = selectedColorId ? yarnColorMap.get(selectedColorId) : '#ff0000';
                     const isEraser = selectedColorId === null;
                     const fillOpacity = isEraser ? 0.4 : 0.6;
+                    const previews = [];
 
                     if (activeTool === 'brush') {
-                        const previews = [...renderBrushPreview(hoveredCell.x, hoveredCell.y, color, isEraser)];
+                        previews.push(...renderBrushPreview(hoveredCell.x, hoveredCell.y, color, isEraser));
                         if (symmetryMode === 'vertical') {
                             const mirroredX = width - 1 - hoveredCell.x;
-                            previews.push(...renderBrushPreview(mirroredX, hoveredCell.y, color, isEraser));
+                            if (mirroredX !== hoveredCell.x) { // Avoid double preview on center line
+                                previews.push(...renderBrushPreview(mirroredX, hoveredCell.y, color, isEraser));
+                            }
                         }
                         if (symmetryMode === 'horizontal') {
                             const mirroredY = height - 1 - hoveredCell.y;
-                            previews.push(...renderBrushPreview(hoveredCell.x, mirroredY, color, isEraser));
+                             if (mirroredY !== hoveredCell.y) { // Avoid double preview on center line
+                                previews.push(...renderBrushPreview(hoveredCell.x, mirroredY, color, isEraser));
+                             }
                         }
                         return previews;
                     }
@@ -411,10 +422,20 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
                         const rectH = Math.min(endY, height) - rectY;
 
                         if (rectH > 0) {
-                            return (
-                                <rect x={0} y={rectY} width={width} height={rectH} fill={color} fillOpacity={fillOpacity} />
-                            );
+                            previews.push(<rect key="hover-row-main" x={0} y={rectY} width={width} height={rectH} fill={color} fillOpacity={fillOpacity} />);
                         }
+
+                        if (symmetryMode === 'horizontal') {
+                            const mirroredY = height - 1 - hoveredCell.y;
+                            const mirroredStartY = mirroredY - offset;
+                            const mirroredEndY = mirroredStartY + rowFillSize;
+                            const mirroredRectY = Math.max(0, mirroredStartY);
+                            const mirroredRectH = Math.min(mirroredEndY, height) - mirroredRectY;
+                            if (mirroredRectH > 0) {
+                                previews.push(<rect key="hover-row-mirror" x={0} y={mirroredRectY} width={width} height={mirroredRectH} fill={color} fillOpacity={fillOpacity} />);
+                            }
+                        }
+                        return previews;
                     }
 
                     if (activeTool === 'fill-column') {
@@ -426,10 +447,20 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
                         const rectW = Math.min(endX, width) - rectX;
 
                         if (rectW > 0) {
-                            return (
-                                <rect x={rectX} y={0} width={rectW} height={height} fill={color} fillOpacity={fillOpacity} />
-                            );
+                           previews.push(<rect key="hover-col-main" x={rectX} y={0} width={rectW} height={height} fill={color} fillOpacity={fillOpacity} />);
                         }
+
+                        if (symmetryMode === 'vertical') {
+                            const mirroredX = width - 1 - hoveredCell.x;
+                            const mirroredStartX = mirroredX - offset;
+                            const mirroredEndX = mirroredStartX + colFillSize;
+                            const mirroredRectX = Math.max(0, mirroredStartX);
+                            const mirroredRectW = Math.min(mirroredEndX, width) - mirroredRectX;
+                            if(mirroredRectW > 0) {
+                                previews.push(<rect key="hover-col-mirror" x={mirroredRectX} y={0} width={mirroredRectW} height={height} fill={color} fillOpacity={fillOpacity} />);
+                            }
+                        }
+                        return previews;
                     }
                     
                     if (activeTool === 'text') {

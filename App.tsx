@@ -331,6 +331,22 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                     }
                 }
             }
+            if (symmetryMode === 'horizontal') {
+                const mirroredGridY = height - 1 - gridY;
+                const mirroredStartY = mirroredGridY - offset;
+                 for (let i = 0; i < rowFillSize; i++) {
+                    const currentY = mirroredStartY + i;
+                    if (currentY >= 0 && currentY < height) {
+                        for (let x = 0; x < width; x++) {
+                            const idx = currentY * width + x;
+                            if (newGrid[idx] !== selectedColorId) {
+                                newGrid[idx] = selectedColorId;
+                                changed = true;
+                            }
+                        }
+                    }
+                }
+            }
         } else if (activeTool === 'fill-column') {
             const offset = Math.floor((colFillSize - 1) / 2);
             const startX = gridX - offset;
@@ -342,6 +358,22 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                          if (newGrid[idx] !== selectedColorId) {
                             newGrid[idx] = selectedColorId;
                             changed = true;
+                        }
+                    }
+                }
+            }
+             if (symmetryMode === 'vertical') {
+                const mirroredGridX = width - 1 - gridX;
+                const mirroredStartX = mirroredGridX - offset;
+                for (let i = 0; i < colFillSize; i++) {
+                    const currentX = mirroredStartX + i;
+                    if (currentX >= 0 && currentX < width) {
+                        for (let y = 0; y < height; y++) {
+                            const idx = y * width + currentX;
+                            if (newGrid[idx] !== selectedColorId) {
+                                newGrid[idx] = selectedColorId;
+                                changed = true;
+                            }
                         }
                     }
                 }
