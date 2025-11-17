@@ -1,6 +1,5 @@
-
 import React, { useState, useReducer, useCallback, useMemo, ChangeEvent, useRef, useEffect } from 'react';
-import { HashRouter, Routes, Route, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, NavLink, useLocation, useNavigate, Link } from 'react-router-dom';
 import { AnyProject, PatternType, PixelGridData, ProjectState, ProjectAction, YarnColor } from './types';
 import { createNewProject, getProjects, saveProject, deleteProject, processImageToGrid } from './services/projectService';
 import { exportPixelGridToPDF } from './services/exportService';
@@ -98,6 +97,12 @@ const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () => void;
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
+    const DropdownLink: React.FC<{to: string, children: React.ReactNode}> = ({to, children}) => (
+        <Link to={to} onClick={() => setIsDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">
+            {children}
+        </Link>
+    );
+
     return (
         <header className="bg-white shadow-md p-2 flex justify-between items-center z-20">
             <div className="relative" ref={dropdownRef}>
@@ -108,23 +113,24 @@ const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () => void;
                     <h1 className="text-xl font-bold text-gray-800 hidden sm:block">BlanketSmith</h1>
                 </button>
                 {isDropdownOpen && (
-                    <div className="absolute top-full mt-2 w-64 bg-white rounded-md shadow-lg border z-30">
-                        <div className="p-2">
-                           <div className="flex items-center justify-between p-2">
-                                <label htmlFor="sidebar-toggle" className="text-sm font-medium text-gray-700">Show Sidebar</label>
-                                <button
-                                    type="button"
-                                    role="switch"
-                                    aria-checked={isSidebarVisible}
-                                    id="sidebar-toggle"
-                                    onClick={(e) => { e.stopPropagation(); onToggleSidebar(); }}
-                                    className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${isSidebarVisible ? 'bg-indigo-600' : 'bg-gray-200'}`}
-                                >
-                                    <span
-                                        className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ease-in-out ${isSidebarVisible ? 'translate-x-6' : 'translate-x-1'}`}
-                                    />
-                                </button>
-                            </div>
+                    <div className="absolute top-full mt-2 w-64 bg-white rounded-md shadow-lg border z-30 p-2 space-y-1">
+                        <DropdownLink to="/contact">Contact Us</DropdownLink>
+                        <DropdownLink to="/partner">Partner With Us</DropdownLink>
+                        <div className="border-t my-1"></div>
+                        <div className="flex items-center justify-between p-2">
+                            <label htmlFor="sidebar-toggle" className="text-sm font-medium text-gray-700">Show Sidebar</label>
+                            <button
+                                type="button"
+                                role="switch"
+                                aria-checked={isSidebarVisible}
+                                id="sidebar-toggle"
+                                onClick={(e) => { e.stopPropagation(); onToggleSidebar(); }}
+                                className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${isSidebarVisible ? 'bg-indigo-600' : 'bg-gray-200'}`}
+                            >
+                                <span
+                                    className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ease-in-out ${isSidebarVisible ? 'translate-x-6' : 'translate-x-1'}`}
+                                />
+                            </button>
                         </div>
                     </div>
                 )}
@@ -320,9 +326,12 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
     };
 
     const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
-        if (!e.target.files || e.target.files.length === 0 || !project || !projectData) return;
-        const file = e.target.files[0];
+        const fileInput = e.target;
+        if (!fileInput.files || fileInput.files.length === 0 || !project || !projectData) return;
+        
+        const file = fileInput.files[0];
         const reader = new FileReader();
+        
         reader.onload = (event) => {
             const img = new Image();
             img.onload = async () => {
@@ -349,7 +358,11 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
             };
             img.src = event.target?.result as string;
         };
+        
         reader.readAsDataURL(file);
+
+        // Clear the input value to allow re-uploading the same file
+        fileInput.value = '';
     };
 
     const handleResize = () => {
@@ -687,6 +700,8 @@ const ProjectsPage: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newProjectName, setNewProjectName] = useState('');
     const importFileRef = useRef<HTMLInputElement>(null);
+    const [modalStep, setModalStep] = useState(1);
+    const [selectedProjectType, setSelectedProjectType] = useState<PatternType | null>(null);
     
     const throwSize = BLANKET_SIZES.find(s => s.name === 'Throw') || { width: 50, height: 60 };
     const [selectedSizeKey, setSelectedSizeKey] = useState('Throw');
@@ -695,6 +710,16 @@ const ProjectsPage: React.FC = () => {
 
     const { dispatch } = useProject();
     const navigate = useNavigate();
+
+    const openModal = () => {
+        setModalStep(1);
+        setSelectedProjectType(null);
+        setNewProjectName('');
+        setSelectedSizeKey('Throw');
+        setCustomWidth(throwSize.width);
+        setCustomHeight(throwSize.height);
+        setIsModalOpen(true);
+    };
 
     const handleSizeChange = (e: ChangeEvent<HTMLSelectElement>) => {
         const key = e.target.value;
@@ -709,12 +734,11 @@ const ProjectsPage: React.FC = () => {
     }
 
     const handleCreateProject = () => {
-        if (newProjectName.trim() && customWidth > 0 && customHeight > 0) {
-            const newProject = createNewProject('pixel', newProjectName, customWidth, customHeight);
+        if (newProjectName.trim() && customWidth > 0 && customHeight > 0 && selectedProjectType) {
+            const newProject = createNewProject(selectedProjectType, newProjectName, customWidth, customHeight);
             saveProject(newProject);
             setProjects(getProjects());
             setIsModalOpen(false);
-            setNewProjectName('');
             dispatch({ type: 'NEW_PROJECT', payload: newProject });
             navigate('/');
         }
@@ -785,6 +809,17 @@ const ProjectsPage: React.FC = () => {
         reader.readAsText(file);
     };
 
+    const PatternTypeCard: React.FC<{type: PatternType, icon: string, label: string, enabled: boolean}> = ({type, icon, label, enabled}) => (
+        <div 
+            onClick={() => enabled && setSelectedProjectType(type)}
+            className={`p-4 border-2 rounded-lg text-center cursor-pointer transition-all duration-200 ${selectedProjectType === type ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-500' : 'border-gray-300 bg-white hover:border-indigo-400'} ${!enabled && 'opacity-50 cursor-not-allowed bg-gray-100'}`}
+        >
+            <Icon name={icon} className="w-10 h-10 mx-auto mb-2 text-indigo-600" />
+            <h4 className="font-semibold text-gray-800">{label}</h4>
+            {!enabled && <span className="text-xs text-gray-500 block">Coming Soon</span>}
+        </div>
+    );
+
 
     return (
         <div className="p-4 sm:p-6 lg:p-8">
@@ -792,14 +827,14 @@ const ProjectsPage: React.FC = () => {
                 type="file"
                 ref={importFileRef}
                 className="hidden"
-                accept=".json,.bsmith"
+                accept=".json,.bsmith.json"
                 onChange={handleFileImport}
             />
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">My Projects</h2>
                 <div className="flex items-center gap-2">
                     <Button variant="secondary" onClick={() => importFileRef.current?.click()}>Import Project</Button>
-                    <Button onClick={() => setIsModalOpen(true)}>Create New Project</Button>
+                    <Button onClick={openModal}>Create New Project</Button>
                 </div>
             </div>
             
@@ -826,60 +861,77 @@ const ProjectsPage: React.FC = () => {
             </div>
 
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create New Project">
-                <div className="space-y-4">
-                    <div>
-                        <label htmlFor="projectName" className="block text-sm font-medium text-gray-700">Project Name</label>
-                        <input
-                            type="text"
-                            id="projectName"
-                            value={newProjectName}
-                            onChange={(e) => setNewProjectName(e.target.value)}
-                            className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                        />
-                    </div>
-                    <div>
-                        <label htmlFor="projectSize" className="block text-sm font-medium text-gray-700">Pattern Size</label>
-                         <select
-                            id="projectSize"
-                            value={selectedSizeKey}
-                            onChange={handleSizeChange}
-                            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-                        >
-                            {BLANKET_SIZES.map(size => (
-                                <option key={size.name} value={size.name}>{size.name} ({size.width} x {size.height})</option>
-                            ))}
-                            <option value="Custom">Custom Size</option>
-                        </select>
-                    </div>
-
-                    {selectedSizeKey === 'Custom' && (
-                        <div className="flex items-center gap-2">
-                            <div>
-                                <label htmlFor="customWidth" className="block text-xs font-medium text-gray-500">Width</label>
-                                <input
-                                    type="number"
-                                    id="customWidth"
-                                    value={customWidth}
-                                    onChange={(e) => setCustomWidth(parseInt(e.target.value, 10) || 0)}
-                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                />
-                            </div>
-                            <div className="pt-5 text-gray-500">x</div>
-                            <div>
-                                <label htmlFor="customHeight" className="block text-xs font-medium text-gray-500">Height</label>
-                                <input
-                                    type="number"
-                                    id="customHeight"
-                                    value={customHeight}
-                                    onChange={(e) => setCustomHeight(parseInt(e.target.value, 10) || 0)}
-                                    className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-                                />
-                            </div>
+                {modalStep === 1 && (
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-medium text-gray-900">1. Select Pattern Type</h3>
+                        <div className="grid grid-cols-2 gap-4">
+                            <PatternTypeCard type="pixel" icon="grid" label="Graph Pattern" enabled={true} />
+                            <PatternTypeCard type="c2c" icon="c2c" label="C2C" enabled={false} />
+                            <PatternTypeCard type="stripes" icon="stripes" label="Stripes" enabled={false} />
+                            <PatternTypeCard type="granny" icon="granny" label="Granny Square" enabled={false} />
                         </div>
-                    )}
-                    
-                    <Button onClick={handleCreateProject}>Create Project</Button>
-                </div>
+                        <Button onClick={() => setModalStep(2)} disabled={!selectedProjectType}>Next</Button>
+                    </div>
+                )}
+                {modalStep === 2 && (
+                    <div className="space-y-4">
+                        <h3 className="text-lg font-medium text-gray-900">2. Project Details</h3>
+                        <div>
+                            <label htmlFor="projectName" className="block text-sm font-medium text-gray-700">Project Name</label>
+                            <input
+                                type="text"
+                                id="projectName"
+                                value={newProjectName}
+                                onChange={(e) => setNewProjectName(e.target.value)}
+                                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                            />
+                        </div>
+                        <div>
+                            <label htmlFor="projectSize" className="block text-sm font-medium text-gray-700">Pattern Size</label>
+                             <select
+                                id="projectSize"
+                                value={selectedSizeKey}
+                                onChange={handleSizeChange}
+                                className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
+                            >
+                                {BLANKET_SIZES.map(size => (
+                                    <option key={size.name} value={size.name}>{size.name} ({size.width} x {size.height})</option>
+                                ))}
+                                <option value="Custom">Custom Size</option>
+                            </select>
+                        </div>
+
+                        {selectedSizeKey === 'Custom' && (
+                            <div className="flex items-center gap-2">
+                                <div>
+                                    <label htmlFor="customWidth" className="block text-xs font-medium text-gray-500">Width</label>
+                                    <input
+                                        type="number"
+                                        id="customWidth"
+                                        value={customWidth}
+                                        onChange={(e) => setCustomWidth(parseInt(e.target.value, 10) || 0)}
+                                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    />
+                                </div>
+                                <div className="pt-5 text-gray-500">x</div>
+                                <div>
+                                    <label htmlFor="customHeight" className="block text-xs font-medium text-gray-500">Height</label>
+                                    <input
+                                        type="number"
+                                        id="customHeight"
+                                        value={customHeight}
+                                        onChange={(e) => setCustomHeight(parseInt(e.target.value, 10) || 0)}
+                                        className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                    />
+                                </div>
+                            </div>
+                        )}
+                        <div className="flex justify-between">
+                            <Button variant="secondary" onClick={() => setModalStep(1)}>Back</Button>
+                            <Button onClick={handleCreateProject}>Create Project</Button>
+                        </div>
+                    </div>
+                )}
             </Modal>
         </div>
     );
@@ -892,6 +944,26 @@ const PlaceholderPage: React.FC<{title: string}> = ({title}) => (
         <p className="mt-4 text-sm bg-yellow-100 text-yellow-800 p-4 rounded-lg">
             <strong>TODO:</strong> Implement the core logic for the {title}. This includes data models, UI components for pattern generation, and specific export formats. The overall app structure is in place.
         </p>
+    </div>
+);
+
+const ContactPage: React.FC = () => (
+    <div className="p-8 max-w-2xl mx-auto">
+        <h2 className="text-3xl font-bold text-gray-800 mb-4">Contact Us</h2>
+        <p className="text-gray-600 mb-6">Have a question, feedback, or a suggestion? We'd love to hear from you! The best way to reach us is by email.</p>
+        <a href="mailto:contact@blanketsmith.com" className="inline-block bg-indigo-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors">
+            Email: contact@blanketsmith.com
+        </a>
+    </div>
+);
+
+const PartnerPage: React.FC = () => (
+     <div className="p-8 max-w-2xl mx-auto">
+        <h2 className="text-3xl font-bold text-gray-800 mb-4">Partner With Us</h2>
+        <p className="text-gray-600 mb-6">Are you a content creator, yarn brand, or designer in the fiber arts community? We're always looking for passionate people to collaborate with. Let's create something amazing together!</p>
+         <a href="mailto:partners@blanketsmith.com" className="inline-block bg-indigo-600 text-white font-semibold px-6 py-3 rounded-lg hover:bg-indigo-700 transition-colors">
+            Email: partners@blanketsmith.com
+        </a>
     </div>
 );
 
@@ -926,6 +998,8 @@ const MainLayout: React.FC = () => {
                             <Route path="/stripes" element={<PlaceholderPage title="Stripe Generator" />} />
                             <Route path="/granny" element={<PlaceholderPage title="Granny Square Planner" />} />
                             <Route path="/projects" element={<ProjectsPage />} />
+                            <Route path="/contact" element={<ContactPage />} />
+                            <Route path="/partner" element={<PartnerPage />} />
                         </Routes>
                     </main>
                     {state.project && isEditorPage && <Footer zoom={zoom} onZoomChange={setZoom} />}
