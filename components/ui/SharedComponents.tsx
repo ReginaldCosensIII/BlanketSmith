@@ -21,6 +21,8 @@ export const Icon: React.FC<{ name: string; className?: string }> = ({ name, cla
     'eyedropper': <path strokeLinecap="round" strokeLinejoin="round" d="M10.163 2.548c.3-.3.738-.3 1.038 0l4.473 4.473a.75.75 0 010 1.06l-4.472 4.473a.75.75 0 01-1.06 0L5.69 7.97a.75.75 0 010-1.06l4.473-4.473zM10.163 2.548L5.69 7.021m0 0L1.217 11.494a.75.75 0 000 1.06l4.473 4.473a.75.75 0 001.06 0l4.473-4.473m0 0l4.473 4.473 4.473-4.473a.75.75 0 000-1.06l-4.473-4.473-4.473 4.473z" />,
     'download': <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3" />,
     'text': <path strokeLinecap="round" strokeLinejoin="round" d="M5 3h14M12 3v18" />,
+    'symmetry-vertical': <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m4-14l-4 4-4-4m8 12l-4-4-4 4" />,
+    'symmetry-horizontal': <path strokeLinecap="round" strokeLinejoin="round" d="M4 12h16m-14-4l4 4-4 4m12-8l-4 4 4 4" />,
   };
 
   return (

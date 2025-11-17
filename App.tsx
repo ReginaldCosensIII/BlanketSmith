@@ -4,7 +4,7 @@ import { AnyProject, PatternType, PixelGridData, ProjectState, ProjectAction, Ya
 import { createNewProject, getProjects, saveProject, deleteProject, processImageToGrid } from './services/projectService';
 import { exportPixelGridToPDF } from './services/exportService';
 import { Icon, Button, Modal } from './components/ui/SharedComponents';
-import PixelGridEditor from './components/PixelGridEditor';
+import PixelGridEditor, { SymmetryMode } from './components/PixelGridEditor';
 import { BLANKET_SIZES, PIXEL_FONT } from './constants';
 
 // STATE MANAGEMENT (Context & Reducer)
@@ -216,6 +216,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
     const [colFillSize, setColFillSize] = useState(1);
     const [textToolInput, setTextToolInput] = useState('Text');
     const [textSize, setTextSize] = useState(1);
+    const [symmetryMode, setSymmetryMode] = useState<SymmetryMode>('none');
 
     const project = state.project?.type === 'pixel' ? state.project : null;
     const projectData = project?.data as PixelGridData | undefined;
@@ -466,6 +467,10 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
             <span>{label}</span>
         </Button>
     );
+    
+    const toggleSymmetry = (mode: SymmetryMode) => {
+        setSymmetryMode(prev => prev === mode ? 'none' : mode);
+    }
 
     return (
         <div className="flex-1 flex h-full overflow-hidden">
@@ -494,6 +499,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                     colFillSize={colFillSize}
                     textToolInput={textToolInput}
                     textSize={textSize}
+                    symmetryMode={symmetryMode}
                     zoom={zoom}
                     onZoomChange={onZoomChange}
                 />
@@ -701,6 +707,28 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                                 />
                             </div>
                         )}
+                    </div>
+                    
+                    <div className="pb-4 border-b">
+                        <h4 className="font-semibold mb-2 text-gray-700">Drawing Aids</h4>
+                        <div className="flex gap-2">
+                             <Button 
+                                variant={symmetryMode === 'vertical' ? 'primary' : 'secondary'}
+                                onClick={() => toggleSymmetry('vertical')}
+                                className="flex-1 justify-center"
+                                title="Vertical Symmetry"
+                            >
+                                <Icon name="symmetry-vertical" className="w-5 h-5" />
+                            </Button>
+                             <Button 
+                                variant={symmetryMode === 'horizontal' ? 'primary' : 'secondary'}
+                                onClick={() => toggleSymmetry('horizontal')}
+                                className="flex-1 justify-center"
+                                title="Horizontal Symmetry"
+                            >
+                                <Icon name="symmetry-horizontal" className="w-5 h-5" />
+                            </Button>
+                        </div>
                     </div>
 
                     <div className="pb-4 border-b">

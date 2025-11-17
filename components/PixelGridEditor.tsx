@@ -3,6 +3,7 @@ import { PixelGridData, YarnColor } from '../types';
 import { PIXEL_FONT } from '../constants';
 
 type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column' | 'eyedropper' | 'text';
+export type SymmetryMode = 'none' | 'vertical' | 'horizontal';
 
 interface PixelGridEditorProps {
   data: PixelGridData;
@@ -17,13 +18,14 @@ interface PixelGridEditorProps {
   colFillSize: number;
   textToolInput: string;
   textSize: number;
+  symmetryMode: SymmetryMode;
   zoom: number;
   onZoomChange: (newZoom: number) => void;
 }
 
 const RULER_SIZE = 2; // Units for ruler size
 
-const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, selectedColorId, onGridChange, showGridLines, activeTool, onCanvasClick, brushSize, rowFillSize, colFillSize, textToolInput, textSize, zoom, onZoomChange }) => {
+const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, selectedColorId, onGridChange, showGridLines, activeTool, onCanvasClick, brushSize, rowFillSize, colFillSize, textToolInput, textSize, symmetryMode, zoom, onZoomChange }) => {
   const { width, height, grid } = data;
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -76,14 +78,7 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
       return Math.sqrt(Math.pow(t1.clientX - t2.clientX, 2) + Math.pow(t1.clientY - t2.clientY, 2));
   }
 
-  const handlePaint = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    const { x, y } = getMousePosition(e.nativeEvent as any);
-    const gridX = Math.floor(x - RULER_SIZE);
-    const gridY = Math.floor(y - RULER_SIZE);
-    
-    if (gridX < -brushSize || gridX >= width + brushSize || gridY < -brushSize || gridY >= height + brushSize) return;
-
-    const newPaintedCells = new Set<number>();
+  const paintAt = useCallback((gridX: number, gridY: number, newPaintedCells: Set<number>) => {
     const offset = Math.floor((brushSize - 1) / 2);
     const startX = gridX - offset;
     const startY = gridY - offset;
@@ -101,12 +96,34 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
             }
         }
     }
+  }, [brushSize, width, height, grid, selectedColorId, paintedCells]);
+
+  const handlePaint = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    const { x, y } = getMousePosition(e.nativeEvent as any);
+    const gridX = Math.floor(x - RULER_SIZE);
+    const gridY = Math.floor(y - RULER_SIZE);
+    
+    if (gridX < -brushSize || gridX >= width + brushSize || gridY < -brushSize || gridY >= height + brushSize) return;
+
+    const newPaintedCells = new Set<number>();
+    
+    paintAt(gridX, gridY, newPaintedCells);
+    
+    if (symmetryMode === 'vertical') {
+        const mirroredX = width - 1 - gridX;
+        paintAt(mirroredX, gridY, newPaintedCells);
+    }
+    
+    if (symmetryMode === 'horizontal') {
+        const mirroredY = height - 1 - gridY;
+        paintAt(gridX, mirroredY, newPaintedCells);
+    }
 
     if (newPaintedCells.size > 0) {
         setPaintedCells(prev => new Set([...prev, ...newPaintedCells]));
     }
 
-  }, [grid, selectedColorId, paintedCells, width, height, brushSize]);
+  }, [paintAt, symmetryMode, width, height, brushSize]);
 
   const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
     if ('touches' in e.nativeEvent && e.nativeEvent.touches.length === 2) {
@@ -273,6 +290,40 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
 
   const svgTotalWidth = width + RULER_SIZE * 2;
   const svgTotalHeight = height + RULER_SIZE * 2;
+  
+  const renderBrushPreview = (cellX: number, cellY: number, color: string | undefined, isEraser: boolean) => {
+    const elements = [];
+    const fillOpacity = isEraser ? 0.4 : 0.6;
+    const stroke = isEraser ? '#ff0000' : '#ffffff';
+    const offset = Math.floor((brushSize - 1) / 2);
+    const startX = cellX - offset;
+    const startY = cellY - offset;
+
+    for (let i = 0; i < brushSize; i++) {
+        for (let j = 0; j < brushSize; j++) {
+            const currentX = startX + i;
+            const currentY = startY + j;
+
+            if (currentX >= 0 && currentX < width && currentY >= 0 && currentY < height) {
+                elements.push(
+                    <rect
+                        key={`hover-${i}-${j}-${cellX}-${cellY}`}
+                        x={currentX}
+                        y={currentY}
+                        width="1"
+                        height="1"
+                        fill={color}
+                        fillOpacity={fillOpacity}
+                        stroke={stroke}
+                        strokeOpacity={0.8}
+                        strokeWidth={0.05}
+                    />
+                );
+            }
+        }
+    }
+    return elements;
+  }
 
   return (
     <div
@@ -337,38 +388,18 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
                     const color = selectedColorId ? yarnColorMap.get(selectedColorId) : '#ff0000';
                     const isEraser = selectedColorId === null;
                     const fillOpacity = isEraser ? 0.4 : 0.6;
-                    const stroke = isEraser ? '#ff0000' : '#ffffff';
 
                     if (activeTool === 'brush') {
-                        const elements = [];
-                        const offset = Math.floor((brushSize - 1) / 2);
-                        const startX = hoveredCell.x - offset;
-                        const startY = hoveredCell.y - offset;
-
-                        for (let i = 0; i < brushSize; i++) {
-                            for (let j = 0; j < brushSize; j++) {
-                                const currentX = startX + i;
-                                const currentY = startY + j;
-
-                                if (currentX >= 0 && currentX < width && currentY >= 0 && currentY < height) {
-                                    elements.push(
-                                        <rect
-                                            key={`hover-${i}-${j}`}
-                                            x={currentX}
-                                            y={currentY}
-                                            width="1"
-                                            height="1"
-                                            fill={color}
-                                            fillOpacity={fillOpacity}
-                                            stroke={stroke}
-                                            strokeOpacity={0.8}
-                                            strokeWidth={0.05}
-                                        />
-                                    );
-                                }
-                            }
+                        const previews = [...renderBrushPreview(hoveredCell.x, hoveredCell.y, color, isEraser)];
+                        if (symmetryMode === 'vertical') {
+                            const mirroredX = width - 1 - hoveredCell.x;
+                            previews.push(...renderBrushPreview(mirroredX, hoveredCell.y, color, isEraser));
                         }
-                        return elements;
+                        if (symmetryMode === 'horizontal') {
+                            const mirroredY = height - 1 - hoveredCell.y;
+                            previews.push(...renderBrushPreview(hoveredCell.x, mirroredY, color, isEraser));
+                        }
+                        return previews;
                     }
 
                     if (activeTool === 'fill-row') {
