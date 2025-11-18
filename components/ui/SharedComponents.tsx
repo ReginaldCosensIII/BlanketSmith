@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 export const Icon: React.FC<{ name: string; className?: string }> = ({ name, className = 'w-6 h-6' }) => {
@@ -23,6 +24,10 @@ export const Icon: React.FC<{ name: string; className?: string }> = ({ name, cla
     'text': <path strokeLinecap="round" strokeLinejoin="round" d="M5 3h14M12 3v18" />,
     'symmetry-vertical': <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m4-14l-4 4-4-4m8 12l-4-4-4 4" />,
     'symmetry-horizontal': <path strokeLinecap="round" strokeLinejoin="round" d="M4 12h16m-14-4l4 4-4 4m12-8l-4 4 4 4" />,
+    'mirror-l-r': <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18m-3-9h1.5m1.5 0h1.5m3 0l-3 3m0 0l-3-3m3 3V9" />,
+    'mirror-r-l': <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18m3-9h-1.5m-1.5 0H9m-3 0l3 3m0 0l3-3m-3 3V9" />,
+    'mirror-t-b': <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18m-9-3v1.5m0 1.5v1.5m0 3l3-3m0 0l-3-3m3 3H9" />,
+    'mirror-b-t': <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18m-9 3v-1.5m0-1.5V9m0-3l3 3m0 0l-3 3m3-3H9" />,
   };
 
   return (
@@ -47,7 +52,7 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
   );
 };
 
-export const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode }> = ({ isOpen, onClose, title, children }) => {
+export const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode; footer?: React.ReactNode }> = ({ isOpen, onClose, title, children, footer }) => {
   if (!isOpen) return null;
 
   return (
@@ -59,8 +64,8 @@ export const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: stri
         <div className="p-4">
           {children}
         </div>
-        <div className="p-4 border-t flex justify-end">
-          <Button variant="secondary" onClick={onClose}>Close</Button>
+        <div className="p-4 border-t flex justify-end gap-2">
+          {footer ? footer : <Button variant="secondary" onClick={onClose}>Close</Button>}
         </div>
       </div>
     </div>

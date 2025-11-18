@@ -3,7 +3,10 @@ import { PixelGridData, YarnColor } from '../types';
 import { PIXEL_FONT } from '../constants';
 
 type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column' | 'eyedropper' | 'text';
-export type SymmetryMode = 'none' | 'vertical' | 'horizontal';
+export type Symmetry = {
+    vertical: boolean;
+    horizontal: boolean;
+};
 
 interface PixelGridEditorProps {
   data: PixelGridData;
@@ -18,14 +21,14 @@ interface PixelGridEditorProps {
   colFillSize: number;
   textToolInput: string;
   textSize: number;
-  symmetryMode: SymmetryMode;
+  symmetry: Symmetry;
   zoom: number;
   onZoomChange: (newZoom: number) => void;
 }
 
 const RULER_SIZE = 2; // Units for ruler size
 
-const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, selectedColorId, onGridChange, showGridLines, activeTool, onCanvasClick, brushSize, rowFillSize, colFillSize, textToolInput, textSize, symmetryMode, zoom, onZoomChange }) => {
+const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, selectedColorId, onGridChange, showGridLines, activeTool, onCanvasClick, brushSize, rowFillSize, colFillSize, textToolInput, textSize, symmetry, zoom, onZoomChange }) => {
   const { width, height, grid } = data;
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
@@ -107,29 +110,29 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
 
     const newPaintedCells = new Set<number>();
     
-    paintAt(gridX, gridY, newPaintedCells);
+    const pointsToPaint = [{x: gridX, y: gridY}];
     
-    if (symmetryMode === 'vertical') {
-        const mirroredX = width - 1 - gridX;
-        // Avoid double-painting the center line
-        if (mirroredX !== gridX) {
-            paintAt(mirroredX, gridY, newPaintedCells);
-        }
+    if (symmetry.vertical) {
+        pointsToPaint.push({ x: width - 1 - gridX, y: gridY });
+    }
+    if (symmetry.horizontal) {
+        pointsToPaint.push({ x: gridX, y: height - 1 - gridY });
+    }
+    if (symmetry.vertical && symmetry.horizontal) {
+        pointsToPaint.push({ x: width - 1 - gridX, y: height - 1 - gridY });
     }
     
-    if (symmetryMode === 'horizontal') {
-        const mirroredY = height - 1 - gridY;
-        // Avoid double-painting the center line
-        if (mirroredY !== gridY) {
-            paintAt(gridX, mirroredY, newPaintedCells);
-        }
-    }
+    // Use a Set to avoid painting the same cell twice (e.g., on center lines)
+    new Set(pointsToPaint.map(p => `${p.x},${p.y}`)).forEach(pStr => {
+      const [pX, pY] = pStr.split(',').map(Number);
+      paintAt(pX, pY, newPaintedCells);
+    });
 
     if (newPaintedCells.size > 0) {
         setPaintedCells(prev => new Set([...prev, ...newPaintedCells]));
     }
 
-  }, [paintAt, symmetryMode, width, height, brushSize]);
+  }, [paintAt, symmetry, width, height, brushSize]);
 
   const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
     if ('touches' in e.nativeEvent && e.nativeEvent.touches.length === 2) {
@@ -331,6 +334,100 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
     return elements;
   }
 
+  const getHoverPreviews = () => {
+    if (!hoveredCell || isDrawing) return null;
+
+    const previews: React.ReactNode[] = [];
+    const color = selectedColorId ? yarnColorMap.get(selectedColorId) : '#ff0000';
+    const isEraser = selectedColorId === null;
+    const fillOpacity = isEraser ? 0.4 : 0.6;
+
+    const addPreview = (previewKey: string, generator: () => React.ReactNode | React.ReactNode[]) => {
+      previews.push(<g key={previewKey}>{generator()}</g>);
+    };
+
+    if (activeTool === 'brush') {
+        const points = [{x: hoveredCell.x, y: hoveredCell.y}];
+        if (symmetry.vertical) points.push({ x: width - 1 - hoveredCell.x, y: hoveredCell.y });
+        if (symmetry.horizontal) points.push({ x: hoveredCell.x, y: height - 1 - hoveredCell.y });
+        if (symmetry.vertical && symmetry.horizontal) points.push({ x: width - 1 - hoveredCell.x, y: height - 1 - hoveredCell.y });
+        
+        new Set(points.map(p => `${p.x},${p.y}`)).forEach((pStr, index) => {
+            const [pX, pY] = pStr.split(',').map(Number);
+            addPreview(`brush-${index}`, () => renderBrushPreview(pX, pY, color, isEraser));
+        });
+    }
+
+    if (activeTool === 'fill-row') {
+        const offset = Math.floor((rowFillSize - 1) / 2);
+        
+        const mainY = hoveredCell.y - offset;
+        const mainRectY = Math.max(0, mainY);
+        const mainRectH = Math.min(mainY + rowFillSize, height) - mainRectY;
+        if(mainRectH > 0) addPreview('fill-row-main', () => <rect x={0} y={mainRectY} width={width} height={mainRectH} fill={color} fillOpacity={fillOpacity} />);
+
+        if (symmetry.horizontal) {
+            const mirroredY = height - 1 - hoveredCell.y - offset;
+            const mirroredRectY = Math.max(0, mirroredY);
+            const mirroredRectH = Math.min(mirroredY + rowFillSize, height) - mirroredRectY;
+            if(mirroredRectH > 0) addPreview('fill-row-mirror-h', () => <rect x={0} y={mirroredRectY} width={width} height={mirroredRectH} fill={color} fillOpacity={fillOpacity} />);
+        }
+    }
+
+    if (activeTool === 'fill-column') {
+        const offset = Math.floor((colFillSize - 1) / 2);
+        
+        const mainX = hoveredCell.x - offset;
+        const mainRectX = Math.max(0, mainX);
+        const mainRectW = Math.min(mainX + colFillSize, width) - mainRectX;
+        if(mainRectW > 0) addPreview('fill-col-main', () => <rect x={mainRectX} y={0} width={mainRectW} height={height} fill={color} fillOpacity={fillOpacity} />);
+
+        if (symmetry.vertical) {
+            const mirroredX = width - 1 - hoveredCell.x - offset;
+            const mirroredRectX = Math.max(0, mirroredX);
+            const mirroredRectW = Math.min(mirroredX + colFillSize, width) - mirroredRectX;
+            if(mirroredRectW > 0) addPreview('fill-col-mirror-v', () => <rect x={mirroredRectX} y={0} width={mirroredRectW} height={height} fill={color} fillOpacity={fillOpacity} />);
+        }
+    }
+    
+    if (activeTool === 'text') {
+        addPreview('text-main', () => {
+            const textElements: React.ReactNode[] = [];
+            let currentX = hoveredCell.x;
+            const startY = hoveredCell.y;
+
+            textToolInput.toUpperCase().split('').forEach((char, charIndex) => {
+                const charData = PIXEL_FONT[char];
+                if (charData) {
+                    charData.forEach((row, y) => {
+                        row.forEach((pixel, x) => {
+                            if (pixel === 1) {
+                                const pixelX = currentX + (x * textSize);
+                                const pixelY = startY + (y * textSize);
+                                textElements.push(
+                                    <rect
+                                        key={`text-${charIndex}-${y}-${x}`}
+                                        x={pixelX}
+                                        y={pixelY}
+                                        width={textSize}
+                                        height={textSize}
+                                        fill={color}
+                                        fillOpacity={fillOpacity}
+                                    />
+                                );
+                            }
+                        });
+                    });
+                    currentX += (charData[0].length * textSize) + (1 * textSize);
+                }
+            });
+            return textElements;
+        });
+    }
+
+    return <g style={{ pointerEvents: 'none' }}>{previews}</g>;
+  };
+
   return (
     <div
       ref={containerRef}
@@ -388,118 +485,7 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
           }
 
           {/* Hover Previews */}
-          {hoveredCell && !isDrawing && (
-            <g style={{ pointerEvents: 'none' }}>
-                {(() => {
-                    const color = selectedColorId ? yarnColorMap.get(selectedColorId) : '#ff0000';
-                    const isEraser = selectedColorId === null;
-                    const fillOpacity = isEraser ? 0.4 : 0.6;
-                    const previews = [];
-
-                    if (activeTool === 'brush') {
-                        previews.push(...renderBrushPreview(hoveredCell.x, hoveredCell.y, color, isEraser));
-                        if (symmetryMode === 'vertical') {
-                            const mirroredX = width - 1 - hoveredCell.x;
-                            if (mirroredX !== hoveredCell.x) { // Avoid double preview on center line
-                                previews.push(...renderBrushPreview(mirroredX, hoveredCell.y, color, isEraser));
-                            }
-                        }
-                        if (symmetryMode === 'horizontal') {
-                            const mirroredY = height - 1 - hoveredCell.y;
-                             if (mirroredY !== hoveredCell.y) { // Avoid double preview on center line
-                                previews.push(...renderBrushPreview(hoveredCell.x, mirroredY, color, isEraser));
-                             }
-                        }
-                        return previews;
-                    }
-
-                    if (activeTool === 'fill-row') {
-                        const offset = Math.floor((rowFillSize - 1) / 2);
-                        const startY = hoveredCell.y - offset;
-                        const endY = startY + rowFillSize;
-                        
-                        const rectY = Math.max(0, startY);
-                        const rectH = Math.min(endY, height) - rectY;
-
-                        if (rectH > 0) {
-                            previews.push(<rect key="hover-row-main" x={0} y={rectY} width={width} height={rectH} fill={color} fillOpacity={fillOpacity} />);
-                        }
-
-                        if (symmetryMode === 'horizontal') {
-                            const mirroredY = height - 1 - hoveredCell.y;
-                            const mirroredStartY = mirroredY - offset;
-                            const mirroredEndY = mirroredStartY + rowFillSize;
-                            const mirroredRectY = Math.max(0, mirroredStartY);
-                            const mirroredRectH = Math.min(mirroredEndY, height) - mirroredRectY;
-                            if (mirroredRectH > 0) {
-                                previews.push(<rect key="hover-row-mirror" x={0} y={mirroredRectY} width={width} height={mirroredRectH} fill={color} fillOpacity={fillOpacity} />);
-                            }
-                        }
-                        return previews;
-                    }
-
-                    if (activeTool === 'fill-column') {
-                        const offset = Math.floor((colFillSize - 1) / 2);
-                        const startX = hoveredCell.x - offset;
-                        const endX = startX + colFillSize;
-
-                        const rectX = Math.max(0, startX);
-                        const rectW = Math.min(endX, width) - rectX;
-
-                        if (rectW > 0) {
-                           previews.push(<rect key="hover-col-main" x={rectX} y={0} width={rectW} height={height} fill={color} fillOpacity={fillOpacity} />);
-                        }
-
-                        if (symmetryMode === 'vertical') {
-                            const mirroredX = width - 1 - hoveredCell.x;
-                            const mirroredStartX = mirroredX - offset;
-                            const mirroredEndX = mirroredStartX + colFillSize;
-                            const mirroredRectX = Math.max(0, mirroredStartX);
-                            const mirroredRectW = Math.min(mirroredEndX, width) - mirroredRectX;
-                            if(mirroredRectW > 0) {
-                                previews.push(<rect key="hover-col-mirror" x={mirroredRectX} y={0} width={mirroredRectW} height={height} fill={color} fillOpacity={fillOpacity} />);
-                            }
-                        }
-                        return previews;
-                    }
-                    
-                    if (activeTool === 'text') {
-                      const textElements: React.ReactNode[] = [];
-                      let currentX = hoveredCell.x;
-                      const startY = hoveredCell.y;
-
-                      textToolInput.toUpperCase().split('').forEach((char, charIndex) => {
-                          const charData = PIXEL_FONT[char];
-                          if (charData) {
-                              charData.forEach((row, y) => {
-                                  row.forEach((pixel, x) => {
-                                      if (pixel === 1) {
-                                          const pixelX = currentX + (x * textSize);
-                                          const pixelY = startY + (y * textSize);
-                                            textElements.push(
-                                                <rect
-                                                    key={`text-${charIndex}-${y}-${x}`}
-                                                    x={pixelX}
-                                                    y={pixelY}
-                                                    width={textSize}
-                                                    height={textSize}
-                                                    fill={color}
-                                                    fillOpacity={fillOpacity}
-                                                />
-                                            );
-                                      }
-                                  });
-                              });
-                              currentX += (charData[0].length * textSize) + (1 * textSize); // Advance X by scaled char width + scaled spacing
-                          }
-                      });
-                      return textElements;
-                    }
-
-                    return null;
-                })()}
-            </g>
-          )}
+          {getHoverPreviews()}
         </g>
          
         {/* Rulers and Lines */}

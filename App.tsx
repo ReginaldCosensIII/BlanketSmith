@@ -1,10 +1,11 @@
+
 import React, { useState, useReducer, useCallback, useMemo, ChangeEvent, useRef, useEffect } from 'react';
 import { HashRouter, Routes, Route, NavLink, useLocation, useNavigate, Link } from 'react-router-dom';
 import { AnyProject, PatternType, PixelGridData, ProjectState, ProjectAction, YarnColor } from './types';
 import { createNewProject, getProjects, saveProject, deleteProject, processImageToGrid } from './services/projectService';
 import { exportPixelGridToPDF } from './services/exportService';
 import { Icon, Button, Modal } from './components/ui/SharedComponents';
-import PixelGridEditor, { SymmetryMode } from './components/PixelGridEditor';
+import PixelGridEditor, { Symmetry } from './components/PixelGridEditor';
 import { BLANKET_SIZES, PIXEL_FONT } from './constants';
 
 // STATE MANAGEMENT (Context & Reducer)
@@ -198,6 +199,7 @@ const Footer: React.FC<{ zoom: number, onZoomChange: (newZoom: number) => void }
 
 const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) => void; }> = ({ zoom, onZoomChange }) => {
     type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column' | 'eyedropper' | 'text';
+    type MirrorDirection = 'left-to-right' | 'right-to-left' | 'top-to-bottom' | 'bottom-to-top';
 
     const { state, dispatch } = useProject();
     const [selectedColorId, setSelectedColorId] = useState<string | null>(null);
@@ -216,26 +218,32 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
     const [colFillSize, setColFillSize] = useState(1);
     const [textToolInput, setTextToolInput] = useState('Text');
     const [textSize, setTextSize] = useState(1);
-    const [symmetryMode, setSymmetryMode] = useState<SymmetryMode>('none');
+    const [symmetry, setSymmetry] = useState<Symmetry>({ vertical: false, horizontal: false });
+    
+    const [mirrorConfirm, setMirrorConfirm] = useState<{isOpen: boolean, direction: MirrorDirection | null}>({isOpen: false, direction: null});
 
     const project = state.project?.type === 'pixel' ? state.project : null;
-    const projectData = project?.data as PixelGridData | undefined;
     
-    const [newWidth, setNewWidth] = useState(projectData?.width || 50);
-    const [newHeight, setNewHeight] = useState(projectData?.height || 50);
+    const [newWidth, setNewWidth] = useState(project?.data && 'width' in project.data ? project.data.width : 50);
+    const [newHeight, setNewHeight] = useState(project?.data && 'height' in project.data ? project.data.height : 50);
+    
+    const projectStateRef = useRef(state);
+    useEffect(() => {
+        projectStateRef.current = state;
+    }, [state]);
 
     const yarnColorMap = useMemo(() => 
         project ? new Map(project.yarnPalette.map(yc => [yc.id, yc])) : new Map(),
     [project]);
 
     useEffect(() => {
-        if (projectData) {
-            setNewWidth(projectData.width);
-            setNewHeight(projectData.height);
+        if (project?.data && 'width' in project.data) {
+            setNewWidth(project.data.width);
+            setNewHeight(project.data.height);
         }
-    }, [projectData?.width, projectData?.height]);
+    }, [project]);
 
-    const updateGrid = (newGrid: (string|null)[]) => {
+    const updateGrid = useCallback((newGrid: (string|null)[]) => {
         const usedYarnSet = new Set<string>();
         newGrid.forEach(cell => {
             if (cell) usedYarnSet.add(cell);
@@ -244,20 +252,22 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
             grid: newGrid, 
             palette: Array.from(usedYarnSet) 
         } });
-    };
+    }, [dispatch]);
 
     const handleGridChange = (newGrid: (string|null)[]) => {
-        if (!projectData) return;
+        if (!project || !project.data || !('grid' in project.data)) return;
         updateGrid(newGrid);
     };
     
     const handleFillCanvas = () => {
+        const projectData = project?.data as PixelGridData;
         if (!projectData || selectedColorId === undefined) return;
         const newGrid = Array(projectData.width * projectData.height).fill(selectedColorId);
         updateGrid(newGrid);
     };
 
     const handleReplace = () => {
+        const projectData = project?.data as PixelGridData;
         if (!projectData || replaceFromColor === undefined || replaceToColor === undefined) return;
         const newGrid = projectData.grid.map(cellId => (cellId === replaceFromColor ? replaceToColor : cellId));
         updateGrid(newGrid as (string | null)[]);
@@ -266,6 +276,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
     };
     
     const handleCanvasClick = (gridX: number, gridY: number) => {
+        const projectData = project?.data as PixelGridData;
         if (!projectData) return;
         const { width, height, grid } = projectData;
         const index = gridY * width + gridX;
@@ -288,6 +299,42 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
         
         let newGrid = [...grid];
         let changed = false;
+
+        const applyFill = (points: {x: number, y: number}[], tool: 'fill-row' | 'fill-column') => {
+            points.forEach(point => {
+                if (tool === 'fill-row') {
+                    const offset = Math.floor((rowFillSize - 1) / 2);
+                    const startY = point.y - offset;
+                    for (let i = 0; i < rowFillSize; i++) {
+                        const currentY = startY + i;
+                        if (currentY >= 0 && currentY < height) {
+                            for (let x = 0; x < width; x++) {
+                                const idx = currentY * width + x;
+                                if (newGrid[idx] !== selectedColorId) {
+                                    newGrid[idx] = selectedColorId;
+                                    changed = true;
+                                }
+                            }
+                        }
+                    }
+                } else { // fill-column
+                    const offset = Math.floor((colFillSize - 1) / 2);
+                    const startX = point.x - offset;
+                    for (let i = 0; i < colFillSize; i++) {
+                        const currentX = startX + i;
+                        if (currentX >= 0 && currentX < width) {
+                            for (let y = 0; y < height; y++) {
+                                const idx = y * width + currentX;
+                                if (newGrid[idx] !== selectedColorId) {
+                                    newGrid[idx] = selectedColorId;
+                                    changed = true;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        };
 
         if (activeTool === 'text') {
             let currentX = gridX;
@@ -316,68 +363,25 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                     currentX += (charData[0].length * textSize) + (1 * textSize);
                 }
             });
-        } else if (activeTool === 'fill-row') {
-            const offset = Math.floor((rowFillSize - 1) / 2);
-            const startY = gridY - offset;
-            for (let i = 0; i < rowFillSize; i++) {
-                const currentY = startY + i;
-                if (currentY >= 0 && currentY < height) {
-                    for (let x = 0; x < width; x++) {
-                        const idx = currentY * width + x;
-                        if (newGrid[idx] !== selectedColorId) {
-                            newGrid[idx] = selectedColorId;
-                            changed = true;
-                        }
-                    }
-                }
+        } else if (activeTool === 'fill-row' || activeTool === 'fill-column') {
+            const pointsToFill = [{x: gridX, y: gridY}];
+            
+            if (activeTool === 'fill-row') {
+                if (symmetry.horizontal) pointsToFill.push({ x: gridX, y: height - 1 - gridY });
+                if (symmetry.vertical) pointsToFill.push({x: width - 1 - gridX, y: gridY });
+                if (symmetry.vertical && symmetry.horizontal) pointsToFill.push({ x: width - 1 - gridX, y: height - 1 - gridY });
+            } else {
+                if (symmetry.vertical) pointsToFill.push({ x: width - 1 - gridX, y: gridY });
+                if (symmetry.horizontal) pointsToFill.push({ x: gridX, y: height - 1 - gridY });
+                if (symmetry.vertical && symmetry.horizontal) pointsToFill.push({ x: width - 1 - gridX, y: height - 1 - gridY });
             }
-            if (symmetryMode === 'horizontal') {
-                const mirroredGridY = height - 1 - gridY;
-                const mirroredStartY = mirroredGridY - offset;
-                 for (let i = 0; i < rowFillSize; i++) {
-                    const currentY = mirroredStartY + i;
-                    if (currentY >= 0 && currentY < height) {
-                        for (let x = 0; x < width; x++) {
-                            const idx = currentY * width + x;
-                            if (newGrid[idx] !== selectedColorId) {
-                                newGrid[idx] = selectedColorId;
-                                changed = true;
-                            }
-                        }
-                    }
-                }
-            }
-        } else if (activeTool === 'fill-column') {
-            const offset = Math.floor((colFillSize - 1) / 2);
-            const startX = gridX - offset;
-             for (let i = 0; i < colFillSize; i++) {
-                const currentX = startX + i;
-                if (currentX >= 0 && currentX < width) {
-                    for (let y = 0; y < height; y++) {
-                        const idx = y * width + currentX;
-                         if (newGrid[idx] !== selectedColorId) {
-                            newGrid[idx] = selectedColorId;
-                            changed = true;
-                        }
-                    }
-                }
-            }
-             if (symmetryMode === 'vertical') {
-                const mirroredGridX = width - 1 - gridX;
-                const mirroredStartX = mirroredGridX - offset;
-                for (let i = 0; i < colFillSize; i++) {
-                    const currentX = mirroredStartX + i;
-                    if (currentX >= 0 && currentX < width) {
-                        for (let y = 0; y < height; y++) {
-                            const idx = y * width + currentX;
-                            if (newGrid[idx] !== selectedColorId) {
-                                newGrid[idx] = selectedColorId;
-                                changed = true;
-                            }
-                        }
-                    }
-                }
-            }
+
+            const uniquePoints = Array.from(new Set(pointsToFill.map(p => `${p.x},${p.y}`))).map(s => {
+                const [x, y] = s.split(',').map(Number);
+                return { x, y };
+            });
+
+            applyFill(uniquePoints, activeTool);
         } else {
             return;
         }
@@ -387,6 +391,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
     };
 
     const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+        const projectData = project?.data as PixelGridData;
         const fileInput = e.target;
         if (!fileInput.files || fileInput.files.length === 0 || !project || !projectData) return;
         
@@ -427,6 +432,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
     };
 
     const handleResize = () => {
+        const projectData = project?.data as PixelGridData;
         if (!projectData || !project || newWidth <= 0 || newHeight <= 0) return;
         if (projectData.width === newWidth && projectData.height === newHeight) return;
 
@@ -462,7 +468,78 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
         });
     };
     
+    const confirmationMessages = {
+        'left-to-right': 'This will overwrite the right half of the pattern with a mirrored copy of the left half.',
+        'right-to-left': 'This will overwrite the left half of the pattern with a mirrored copy of the right half.',
+        'top-to-bottom': 'This will overwrite the bottom half of the pattern with a mirrored copy of the top half.',
+        'bottom-to-top': 'This will overwrite the top half of the pattern with a mirrored copy of the bottom half.',
+    };
+
+    const requestMirror = (direction: MirrorDirection) => {
+        setMirrorConfirm({ isOpen: true, direction });
+    };
+    
+    const confirmMirrorCanvas = useCallback(() => {
+        const direction = mirrorConfirm.direction;
+        if (!direction) return;
+        
+        const currentProjectState = projectStateRef.current;
+        const projectToMirror = currentProjectState.project;
+
+        if (!projectToMirror || projectToMirror.type !== 'pixel') {
+            setMirrorConfirm({ isOpen: false, direction: null });
+            return;
+        }
+
+        const projectData = projectToMirror.data as PixelGridData;
+        const { width, height, grid: originalGrid } = projectData;
+        const newGrid = [...originalGrid];
+
+        switch(direction) {
+            case 'left-to-right':
+                for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < Math.ceil(width / 2); x++) {
+                        const sourceIndex = y * width + x;
+                        const destIndex = y * width + (width - 1 - x);
+                        newGrid[destIndex] = originalGrid[sourceIndex];
+                    }
+                }
+                break;
+            case 'right-to-left':
+                    for (let y = 0; y < height; y++) {
+                    for (let x = 0; x < Math.ceil(width / 2); x++) {
+                        const sourceIndex = y * width + (width - 1 - x);
+                        const destIndex = y * width + x;
+                        newGrid[destIndex] = originalGrid[sourceIndex];
+                    }
+                }
+                break;
+            case 'top-to-bottom':
+                for (let y = 0; y < Math.ceil(height / 2); y++) {
+                    for (let x = 0; x < width; x++) {
+                        const sourceIndex = y * width + x;
+                        const destIndex = (height - 1 - y) * width + x;
+                        newGrid[destIndex] = originalGrid[sourceIndex];
+                    }
+                }
+                break;
+            case 'bottom-to-top':
+                for (let y = 0; y < Math.ceil(height / 2); y++) {
+                    for (let x = 0; x < width; x++) {
+                        const sourceIndex = (height - 1 - y) * width + x;
+                        const destIndex = y * width + x;
+                        newGrid[destIndex] = originalGrid[sourceIndex];
+                    }
+                }
+                break;
+        }
+        
+        updateGrid(newGrid);
+        setMirrorConfirm({ isOpen: false, direction: null });
+    }, [mirrorConfirm.direction, updateGrid]);
+    
     const yarnUsage = useMemo(() => {
+        const projectData = project?.data as PixelGridData;
         if (!projectData || !project) return new Map<string, number>();
         const counts = new Map<string, number>();
         projectData.grid.forEach(cellId => {
@@ -471,9 +548,9 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
             }
         });
         return counts;
-    }, [projectData, project]);
+    }, [project]);
 
-
+    const projectData = project?.data as PixelGridData | undefined;
     if (!project || !projectData) return <div className="p-4">No Pixel Art project loaded. Go to "My Projects" to create or load one.</div>;
 
     const hasSizeChanged = projectData.width !== newWidth || projectData.height !== newHeight;
@@ -500,8 +577,8 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
         </Button>
     );
     
-    const toggleSymmetry = (mode: SymmetryMode) => {
-        setSymmetryMode(prev => prev === mode ? 'none' : mode);
+    const toggleSymmetry = (mode: 'vertical' | 'horizontal') => {
+        setSymmetry(prev => ({ ...prev, [mode]: !prev[mode] }));
     }
 
     return (
@@ -531,7 +608,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                     colFillSize={colFillSize}
                     textToolInput={textToolInput}
                     textSize={textSize}
-                    symmetryMode={symmetryMode}
+                    symmetry={symmetry}
                     zoom={zoom}
                     onZoomChange={onZoomChange}
                 />
@@ -654,6 +731,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                                     <span>Text Size</span>
                                     <span className="font-mono bg-white px-2 py-0.5 rounded">{textSize}x</span>
                                 </label>
+
                                 <input
                                     id="text-size"
                                     type="range"
@@ -743,23 +821,37 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                     
                     <div className="pb-4 border-b">
                         <h4 className="font-semibold mb-2 text-gray-700">Drawing Aids</h4>
-                        <div className="flex gap-2">
-                             <Button 
-                                variant={symmetryMode === 'vertical' ? 'primary' : 'secondary'}
-                                onClick={() => toggleSymmetry('vertical')}
-                                className="flex-1 justify-center"
-                                title="Vertical Symmetry"
-                            >
-                                <Icon name="symmetry-vertical" className="w-5 h-5" />
-                            </Button>
-                             <Button 
-                                variant={symmetryMode === 'horizontal' ? 'primary' : 'secondary'}
-                                onClick={() => toggleSymmetry('horizontal')}
-                                className="flex-1 justify-center"
-                                title="Horizontal Symmetry"
-                            >
-                                <Icon name="symmetry-horizontal" className="w-5 h-5" />
-                            </Button>
+                        <div className="space-y-2">
+                            <div>
+                                <h5 className="text-sm font-medium text-gray-600 mb-1">Symmetry Mode</h5>
+                                <div className="flex gap-2">
+                                    <Button 
+                                        variant={symmetry.vertical ? 'primary' : 'secondary'}
+                                        onClick={() => toggleSymmetry('vertical')}
+                                        className="flex-1 justify-center"
+                                        title="Vertical Symmetry"
+                                    >
+                                        <Icon name="symmetry-vertical" className="w-5 h-5" />
+                                    </Button>
+                                    <Button 
+                                        variant={symmetry.horizontal ? 'primary' : 'secondary'}
+                                        onClick={() => toggleSymmetry('horizontal')}
+                                        className="flex-1 justify-center"
+                                        title="Horizontal Symmetry"
+                                    >
+                                        <Icon name="symmetry-horizontal" className="w-5 h-5" />
+                                    </Button>
+                                </div>
+                            </div>
+                            <div>
+                                <h5 className="text-sm font-medium text-gray-600 mb-1">Mirror Canvas</h5>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <Button variant="secondary" onClick={() => requestMirror('left-to-right')} className="justify-center" title="Mirror Left to Right"><Icon name="mirror-l-r" className="w-5 h-5"/></Button>
+                                    <Button variant="secondary" onClick={() => requestMirror('right-to-left')} className="justify-center" title="Mirror Right to Left"><Icon name="mirror-r-l" className="w-5 h-5"/></Button>
+                                    <Button variant="secondary" onClick={() => requestMirror('top-to-bottom')} className="justify-center" title="Mirror Top to Bottom"><Icon name="mirror-t-b" className="w-5 h-5"/></Button>
+                                    <Button variant="secondary" onClick={() => requestMirror('bottom-to-top')} className="justify-center" title="Mirror Bottom to Top"><Icon name="mirror-b-t" className="w-5 h-5"/></Button>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -807,6 +899,23 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                     </div>
                 </div>
             </aside>
+            
+            <Modal 
+                isOpen={mirrorConfirm.isOpen} 
+                onClose={() => setMirrorConfirm({ isOpen: false, direction: null })} 
+                title="Confirm Mirror Canvas"
+                footer={
+                    <>
+                        <Button variant="secondary" onClick={() => setMirrorConfirm({ isOpen: false, direction: null })}>Cancel</Button>
+                        <Button onClick={confirmMirrorCanvas}>Confirm</Button>
+                    </>
+                }
+            >
+                <p className="text-gray-700">
+                    {mirrorConfirm.direction && confirmationMessages[mirrorConfirm.direction]}
+                </p>
+                <p className="text-sm text-gray-500 mt-2">This action can be undone.</p>
+            </Modal>
         </div>
     );
 };
