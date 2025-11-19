@@ -90,6 +90,61 @@ const useProject = () => {
   return context;
 };
 
+// --- COLOR MATH HELPERS ---
+const hexToRgb = (hex: string): [number, number, number] => {
+    const bigint = parseInt(hex.slice(1), 16);
+    const r = (bigint >> 16) & 255;
+    const g = (bigint >> 8) & 255;
+    const b = bigint & 255;
+    return [r, g, b];
+}
+
+const rgbToHex = (r: number, g: number, b: number): string => {
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1).toUpperCase();
+}
+
+const rgbToHsl = (r: number, g: number, b: number): [number, number, number] => {
+    r /= 255; g /= 255; b /= 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0, s = 0, l = (max + min) / 2;
+
+    if (max !== min) {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+    }
+    return [Math.round(h * 360), Math.round(s * 100), Math.round(l * 100)];
+}
+
+const hslToRgb = (h: number, s: number, l: number): [number, number, number] => {
+    h /= 360; s /= 100; l /= 100;
+    let r, g, b;
+
+    if (s === 0) {
+        r = g = b = l;
+    } else {
+        const hue2rgb = (p: number, q: number, t: number) => {
+            if (t < 0) t += 1;
+            if (t > 1) t -= 1;
+            if (t < 1 / 6) return p + (q - p) * 6 * t;
+            if (t < 1 / 2) return q;
+            if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+            return p;
+        }
+        const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+        const p = 2 * l - q;
+        r = hue2rgb(p, q, h + 1 / 3);
+        g = hue2rgb(p, q, h);
+        b = hue2rgb(p, q, h - 1 / 3);
+    }
+    return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
+}
+
 // --- HELPER COMPONENTS ---
 
 const NavItem: React.FC<{ to: string; icon: string; label: string }> = ({ to, icon, label }) => (
@@ -219,6 +274,7 @@ const Footer: React.FC<{ zoom: number, onZoomChange: (newZoom: number) => void }
 const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) => void; }> = ({ zoom, onZoomChange }) => {
     type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column' | 'eyedropper' | 'text';
     type MirrorDirection = 'left-to-right' | 'right-to-left' | 'top-to-bottom' | 'bottom-to-top';
+    type ColorMode = 'HEX' | 'RGB' | 'HSL';
 
     const { state, dispatch } = useProject();
     
@@ -249,7 +305,9 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
 
     // Color Picker Modal State
     const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
-    const [tempCustomColor, setTempCustomColor] = useState('#000000');
+    const [tempCustomColor, setTempCustomColor] = useState('#FF0000');
+    const [pickerMode, setPickerMode] = useState<ColorMode>('HEX');
+    const [hsl, setHsl] = useState<[number, number, number]>([0, 100, 50]); // h:0-360, s:0-100, l:0-100
     const colorInputRef = useRef<HTMLInputElement>(null);
 
     const project = state.project?.type === 'pixel' ? state.project : null;
@@ -312,6 +370,15 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
             }
         }
     }, [project]);
+
+    // Sync HSL state ONLY when opening modal to avoid feedback loop
+    useEffect(() => {
+        if (isColorPickerOpen) {
+            // Only sync from hex on open. Inside the modal, HSL is the source of truth for sliders.
+            const rgb = hexToRgb(tempCustomColor);
+            setHsl(rgbToHsl(rgb[0], rgb[1], rgb[2]));
+        }
+    }, [isColorPickerOpen]); // Removed tempCustomColor dependency
 
     useEffect(() => {
         if (project?.data && 'width' in project.data) {
@@ -702,6 +769,12 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
         setIsColorPickerOpen(false);
     };
 
+    const updateColorFromHsl = (h: number, s: number, l: number) => {
+        setHsl([h, s, l]);
+        const rgb = hslToRgb(h, s, l);
+        setTempCustomColor(rgbToHex(rgb[0], rgb[1], rgb[2]));
+    };
+
     const ToolButton = ({ tool, label, icon }: { tool: Tool, label: string, icon?: string }) => (
         <Button
             variant={activeTool === tool ? 'primary' : 'secondary'}
@@ -1051,7 +1124,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                                 <div className="w-8 h-1 bg-red-500 transform rotate-45 absolute"></div>
                             </div>
                             
-                            {/* Add Custom Color Button - Replaced Input with Modal Trigger */}
+                            {/* Add Custom Color Button - Modal Trigger */}
                             <div 
                                 className="relative w-10 h-10 rounded-full border-2 border-gray-300 border-dashed flex items-center justify-center hover:border-gray-400 bg-white cursor-pointer" 
                                 title="Add Custom Color"
@@ -1186,7 +1259,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                 </div>
             </Modal>
 
-            {/* New Color Picker Modal */}
+            {/* Advanced Custom Color Modal */}
             <Modal
                 isOpen={isColorPickerOpen}
                 onClose={() => setIsColorPickerOpen(false)}
@@ -1198,59 +1271,155 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                     </>
                 }
             >
-                <div className="space-y-6">
+                <div className="space-y-4">
                     {/* Large Preview Swatch */}
-                    <div className="flex flex-col gap-2">
-                        <label className="text-sm font-medium text-gray-700">Color Preview</label>
-                        <div
-                            className="w-full h-24 rounded-lg border border-gray-300 shadow-inner transition-colors duration-200"
-                            style={{ backgroundColor: tempCustomColor }}
-                        />
+                    <div
+                        className="w-full h-24 rounded-lg border border-gray-300 shadow-inner transition-colors duration-200"
+                        style={{ backgroundColor: tempCustomColor }}
+                    />
+                    
+                    {/* Embedded Color Sliders */}
+                    <div className="space-y-3">
+                        <div>
+                            <label className="block text-xs font-medium text-gray-500 mb-1">Hue (Rainbow)</label>
+                            <input 
+                                type="range" 
+                                min="0" 
+                                max="360" 
+                                value={hsl[0]} 
+                                onChange={(e) => updateColorFromHsl(Number(e.target.value), hsl[1], hsl[2])}
+                                className="w-full h-3 rounded-lg appearance-none cursor-pointer"
+                                style={{ background: 'linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)' }}
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1">Lightness</label>
+                                <input 
+                                    type="range" 
+                                    min="0" 
+                                    max="100" 
+                                    value={hsl[2]} 
+                                    onChange={(e) => updateColorFromHsl(hsl[0], hsl[1], Number(e.target.value))}
+                                    className="w-full h-3 rounded-lg appearance-none cursor-pointer"
+                                    style={{ background: `linear-gradient(to right, black, hsl(${hsl[0]}, ${hsl[1]}%, 50%), white)` }}
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-500 mb-1">Saturation</label>
+                                <input 
+                                    type="range" 
+                                    min="0" 
+                                    max="100" 
+                                    value={hsl[1]} 
+                                    onChange={(e) => updateColorFromHsl(hsl[0], Number(e.target.value), hsl[2])}
+                                    className="w-full h-3 rounded-lg appearance-none cursor-pointer bg-gray-200"
+                                />
+                            </div>
+                        </div>
                     </div>
 
-                    <div className="flex gap-4">
-                        {/* Hex Input */}
-                        <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Hex Code</label>
-                            <div className="relative">
+                    {/* Tabs for Input Mode */}
+                    <div className="flex border-b">
+                        {(['HEX', 'RGB', 'HSL'] as ColorMode[]).map(mode => (
+                            <button
+                                key={mode}
+                                className={`flex-1 py-2 text-sm font-medium ${pickerMode === mode ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+                                onClick={() => setPickerMode(mode)}
+                            >
+                                {mode}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="pt-2">
+                        {pickerMode === 'HEX' && (
+                             <div className="relative">
                                 <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">#</span>
                                 <input
                                     type="text"
                                     value={tempCustomColor.replace('#', '')}
                                     onChange={(e) => {
                                         const val = e.target.value;
-                                        // Allow typing, auto-add hash
                                         if (/^[0-9A-Fa-f]*$/.test(val) && val.length <= 6) {
-                                            setTempCustomColor(`#${val.toUpperCase()}`);
+                                            const newHex = `#${val.toUpperCase()}`;
+                                            if (val.length === 6) {
+                                                const rgb = hexToRgb(newHex);
+                                                setHsl(rgbToHsl(rgb[0], rgb[1], rgb[2]));
+                                            }
+                                            setTempCustomColor(newHex);
                                         }
                                     }}
                                     className="block w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm font-mono uppercase"
                                     maxLength={6}
                                 />
                             </div>
-                        </div>
-
-                        {/* System Picker Button */}
-                        <div className="flex-1">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">System Picker</label>
-                            <Button
-                                variant="secondary"
-                                className="w-full justify-center"
-                                onClick={() => colorInputRef.current?.click()}
-                            >
-                                <Icon name="eyedropper" className="w-4 h-4" />
-                                <span>Open Picker</span>
-                            </Button>
-                            <input
-                                ref={colorInputRef}
-                                type="color"
-                                value={tempCustomColor}
-                                onChange={(e) => setTempCustomColor(e.target.value)}
-                                className="sr-only"
-                                aria-hidden="true"
-                            />
-                        </div>
+                        )}
+                        {pickerMode === 'RGB' && (
+                            <div className="flex gap-2">
+                                {hexToRgb(tempCustomColor).map((val, i) => (
+                                    <div key={i} className="flex-1">
+                                        <label className="block text-xs text-gray-500 mb-1">{['R','G','B'][i]}</label>
+                                        <input 
+                                            type="number" 
+                                            min="0" max="255" 
+                                            value={val} 
+                                            onChange={(e) => {
+                                                const rgb = hexToRgb(tempCustomColor);
+                                                rgb[i] = Math.min(255, Math.max(0, parseInt(e.target.value) || 0));
+                                                setTempCustomColor(rgbToHex(rgb[0], rgb[1], rgb[2]));
+                                                setHsl(rgbToHsl(rgb[0], rgb[1], rgb[2]));
+                                            }}
+                                            className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                        {pickerMode === 'HSL' && (
+                            <div className="flex gap-2">
+                                {[hsl[0], hsl[1], hsl[2]].map((val, i) => (
+                                    <div key={i} className="flex-1">
+                                        <label className="block text-xs text-gray-500 mb-1">{['H','S','L'][i]}</label>
+                                        <input 
+                                            type="number" 
+                                            min="0" max={i===0 ? 360 : 100}
+                                            value={val} 
+                                            onChange={(e) => {
+                                                const newHsl = [...hsl] as [number, number, number];
+                                                newHsl[i] = Math.min(i===0?360:100, Math.max(0, parseInt(e.target.value) || 0));
+                                                updateColorFromHsl(newHsl[0], newHsl[1], newHsl[2]);
+                                            }}
+                                            className="w-full px-2 py-1 border border-gray-300 rounded-md text-sm"
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
+                    
+                     {/* Fallback System Picker */}
+                     <div className="text-center pt-2">
+                         <button 
+                            className="text-xs text-gray-400 underline hover:text-gray-600 flex items-center justify-center gap-1 w-full"
+                            onClick={() => colorInputRef.current?.click()}
+                         >
+                             <Icon name="eyedropper" className="w-3 h-3" />
+                             <span>Use System Picker</span>
+                         </button>
+                         <input
+                            ref={colorInputRef}
+                            type="color"
+                            value={tempCustomColor}
+                            onChange={(e) => {
+                                setTempCustomColor(e.target.value);
+                                const rgb = hexToRgb(e.target.value);
+                                setHsl(rgbToHsl(rgb[0], rgb[1], rgb[2]));
+                            }}
+                            className="sr-only"
+                            aria-hidden="true"
+                        />
+                     </div>
                 </div>
             </Modal>
         </div>
