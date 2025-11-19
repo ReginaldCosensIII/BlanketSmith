@@ -66,6 +66,7 @@ export type ProjectAction =
   | { type: 'NEW_PROJECT'; payload: AnyProject }
   | { type: 'UPDATE_PROJECT_DATA'; payload: Partial<PixelGridData | C2CData | StripesData | GrannySquareData> }
   | { type: 'UPDATE_PROJECT_NAME'; payload: string }
+  | { type: 'UPDATE_PROJECT_SETTINGS'; payload: Record<string, any> }
   | { type: 'SET_PALETTE'; payload: YarnColor[] }
   | { type: 'UNDO' }
   | { type: 'REDO' };

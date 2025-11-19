@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useLayoutEffect, useCallback } from 'react';
 import { PixelGridData, YarnColor } from '../types';
 import { PIXEL_FONT } from '../constants';
@@ -10,9 +11,11 @@ export type Symmetry = {
 
 interface PixelGridEditorProps {
   data: PixelGridData;
+  // settings: Record<string, any>; // Removed, handled in App.tsx
   yarnPalette: YarnColor[];
   selectedColorId: string | null;
   onGridChange: (newGrid: (string | null)[]) => void;
+  // onUpdateSettings: (settings: Record<string, any>) => void; // Removed
   showGridLines: boolean;
   activeTool: Tool;
   onCanvasClick: (gridX: number, gridY: number) => void;

@@ -1,4 +1,3 @@
-
 import React, { useState, useReducer, useCallback, useMemo, ChangeEvent, useRef, useEffect } from 'react';
 import { HashRouter, Routes, Route, NavLink, useLocation, useNavigate, Link } from 'react-router-dom';
 import { AnyProject, PatternType, PixelGridData, ProjectState, ProjectAction, YarnColor } from './types';
@@ -30,7 +29,11 @@ const projectReducer = (state: ProjectState, action: ProjectAction): ProjectStat
     case 'UPDATE_PROJECT_NAME': {
         if (!state.project) return state;
         const updatedProject = { ...state.project, name: action.payload };
-        // This is a metadata change, might not need history snapshot
+        return { ...state, project: updatedProject };
+    }
+    case 'UPDATE_PROJECT_SETTINGS': {
+        if (!state.project) return state;
+        const updatedProject = { ...state.project, settings: { ...state.project.settings, ...action.payload } };
         return { ...state, project: updatedProject };
     }
     case 'UNDO': {
@@ -221,6 +224,8 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
     const [symmetry, setSymmetry] = useState<Symmetry>({ vertical: false, horizontal: false });
     
     const [mirrorConfirm, setMirrorConfirm] = useState<{isOpen: boolean, direction: MirrorDirection | null}>({isOpen: false, direction: null});
+    const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+    const [settingsForm, setSettingsForm] = useState({ unit: 'in', stitchesPerUnit: 4, rowsPerUnit: 4, hookSize: '' });
 
     const project = state.project?.type === 'pixel' ? state.project : null;
     
@@ -549,8 +554,41 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
         });
         return counts;
     }, [project]);
+    
+    // --- SETTINGS MODAL LOGIC ---
+    const openSettingsModal = () => {
+        setSettingsForm({
+            unit: project?.settings?.unit || 'in',
+            stitchesPerUnit: project?.settings?.stitchesPerUnit || 4,
+            rowsPerUnit: project?.settings?.rowsPerUnit || 4,
+            hookSize: project?.settings?.hookSize || ''
+        });
+        setIsSettingsModalOpen(true);
+    };
+
+    const saveSettings = () => {
+        dispatch({ type: 'UPDATE_PROJECT_SETTINGS', payload: settingsForm });
+        setIsSettingsModalOpen(false);
+    };
 
     const projectData = project?.data as PixelGridData | undefined;
+    
+    // Calculate physical dimensions string
+    const physicalSizeString = useMemo(() => {
+        if (!projectData || !project?.settings) return null;
+        const width = projectData.width;
+        const height = projectData.height;
+        const sts = Number(project.settings.stitchesPerUnit);
+        const rows = Number(project.settings.rowsPerUnit);
+        const unit = project.settings.unit || 'in';
+        
+        if (!sts || !rows) return null;
+        
+        const pWidth = (width / sts).toFixed(1);
+        const pHeight = (height / rows).toFixed(1);
+        return `${pWidth} x ${pHeight} ${unit}`;
+    }, [projectData, project?.settings]);
+
     if (!project || !projectData) return <div className="p-4">No Pixel Art project loaded. Go to "My Projects" to create or load one.</div>;
 
     const hasSizeChanged = projectData.width !== newWidth || projectData.height !== newHeight;
@@ -667,6 +705,17 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                                 <input type="number" aria-label="height" value={newHeight} onChange={e => setNewHeight(parseInt(e.target.value, 10) || 0)} className="w-full text-center px-2 py-1 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"/>
                             </div>
                             <Button className="w-full mt-2" onClick={handleResize} disabled={!hasSizeChanged}>Resize Canvas</Button>
+
+                            {/* PHYSICAL DIMENSIONS & SETTINGS TRIGGER */}
+                            <div className="mt-4 pt-3 border-t border-dashed">
+                                <div className="flex justify-between items-center mb-1">
+                                    <span className="text-xs font-medium text-gray-500">Est. Physical Size</span>
+                                    <button onClick={openSettingsModal} className="text-xs text-indigo-600 hover:underline">Edit Gauge</button>
+                                </div>
+                                <div className="text-center font-mono bg-gray-50 text-gray-800 p-1 rounded border text-sm">
+                                    {physicalSizeString || 'Set Gauge to Calculate'}
+                                </div>
+                            </div>
                         </div>
 
                         <div>
@@ -915,6 +964,86 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                     {mirrorConfirm.direction && confirmationMessages[mirrorConfirm.direction]}
                 </p>
                 <p className="text-sm text-gray-500 mt-2">This action can be undone.</p>
+            </Modal>
+
+            <Modal
+                isOpen={isSettingsModalOpen}
+                onClose={() => setIsSettingsModalOpen(false)}
+                title="Project Settings & Gauge"
+                footer={
+                    <>
+                        <Button variant="secondary" onClick={() => setIsSettingsModalOpen(false)}>Cancel</Button>
+                        <Button onClick={saveSettings}>Save Settings</Button>
+                    </>
+                }
+            >
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Measurement Unit</label>
+                        <div className="flex mt-1 gap-4">
+                            <label className="inline-flex items-center">
+                                <input 
+                                    type="radio" 
+                                    className="form-radio text-indigo-600" 
+                                    name="unit" 
+                                    value="in" 
+                                    checked={settingsForm.unit === 'in'} 
+                                    onChange={(e) => setSettingsForm({...settingsForm, unit: e.target.value})}
+                                />
+                                <span className="ml-2 text-gray-700">Inches (in)</span>
+                            </label>
+                            <label className="inline-flex items-center">
+                                <input 
+                                    type="radio" 
+                                    className="form-radio text-indigo-600" 
+                                    name="unit" 
+                                    value="cm" 
+                                    checked={settingsForm.unit === 'cm'} 
+                                    onChange={(e) => setSettingsForm({...settingsForm, unit: e.target.value})}
+                                />
+                                <span className="ml-2 text-gray-700">Centimeters (cm)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Stitches per {settingsForm.unit}</label>
+                            <input
+                                type="number"
+                                min="0.1"
+                                step="0.1"
+                                value={settingsForm.stitchesPerUnit}
+                                onChange={(e) => setSettingsForm({...settingsForm, stitchesPerUnit: parseFloat(e.target.value)})}
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            />
+                            <p className="text-xs text-gray-500 mt-1">Horizontal Gauge</p>
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700">Rows per {settingsForm.unit}</label>
+                            <input
+                                type="number"
+                                min="0.1"
+                                step="0.1"
+                                value={settingsForm.rowsPerUnit}
+                                onChange={(e) => setSettingsForm({...settingsForm, rowsPerUnit: parseFloat(e.target.value)})}
+                                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500"
+                            />
+                             <p className="text-xs text-gray-500 mt-1">Vertical Gauge</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Recommended Hook/Needle Size</label>
+                        <input
+                            type="text"
+                            placeholder="e.g. 5.0mm / H-8"
+                            value={settingsForm.hookSize}
+                            onChange={(e) => setSettingsForm({...settingsForm, hookSize: e.target.value})}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                    </div>
+                </div>
             </Modal>
         </div>
     );
