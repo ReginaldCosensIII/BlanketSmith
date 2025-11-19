@@ -4,7 +4,7 @@ import { PixelGridData, YarnColor, Symmetry, CellData } from '../types';
 import { PIXEL_FONT } from '../constants';
 import { useCanvasLogic } from '../hooks/useCanvasLogic';
 
-type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column' | 'eyedropper' | 'text';
+type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column' | 'eyedropper' | 'text' | 'select';
 
 interface PixelGridEditorProps {
   data: PixelGridData;
@@ -23,6 +23,10 @@ interface PixelGridEditorProps {
   symmetry: Symmetry;
   zoom: number;
   onZoomChange: (newZoom: number) => void;
+  // Phase 4 Props
+  showCenterGuides: boolean;
+  selection: { x: number, y: number, w: number, h: number } | null;
+  onSelectionChange: (sel: { x: number, y: number, w: number, h: number } | null) => void;
 }
 
 const RULER_SIZE = 2;
@@ -43,7 +47,10 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
   textSize, 
   symmetry, 
   zoom, 
-  onZoomChange 
+  onZoomChange,
+  showCenterGuides,
+  selection,
+  onSelectionChange
 }) => {
   const { width, height, grid } = data;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -54,34 +61,20 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
   const [drawingButton, setDrawingButton] = useState<'left' | 'right' | null>(null);
   const [paintedCells, setPaintedCells] = useState<Set<number>>(new Set());
   const [hoveredCell, setHoveredCell] = useState<{ x: number; y: number } | null>(null);
+  const [selectionStart, setSelectionStart] = useState<{ x: number, y: number } | null>(null);
   
   const yarnColorMap = React.useMemo(() => new Map(yarnPalette.map(yc => [yc.id, yc.hex])), [yarnPalette]);
   
-  // Use custom hook for logic
   const { getSymmetryPoints, getBrushPoints } = useCanvasLogic(width, height, symmetry);
 
+  // Initial Zoom calculation
   useLayoutEffect(() => {
     const container = containerRef.current;
-    if (container) {
-      const { clientWidth, clientHeight } = container;
-      const svgLogicalWidth = width + RULER_SIZE * 2;
-      const svgLogicalHeight = height + RULER_SIZE * 2;
-      
-      const zoomX = clientWidth / svgLogicalWidth;
-      const zoomY = clientHeight / svgLogicalHeight;
-      
-      const initialZoom = Math.min(zoomX, zoomY) * 0.95; 
-      onZoomChange(Math.max(0.1, initialZoom));
-
-      requestAnimationFrame(() => {
-        if (containerRef.current) {
-          const { scrollWidth, scrollHeight, clientWidth, clientHeight } = containerRef.current;
-          containerRef.current.scrollLeft = (scrollWidth - clientWidth) / 2;
-          containerRef.current.scrollTop = (scrollHeight - clientHeight) / 2;
-        }
-      });
+    if (container && zoom === 1) { 
+       // Only auto-fit if zoom is default/reset
+       // Logic removed to prevent Error #185 loop, relies on manual or parent init
     }
-  }, [width, height, onZoomChange]);
+  }, [width, height]);
   
   const getMousePosition = (e: React.MouseEvent | React.TouchEvent) => {
     if (!svgRef.current) return { x: 0, y: 0 };
@@ -110,21 +103,17 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
     const newPaintedCells = new Set<number>();
     
-    // Determine color based on button
     let activeColorId = primaryColorId;
     const button = buttonOverride || drawingButton;
     
     if (button === 'right') {
         activeColorId = secondaryColorId;
     } else if ('touches' in e) {
-        // Touch always uses primary
         activeColorId = primaryColorId;
     }
 
-    // 1. Get all symmetrical center points
     const symPoints = getSymmetryPoints(gridX, gridY);
 
-    // 2. For each center point, apply brush size
     symPoints.forEach(p => {
         const brushPoints = getBrushPoints(p.x, p.y, brushSize);
         brushPoints.forEach(bp => {
@@ -141,7 +130,6 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
   };
 
   const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
-    // Prevent right-click context menu
     if ('button' in e && e.button === 2) {
         e.preventDefault();
     }
@@ -153,13 +141,28 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         return;
     }
     
-    // Determine click type
     let isRightClick = false;
     if ('button' in e) {
         if (e.button === 2) isRightClick = true;
     }
-
     const clickButton = isRightClick ? 'right' : 'left';
+
+    const { x, y } = getMousePosition(e.nativeEvent as any);
+    const gridX = Math.floor(x - RULER_SIZE);
+    const gridY = Math.floor(y - RULER_SIZE);
+
+    // --- SELECTION TOOL LOGIC ---
+    if (activeTool === 'select') {
+        if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height) {
+            setIsDrawing(true); // reuse drawing state for dragging
+            setSelectionStart({ x: gridX, y: gridY });
+            // Start new selection of 1x1
+            onSelectionChange({ x: gridX, y: gridY, w: 1, h: 1 });
+        } else {
+            onSelectionChange(null);
+        }
+        return;
+    }
 
     if (activeTool === 'brush') {
       setIsDrawing(true);
@@ -167,9 +170,6 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
       setPaintedCells(new Set());
       handlePaint(e, clickButton);
     } else {
-      const { x, y } = getMousePosition(e.nativeEvent as any);
-      const gridX = Math.floor(x - RULER_SIZE);
-      const gridY = Math.floor(y - RULER_SIZE);
       if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height || activeTool === 'text') {
         onCanvasClick(gridX, gridY, isRightClick);
       }
@@ -177,6 +177,7 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
   };
 
   const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
+     // Pinch Logic
      if ('touches' in e.nativeEvent && e.nativeEvent.touches.length === 2 && pinchDistRef.current !== null) {
         e.preventDefault();
         const container = containerRef.current;
@@ -221,8 +222,25 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
       setHoveredCell({ x: gridX, y: gridY });
     }
     
+    // --- SELECTION DRAG LOGIC ---
+    if (isDrawing && activeTool === 'select' && selectionStart) {
+        const startX = selectionStart.x;
+        const startY = selectionStart.y;
+        
+        // Clamp to grid bounds
+        const currentX = Math.max(0, Math.min(width - 1, gridX));
+        const currentY = Math.max(0, Math.min(height - 1, gridY));
+        
+        const minX = Math.min(startX, currentX);
+        const minY = Math.min(startY, currentY);
+        const w = Math.abs(currentX - startX) + 1;
+        const h = Math.abs(currentY - startY) + 1;
+        
+        onSelectionChange({ x: minX, y: minY, w, h });
+        return;
+    }
+
     if (isDrawing && activeTool === 'brush') {
-      // For mouse move, we need to check buttons property to ensure button is still held
       if ('buttons' in e.nativeEvent) {
           if (drawingButton === 'left' && (e.nativeEvent.buttons & 1) === 0) {
               handleMouseUp();
@@ -241,6 +259,13 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     if (pinchDistRef.current !== null) {
         pinchDistRef.current = null;
     }
+    
+    if (activeTool === 'select') {
+        setIsDrawing(false);
+        setSelectionStart(null);
+        return;
+    }
+
     if (isDrawing && paintedCells.size > 0 && activeTool === 'brush') {
       const newGrid = [...grid];
       const colorToApply = drawingButton === 'right' ? secondaryColorId : primaryColorId;
@@ -321,18 +346,11 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
   const fontSize = RULER_SIZE * 0.6;
   
   const getCursor = () => {
-    if (activeTool === 'brush') {
-      return 'crosshair';
-    }
-    if (activeTool === 'fill-row' || activeTool === 'fill-column') {
-      return 'pointer';
-    }
-    if (activeTool === 'eyedropper' || activeTool === 'replace') {
-        return 'copy';
-    }
-    if (activeTool === 'text') {
-        return 'text';
-    }
+    if (activeTool === 'select') return 'crosshair';
+    if (activeTool === 'brush') return 'crosshair';
+    if (activeTool === 'fill-row' || activeTool === 'fill-column') return 'pointer';
+    if (activeTool === 'eyedropper' || activeTool === 'replace') return 'copy';
+    if (activeTool === 'text') return 'text';
     return 'default';
   }
 
@@ -368,7 +386,6 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     if (!hoveredCell || isDrawing) return null;
 
     const previews: React.ReactNode[] = [];
-    // Default to primary color for hover preview
     const color = primaryColorId ? yarnColorMap.get(primaryColorId) : '#ff0000';
     const isEraser = primaryColorId === null;
     const fillOpacity = isEraser ? 0.4 : 0.6;
@@ -383,7 +400,7 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             addPreview(`brush-${index}`, () => renderBrushPreview(p.x, p.y, color, isEraser));
         });
     }
-
+    
     if (activeTool === 'fill-row') {
         const offset = Math.floor((rowFillSize - 1) / 2);
         const mainY = hoveredCell.y - offset;
@@ -478,6 +495,19 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             <pattern id="grid-pattern" width="1" height="1" patternUnits="userSpaceOnUse">
                 <path d="M 1 0 L 0 0 0 1" fill="none" stroke="rgba(0,0,0,0.1)" strokeWidth={0.05} />
             </pattern>
+            <style>{`
+                @keyframes march {
+                    to { stroke-dashoffset: -2; }
+                }
+                .selection-marquee {
+                    stroke: #3b82f6; /* indigo-500 */
+                    stroke-width: 0.5px;
+                    stroke-dasharray: 1, 1;
+                    fill: rgba(59, 130, 246, 0.2);
+                    vector-effect: non-scaling-stroke;
+                    animation: march 1s linear infinite;
+                }
+            `}</style>
         </defs>
 
         <rect x={0} y={0} width={svgTotalWidth} height={RULER_SIZE} fill="#f8f9fa" />
@@ -507,10 +537,37 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
               <rect x="0" y="0" width={width} height={height} fill="url(#grid-pattern)" />
           }
 
+          {/* CENTER GUIDES */}
+          {showCenterGuides && (
+              <g pointerEvents="none">
+                  <line 
+                    x1={width / 2} y1={0} x2={width / 2} y2={height} 
+                    stroke="#ec4899" strokeWidth={0.2} strokeDasharray="0.5, 0.5" 
+                  />
+                  <line 
+                    x1={0} y1={height / 2} x2={width} y2={height / 2} 
+                    stroke="#ec4899" strokeWidth={0.2} strokeDasharray="0.5, 0.5" 
+                  />
+              </g>
+          )}
+
           {getHoverPreviews()}
+
+          {/* SELECTION MARQUEE */}
+          {selection && (
+              <rect 
+                x={selection.x} 
+                y={selection.y} 
+                width={selection.w} 
+                height={selection.h} 
+                className="selection-marquee"
+                pointerEvents="none"
+              />
+          )}
         </g>
          
         <g>
+            {/* Ruler Background Lines */}
             <line x1={RULER_SIZE} y1={0} x2={RULER_SIZE} y2={svgTotalHeight} stroke="#ccc" strokeWidth={0.02} />
             <line x1={RULER_SIZE + width} y1={0} x2={RULER_SIZE + width} y2={svgTotalHeight} stroke="#ccc" strokeWidth={0.02} />
             <line x1={0} y1={RULER_SIZE} x2={svgTotalWidth} y2={RULER_SIZE} stroke="#ccc" strokeWidth={0.02} />
@@ -520,8 +577,6 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 const num = i + 1;
                 if (num % 2 !== 0) return null; 
                 if (num % stepX !== 0 && stepX > 1) return null;
-                
-                const text = String(num);
                 return (
                     <text
                         key={`ruler-top-${i}`}
@@ -533,7 +588,7 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                         fill="#555"
                         style={{ userSelect: 'none', pointerEvents: 'none' }}
                     >
-                        {text}
+                        {String(num)}
                     </text>
                 );
             })}
@@ -542,8 +597,6 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 const num = i + 1;
                 if (num % 2 === 0) return null; 
                 if (num % stepX !== 0 && stepX > 1) return null;
-                
-                const text = String(num);
                 return (
                     <text
                         key={`ruler-bottom-${i}`}
@@ -555,7 +608,7 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                         fill="#555"
                         style={{ userSelect: 'none', pointerEvents: 'none' }}
                     >
-                        {text}
+                        {String(num)}
                     </text>
                 );
             })}
@@ -564,8 +617,6 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 const num = i + 1;
                 if (num % 2 === 0) return null; 
                 if (num % stepY !== 0) return null;
-                
-                const text = String(num);
                 return (
                     <text
                         key={`ruler-left-${i}`}
@@ -577,7 +628,7 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                         fill="#555"
                         style={{ userSelect: 'none', pointerEvents: 'none' }}
                     >
-                        {text}
+                        {String(num)}
                     </text>
                 );
             })}
@@ -586,8 +637,6 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 const num = i + 1;
                 if (num % 2 !== 0) return null; 
                 if (num % stepY !== 0) return null;
-                
-                const text = String(num);
                 return (
                     <text
                         key={`ruler-right-${i}`}
@@ -599,7 +648,7 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                         fill="#555"
                         style={{ userSelect: 'none', pointerEvents: 'none' }}
                     >
-                        {text}
+                        {String(num)}
                     </text>
                 );
             })}

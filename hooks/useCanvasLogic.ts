@@ -1,6 +1,6 @@
 
 import { useCallback } from 'react';
-import { Symmetry } from '../types';
+import { Symmetry, CellData } from '../types';
 
 export const useCanvasLogic = (
     width: number,
@@ -56,5 +56,51 @@ export const useCanvasLogic = (
         return points;
     }, [width, height]);
 
-    return { getSymmetryPoints, getBrushPoints };
+    // --- TRANSFORM HELPERS ---
+
+    const rotateSubGrid = useCallback((subGrid: CellData[], w: number, h: number): CellData[] => {
+        // Rotate 90 degrees clockwise
+        const newGrid = new Array(w * h).fill({ colorId: null });
+        for (let y = 0; y < h; y++) {
+            for (let x = 0; x < w; x++) {
+                // New X is (h - 1 - y)
+                // New Y is x
+                const oldIndex = y * w + x;
+                const newX = h - 1 - y;
+                const newY = x;
+                // Note: Dimensions swap (new grid is h x w)
+                const newIndex = newY * h + newX; 
+                newGrid[newIndex] = subGrid[oldIndex];
+            }
+        }
+        return newGrid;
+    }, []);
+
+    const flipSubGrid = useCallback((subGrid: CellData[], w: number, h: number, direction: 'horizontal' | 'vertical'): CellData[] => {
+        const newGrid = [...subGrid];
+        if (direction === 'horizontal') {
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < Math.floor(w / 2); x++) {
+                    const i1 = y * w + x;
+                    const i2 = y * w + (w - 1 - x);
+                    const temp = newGrid[i1];
+                    newGrid[i1] = newGrid[i2];
+                    newGrid[i2] = temp;
+                }
+            }
+        } else {
+            for (let y = 0; y < Math.floor(h / 2); y++) {
+                for (let x = 0; x < w; x++) {
+                    const i1 = y * w + x;
+                    const i2 = (h - 1 - y) * w + x;
+                    const temp = newGrid[i1];
+                    newGrid[i1] = newGrid[i2];
+                    newGrid[i2] = temp;
+                }
+            }
+        }
+        return newGrid;
+    }, []);
+
+    return { getSymmetryPoints, getBrushPoints, rotateSubGrid, flipSubGrid };
 };
