@@ -9,11 +9,12 @@ type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column' | 'eyedrop
 interface PixelGridEditorProps {
   data: PixelGridData;
   yarnPalette: YarnColor[];
-  selectedColorId: string | null;
+  primaryColorId: string | null;
+  secondaryColorId: string | null;
   onGridChange: (newGrid: CellData[]) => void;
   showGridLines: boolean;
   activeTool: Tool;
-  onCanvasClick: (gridX: number, gridY: number) => void;
+  onCanvasClick: (gridX: number, gridY: number, isRightClick: boolean) => void;
   brushSize: number;
   rowFillSize: number;
   colFillSize: number;
@@ -26,13 +27,31 @@ interface PixelGridEditorProps {
 
 const RULER_SIZE = 2;
 
-const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, selectedColorId, onGridChange, showGridLines, activeTool, onCanvasClick, brushSize, rowFillSize, colFillSize, textToolInput, textSize, symmetry, zoom, onZoomChange }) => {
+const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ 
+  data, 
+  yarnPalette, 
+  primaryColorId, 
+  secondaryColorId,
+  onGridChange, 
+  showGridLines, 
+  activeTool, 
+  onCanvasClick, 
+  brushSize, 
+  rowFillSize, 
+  colFillSize, 
+  textToolInput, 
+  textSize, 
+  symmetry, 
+  zoom, 
+  onZoomChange 
+}) => {
   const { width, height, grid } = data;
   const containerRef = useRef<HTMLDivElement>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   const pinchDistRef = useRef<number | null>(null);
 
   const [isDrawing, setIsDrawing] = useState(false);
+  const [drawingButton, setDrawingButton] = useState<'left' | 'right' | null>(null);
   const [paintedCells, setPaintedCells] = useState<Set<number>>(new Set());
   const [hoveredCell, setHoveredCell] = useState<{ x: number; y: number } | null>(null);
   
@@ -82,7 +101,7 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
       return Math.sqrt(Math.pow(t1.clientX - t2.clientX, 2) + Math.pow(t1.clientY - t2.clientY, 2));
   }
 
-  const handlePaint = (e: React.MouseEvent | React.TouchEvent) => {
+  const handlePaint = (e: React.MouseEvent | React.TouchEvent, buttonOverride?: 'left' | 'right') => {
     const { x, y } = getMousePosition(e.nativeEvent as any);
     const gridX = Math.floor(x - RULER_SIZE);
     const gridY = Math.floor(y - RULER_SIZE);
@@ -91,6 +110,17 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
 
     const newPaintedCells = new Set<number>();
     
+    // Determine color based on button
+    let activeColorId = primaryColorId;
+    const button = buttonOverride || drawingButton;
+    
+    if (button === 'right') {
+        activeColorId = secondaryColorId;
+    } else if ('touches' in e) {
+        // Touch always uses primary
+        activeColorId = primaryColorId;
+    }
+
     // 1. Get all symmetrical center points
     const symPoints = getSymmetryPoints(gridX, gridY);
 
@@ -99,7 +129,7 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
         const brushPoints = getBrushPoints(p.x, p.y, brushSize);
         brushPoints.forEach(bp => {
             const index = bp.y * width + bp.x;
-             if (grid[index].colorId !== selectedColorId && !paintedCells.has(index)) {
+             if (grid[index].colorId !== activeColorId && !paintedCells.has(index)) {
                 newPaintedCells.add(index);
             }
         });
@@ -111,23 +141,37 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
   };
 
   const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+    // Prevent right-click context menu
+    if ('button' in e && e.button === 2) {
+        e.preventDefault();
+    }
+
     if ('touches' in e.nativeEvent && e.nativeEvent.touches.length === 2) {
         e.preventDefault();
         pinchDistRef.current = getPinchDist(e.nativeEvent as TouchEvent);
         setIsDrawing(false);
         return;
     }
-    e.preventDefault();
+    
+    // Determine click type
+    let isRightClick = false;
+    if ('button' in e) {
+        if (e.button === 2) isRightClick = true;
+    }
+
+    const clickButton = isRightClick ? 'right' : 'left';
+
     if (activeTool === 'brush') {
       setIsDrawing(true);
+      setDrawingButton(clickButton);
       setPaintedCells(new Set());
-      handlePaint(e);
+      handlePaint(e, clickButton);
     } else {
       const { x, y } = getMousePosition(e.nativeEvent as any);
       const gridX = Math.floor(x - RULER_SIZE);
       const gridY = Math.floor(y - RULER_SIZE);
       if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height || activeTool === 'text') {
-        onCanvasClick(gridX, gridY);
+        onCanvasClick(gridX, gridY, isRightClick);
       }
     }
   };
@@ -178,6 +222,17 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
     }
     
     if (isDrawing && activeTool === 'brush') {
+      // For mouse move, we need to check buttons property to ensure button is still held
+      if ('buttons' in e.nativeEvent) {
+          if (drawingButton === 'left' && (e.nativeEvent.buttons & 1) === 0) {
+              handleMouseUp();
+              return;
+          }
+          if (drawingButton === 'right' && (e.nativeEvent.buttons & 2) === 0) {
+              handleMouseUp();
+              return;
+          }
+      }
       handlePaint(e);
     }
   };
@@ -188,12 +243,15 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
     }
     if (isDrawing && paintedCells.size > 0 && activeTool === 'brush') {
       const newGrid = [...grid];
+      const colorToApply = drawingButton === 'right' ? secondaryColorId : primaryColorId;
+      
       paintedCells.forEach(index => {
-        newGrid[index] = { ...newGrid[index], colorId: selectedColorId };
+        newGrid[index] = { ...newGrid[index], colorId: colorToApply };
       });
       onGridChange(newGrid);
     }
     setIsDrawing(false);
+    setDrawingButton(null);
     setPaintedCells(new Set());
   };
   
@@ -233,15 +291,21 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
         }
     });
   };
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+      e.preventDefault();
+  }
   
   const temporaryGrid = React.useMemo(() => {
     if (paintedCells.size === 0 || activeTool !== 'brush') return grid;
     const newGrid = [...grid];
+    const colorToApply = drawingButton === 'right' ? secondaryColorId : primaryColorId;
+
     paintedCells.forEach(index => {
-        newGrid[index] = { ...newGrid[index], colorId: selectedColorId };
+        newGrid[index] = { ...newGrid[index], colorId: colorToApply };
     });
     return newGrid;
-  }, [grid, paintedCells, selectedColorId, activeTool]);
+  }, [grid, paintedCells, drawingButton, primaryColorId, secondaryColorId, activeTool]);
   
   const getStep = (dimension: number, currentZoom: number) => {
     const cellsVisible = dimension / currentZoom;
@@ -258,7 +322,7 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
   
   const getCursor = () => {
     if (activeTool === 'brush') {
-      return selectedColorId !== undefined ? 'crosshair' : 'default';
+      return 'crosshair';
     }
     if (activeTool === 'fill-row' || activeTool === 'fill-column') {
       return 'pointer';
@@ -304,8 +368,9 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
     if (!hoveredCell || isDrawing) return null;
 
     const previews: React.ReactNode[] = [];
-    const color = selectedColorId ? yarnColorMap.get(selectedColorId) : '#ff0000';
-    const isEraser = selectedColorId === null;
+    // Default to primary color for hover preview
+    const color = primaryColorId ? yarnColorMap.get(primaryColorId) : '#ff0000';
+    const isEraser = primaryColorId === null;
     const fillOpacity = isEraser ? 0.4 : 0.6;
 
     const addPreview = (previewKey: string, generator: () => React.ReactNode | React.ReactNode[]) => {
@@ -393,6 +458,7 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
       className="w-full h-full bg-gray-200 overflow-auto grid place-items-center touch-none"
       style={{ cursor: getCursor() }}
       onWheel={handleWheel}
+      onContextMenu={handleContextMenu}
     >
       <svg
         ref={svgRef}

@@ -37,6 +37,11 @@ const projectReducer = (state: ProjectState, action: ProjectAction): ProjectStat
         const updatedProject = { ...state.project, settings: { ...state.project.settings, ...action.payload } };
         return { ...state, project: updatedProject };
     }
+    case 'SET_PALETTE': {
+        if (!state.project) return state;
+        const updatedProject = { ...state.project, yarnPalette: action.payload };
+        return { ...state, project: updatedProject };
+    }
     case 'UNDO': {
       if (state.historyIndex > 0) {
         const newIndex = state.historyIndex - 1;
@@ -63,6 +68,16 @@ const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ children }) 
     if (state.project) {
       saveProject(state.project);
     }
+  }, [state.project]);
+
+  // Auto-save functionality
+  useEffect(() => {
+      const timer = setTimeout(() => {
+          if (state.project) {
+              saveProject(state.project);
+          }
+      }, 2000); // Auto-save 2 seconds after last change
+      return () => clearTimeout(timer);
   }, [state.project]);
 
   const value = useMemo(() => ({ state, dispatch, saveCurrentProject }), [state, dispatch, saveCurrentProject]);
@@ -206,7 +221,11 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
     type MirrorDirection = 'left-to-right' | 'right-to-left' | 'top-to-bottom' | 'bottom-to-top';
 
     const { state, dispatch } = useProject();
-    const [selectedColorId, setSelectedColorId] = useState<string | null>(null);
+    
+    // Dual Color System
+    const [primaryColorId, setPrimaryColorId] = useState<string | null>(null);
+    const [secondaryColorId, setSecondaryColorId] = useState<string | null>(null);
+    
     const [isPanelOpen, setIsPanelOpen] = useState(false);
     const [isProcessing, setIsProcessing] = useState(false);
     const [showGridLines, setShowGridLines] = useState(true);
@@ -228,6 +247,11 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [settingsForm, setSettingsForm] = useState({ unit: 'in', stitchesPerUnit: 4, rowsPerUnit: 4, hookSize: '' });
 
+    // Color Picker Modal State
+    const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+    const [tempCustomColor, setTempCustomColor] = useState('#000000');
+    const colorInputRef = useRef<HTMLInputElement>(null);
+
     const project = state.project?.type === 'pixel' ? state.project : null;
     
     const [newWidth, setNewWidth] = useState(project?.data && 'width' in project.data ? project.data.width : 50);
@@ -237,10 +261,57 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
     useEffect(() => {
         projectStateRef.current = state;
     }, [state]);
+    
+    // Keyboard Shortcuts
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+            
+            const key = e.key.toLowerCase();
+            
+            if ((e.ctrlKey || e.metaKey) && key === 'z') {
+                e.preventDefault();
+                dispatch({ type: 'UNDO' });
+                return;
+            }
+            if ((e.ctrlKey || e.metaKey) && key === 'y') {
+                e.preventDefault();
+                dispatch({ type: 'REDO' });
+                return;
+            }
+            
+            switch(key) {
+                case 'b': setActiveTool('brush'); break;
+                case 'f': setActiveTool('fill'); break;
+                case 'e': setActiveTool('eyedropper'); break;
+                case 'r': setActiveTool('replace'); break;
+                case 't': setActiveTool('text'); break;
+                case 'x': {
+                    // Swap colors
+                    const temp = primaryColorId;
+                    setPrimaryColorId(secondaryColorId);
+                    setSecondaryColorId(temp);
+                    break;
+                }
+            }
+        };
+        
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [primaryColorId, secondaryColorId, dispatch]);
 
     const yarnColorMap = useMemo(() => 
         project ? new Map(project.yarnPalette.map(yc => [yc.id, yc])) : new Map(),
     [project]);
+    
+    // Initialize colors when project loads
+    useEffect(() => {
+        if (project && !primaryColorId) {
+            if (project.yarnPalette.length > 0) {
+                setPrimaryColorId(project.yarnPalette[0].id);
+            }
+        }
+    }, [project]);
 
     useEffect(() => {
         if (project?.data && 'width' in project.data) {
@@ -267,8 +338,8 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
     
     const handleFillCanvas = () => {
         const projectData = project?.data as PixelGridData;
-        if (!projectData || selectedColorId === undefined) return;
-        const newGrid = Array.from({ length: projectData.width * projectData.height }, () => ({ colorId: selectedColorId }));
+        if (!projectData || primaryColorId === undefined) return;
+        const newGrid = Array.from({ length: projectData.width * projectData.height }, () => ({ colorId: primaryColorId }));
         updateGrid(newGrid);
     };
 
@@ -283,7 +354,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
         setReplaceToColor(undefined);
     };
     
-    const handleCanvasClick = (gridX: number, gridY: number) => {
+    const handleCanvasClick = (gridX: number, gridY: number, isRightClick: boolean) => {
         const projectData = project?.data as PixelGridData;
         if (!projectData) return;
         const { width, height, grid } = projectData;
@@ -291,7 +362,11 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
         const clickedColorId = grid[index].colorId;
 
         if (activeTool === 'eyedropper') {
-            setSelectedColorId(clickedColorId);
+            if (isRightClick) {
+                setSecondaryColorId(clickedColorId);
+            } else {
+                setPrimaryColorId(clickedColorId);
+            }
             setActiveTool('brush');
             return;
         }
@@ -303,7 +378,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
             return;
         }
         
-        if (selectedColorId === undefined) return;
+        const colorToApply = isRightClick ? secondaryColorId : primaryColorId;
         
         let newGrid = [...grid];
         let changed = false;
@@ -318,8 +393,8 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                         if (currentY >= 0 && currentY < height) {
                             for (let x = 0; x < width; x++) {
                                 const idx = currentY * width + x;
-                                if (newGrid[idx].colorId !== selectedColorId) {
-                                    newGrid[idx] = { ...newGrid[idx], colorId: selectedColorId };
+                                if (newGrid[idx].colorId !== colorToApply) {
+                                    newGrid[idx] = { ...newGrid[idx], colorId: colorToApply };
                                     changed = true;
                                 }
                             }
@@ -333,8 +408,8 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                         if (currentX >= 0 && currentX < width) {
                             for (let y = 0; y < height; y++) {
                                 const idx = y * width + currentX;
-                                if (newGrid[idx].colorId !== selectedColorId) {
-                                    newGrid[idx] = { ...newGrid[idx], colorId: selectedColorId };
+                                if (newGrid[idx].colorId !== colorToApply) {
+                                    newGrid[idx] = { ...newGrid[idx], colorId: colorToApply };
                                     changed = true;
                                 }
                             }
@@ -358,8 +433,8 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                                         const finalY = gridY + (yOffset * textSize) + scaleY;
                                         if (finalX >= 0 && finalX < width && finalY >= 0 && finalY < height) {
                                             const idx = finalY * width + finalX;
-                                            if (newGrid[idx].colorId !== selectedColorId) {
-                                                newGrid[idx] = { ...newGrid[idx], colorId: selectedColorId };
+                                            if (newGrid[idx].colorId !== colorToApply) {
+                                                newGrid[idx] = { ...newGrid[idx], colorId: colorToApply };
                                                 changed = true;
                                             }
                                         }
@@ -397,7 +472,8 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
             updateGrid(newGrid);
         }
     };
-
+    
+    // ... (Image upload logic remains the same)
     const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => {
         const projectData = project?.data as PixelGridData;
         const fileInput = e.target;
@@ -434,11 +510,10 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
         };
         
         reader.readAsDataURL(file);
-
-        // Clear the input value to allow re-uploading the same file
         fileInput.value = '';
     };
-
+    
+    // ... (Resize, Mirror, Settings modal logic remain the same)
     const handleResize = () => {
         const projectData = project?.data as PixelGridData;
         if (!projectData || !project || newWidth <= 0 || newHeight <= 0) return;
@@ -558,7 +633,6 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
         return counts;
     }, [project]);
     
-    // --- SETTINGS MODAL LOGIC ---
     const openSettingsModal = () => {
         setSettingsForm({
             unit: project?.settings?.unit || 'in',
@@ -595,14 +669,37 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
 
     const hasSizeChanged = projectData.width !== newWidth || projectData.height !== newHeight;
 
-    const handlePaletteClick = (colorId: string | null) => {
+    const handlePaletteClick = (colorId: string | null, e: React.MouseEvent) => {
         if (activeTool === 'replace' && replaceTarget) {
             if (replaceTarget === 'from') setReplaceFromColor(colorId);
             if (replaceTarget === 'to') setReplaceToColor(colorId);
             setReplaceTarget(null);
-        } else {
-            setSelectedColorId(colorId);
+            return;
         }
+
+        // Left click sets Primary, Right click sets Secondary
+        if (e.button === 2) {
+            e.preventDefault();
+            setSecondaryColorId(colorId);
+        } else {
+            setPrimaryColorId(colorId);
+        }
+    };
+    
+    // --- NEW: Modal-based Color Addition Logic ---
+    const handleConfirmAddColor = () => {
+        const hex = tempCustomColor;
+        const newColor: YarnColor = {
+            id: `custom-${Date.now()}`,
+            brand: 'Custom',
+            name: `Custom ${hex}`,
+            hex: hex,
+            rgb: [parseInt(hex.slice(1,3), 16), parseInt(hex.slice(3,5), 16), parseInt(hex.slice(5,7), 16)]
+        };
+        const newPalette = [...project.yarnPalette, newColor];
+        dispatch({ type: 'SET_PALETTE', payload: newPalette });
+        setPrimaryColorId(newColor.id);
+        setIsColorPickerOpen(false);
     };
 
     const ToolButton = ({ tool, label, icon }: { tool: Tool, label: string, icon?: string }) => (
@@ -637,7 +734,8 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                 <PixelGridEditor 
                     data={projectData} 
                     yarnPalette={project.yarnPalette} 
-                    selectedColorId={selectedColorId}
+                    primaryColorId={primaryColorId}
+                    secondaryColorId={secondaryColorId}
                     onGridChange={handleGridChange}
                     showGridLines={showGridLines}
                     activeTool={activeTool}
@@ -673,6 +771,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                     {/* ... (Upload, Resize, View Options sections remain same) */}
                     <div className="space-y-4 pb-4 border-b">
                         <div>
                             <Button variant="secondary" className="w-full" onClick={() => imageUploadRef.current?.click()}>
@@ -680,8 +779,8 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                             </Button>
                             <input type="file" ref={imageUploadRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
                         </div>
-
-                         <div className="space-y-2">
+                        {/* ... Max Colors, Dimensions, View Options ... */}
+                        <div className="space-y-2">
                             <label htmlFor="max-colors" className="flex items-center justify-between text-sm font-medium text-gray-700">
                                 <span>Max Colors for Import</span>
                                 <span className="font-mono bg-white px-2 py-0.5 rounded border">{maxImportColors}</span>
@@ -717,7 +816,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                             </div>
                         </div>
 
-                        <div>
+                         <div>
                             <h4 className="font-semibold mb-2 text-sm text-gray-700">View Options</h4>
                             <div className="flex items-center justify-between">
                                 <label htmlFor="grid-toggle" className="text-sm text-gray-700">Show Grid Lines</label>
@@ -740,14 +839,15 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                     <div className="pb-4 border-b">
                         <h4 className="font-semibold mb-2 text-gray-700">Advanced Tools</h4>
                         <div className="grid grid-cols-3 gap-2 mb-2">
-                            <ToolButton tool="brush" label="Brush" icon="edit"/>
-                            <ToolButton tool="fill-row" label="Fill Row"/>
-                            <ToolButton tool="fill-column" label="Fill Col"/>
-                            <ToolButton tool="fill" label="Fill All"/>
-                            <ToolButton tool="replace" label="Replace"/>
-                            <ToolButton tool="eyedropper" label="Picker" icon="eyedropper" />
-                            <ToolButton tool="text" label="Text" icon="text" />
+                            <ToolButton tool="brush" label="Brush (B)" icon="edit"/>
+                            <ToolButton tool="fill-row" label="Row Fill"/>
+                            <ToolButton tool="fill-column" label="Col Fill"/>
+                            <ToolButton tool="fill" label="Fill (F)"/>
+                            <ToolButton tool="replace" label="Rep (R)"/>
+                            <ToolButton tool="eyedropper" label="Pick (E)" icon="eyedropper" />
+                            <ToolButton tool="text" label="Text (T)" icon="text" />
                         </div>
+                        {/* Tool options sections... */}
                         {activeTool === 'brush' && (
                             <div className="p-2 border rounded-md bg-gray-50 space-y-2">
                                 <label htmlFor="brush-size" className="flex items-center justify-between text-sm font-medium text-gray-700">
@@ -765,7 +865,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                                 />
                             </div>
                         )}
-                        {activeTool === 'text' && (
+                         {activeTool === 'text' && (
                             <div className="p-2 border rounded-md bg-gray-50 space-y-2">
                                 <label htmlFor="text-tool-input" className="text-sm font-medium text-gray-700">Text to Place</label>
                                 <input
@@ -793,7 +893,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                         )}
                         {activeTool === 'fill' && (
                             <div className="p-2 border rounded-md bg-gray-50">
-                                <Button onClick={handleFillCanvas} className="w-full" disabled={selectedColorId === undefined}>Fill with Selected</Button>
+                                <Button onClick={handleFillCanvas} className="w-full" disabled={primaryColorId === undefined}>Fill with Primary</Button>
                             </div>
                         )}
                         {activeTool === 'replace' && (
@@ -829,7 +929,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                                 <Button onClick={handleReplace} disabled={replaceFromColor === undefined || replaceToColor === undefined} className="w-full">Apply Replacement</Button>
                             </div>
                         )}
-                        {activeTool === 'fill-row' && (
+                         {activeTool === 'fill-row' && (
                             <div className="p-2 border rounded-md bg-gray-50 space-y-2">
                                 <p className="text-xs text-center text-gray-600 pb-2">Click a row on the canvas to fill.</p>
                                 <label htmlFor="row-fill-size" className="flex items-center justify-between text-sm font-medium text-gray-700">
@@ -868,6 +968,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                     </div>
                     
                     <div className="pb-4 border-b">
+                         {/* ... Symmetry & Mirror sections ... */}
                         <h4 className="font-semibold mb-2 text-gray-700">Drawing Aids</h4>
                         <div className="space-y-2">
                             <div>
@@ -904,25 +1005,65 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                     </div>
 
                     <div className="pb-4 border-b">
-                        <h4 className="font-semibold mb-2 text-gray-700">Color Palette</h4>
+                        <div className="flex justify-between items-center mb-2">
+                            <h4 className="font-semibold text-gray-700">Color Palette</h4>
+                            <div className="flex items-center gap-2">
+                                {/* Dual Color Indicators */}
+                                <div className="relative w-8 h-8 mr-4">
+                                    <div 
+                                        className="absolute top-2 right-0 w-6 h-6 border border-gray-400 shadow-sm z-10 flex items-center justify-center bg-white" 
+                                        style={{ backgroundColor: secondaryColorId ? yarnColorMap.get(secondaryColorId)?.hex : '#ffffff' }}
+                                        title="Secondary Color (Right Click)"
+                                    >
+                                        {secondaryColorId === null && (
+                                            <div className="w-6 h-0.5 bg-red-500 transform rotate-45 absolute"></div>
+                                        )}
+                                    </div>
+                                    <div 
+                                        className="absolute top-0 left-0 w-6 h-6 border border-gray-400 shadow-sm z-20 flex items-center justify-center bg-white" 
+                                        style={{ backgroundColor: primaryColorId ? yarnColorMap.get(primaryColorId)?.hex : '#ffffff' }}
+                                        title="Primary Color (Left Click)"
+                                    >
+                                        {primaryColorId === null && (
+                                            <div className="w-6 h-0.5 bg-red-500 transform rotate-45 absolute"></div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <p className="text-xs text-gray-500 mb-2">Left click sets Primary. Right click sets Secondary.</p>
+
                         <div className="grid grid-cols-6 gap-2">
                             {project.yarnPalette.map(color => (
                                 <div key={color.id} 
-                                    onClick={() => handlePaletteClick(color.id)}
-                                    className={`w-10 h-10 rounded-full cursor-pointer border-2 ${selectedColorId === color.id && activeTool !== 'replace' ? 'border-indigo-600 ring-2 ring-offset-2 ring-indigo-500' : 'border-gray-200'}`}
+                                    onMouseDown={(e) => handlePaletteClick(color.id, e)}
+                                    onContextMenu={(e) => e.preventDefault()}
+                                    className={`w-10 h-10 rounded-full cursor-pointer border-2 ${primaryColorId === color.id ? 'ring-2 ring-offset-1 ring-indigo-500 border-indigo-600' : secondaryColorId === color.id ? 'ring-2 ring-offset-1 ring-pink-500 border-pink-600' : 'border-gray-200'}`}
                                     style={{ backgroundColor: color.hex }}
                                     title={color.name}
                                 />
                             ))}
-                            <div onClick={() => handlePaletteClick(null)}
-                                className={`relative w-10 h-10 rounded-full cursor-pointer border-2 flex items-center justify-center bg-gray-100 ${selectedColorId === null && activeTool !== 'replace' ? 'border-indigo-600 ring-2 ring-offset-2 ring-indigo-500' : 'border-gray-200'}`}
+                            <div 
+                                onMouseDown={(e) => handlePaletteClick(null, e)}
+                                onContextMenu={(e) => e.preventDefault()}
+                                className={`relative w-10 h-10 rounded-full cursor-pointer border-2 flex items-center justify-center bg-gray-100 ${primaryColorId === null ? 'ring-2 ring-offset-1 ring-indigo-500 border-indigo-600' : secondaryColorId === null ? 'ring-2 ring-offset-1 ring-pink-500 border-pink-600' : 'border-gray-200'}`}
                                 title="Eraser">
                                 <div className="w-8 h-1 bg-red-500 transform rotate-45 absolute"></div>
+                            </div>
+                            
+                            {/* Add Custom Color Button - Replaced Input with Modal Trigger */}
+                            <div 
+                                className="relative w-10 h-10 rounded-full border-2 border-gray-300 border-dashed flex items-center justify-center hover:border-gray-400 bg-white cursor-pointer" 
+                                title="Add Custom Color"
+                                onClick={() => setIsColorPickerOpen(true)}
+                            >
+                                <span className="text-xl text-gray-400 font-bold">+</span>
                             </div>
                         </div>
                     </div>
 
                     <div>
+                         {/* ... Yarn Usage ... */}
                         <h4 className="font-semibold mb-2 text-gray-700">Yarn Usage</h4>
                         <ul className="text-sm space-y-2">
                         {projectData.palette.sort((a,b) => (yarnUsage.get(b) || 0) - (yarnUsage.get(a) || 0) ).map(yarnId => {
@@ -989,7 +1130,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                                     checked={settingsForm.unit === 'in'} 
                                     onChange={(e) => setSettingsForm({...settingsForm, unit: e.target.value})}
                                 />
-                                <span className="ml-2 text-gray-700">Inches (in)</span>
+                                <span className="ml-2 text-gray-700 text-gray-700">Inches (in)</span>
                             </label>
                             <label className="inline-flex items-center">
                                 <input 
@@ -1000,7 +1141,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                                     checked={settingsForm.unit === 'cm'} 
                                     onChange={(e) => setSettingsForm({...settingsForm, unit: e.target.value})}
                                 />
-                                <span className="ml-2 text-gray-700">Centimeters (cm)</span>
+                                <span className="ml-2 text-gray-700 text-gray-700">Centimeters (cm)</span>
                             </label>
                         </div>
                     </div>
@@ -1041,6 +1182,74 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                             onChange={(e) => setSettingsForm({...settingsForm, hookSize: e.target.value})}
                             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500"
                         />
+                    </div>
+                </div>
+            </Modal>
+
+            {/* New Color Picker Modal */}
+            <Modal
+                isOpen={isColorPickerOpen}
+                onClose={() => setIsColorPickerOpen(false)}
+                title="Add Custom Color"
+                footer={
+                    <>
+                        <Button variant="secondary" onClick={() => setIsColorPickerOpen(false)}>Cancel</Button>
+                        <Button onClick={handleConfirmAddColor}>Add Color</Button>
+                    </>
+                }
+            >
+                <div className="space-y-6">
+                    {/* Large Preview Swatch */}
+                    <div className="flex flex-col gap-2">
+                        <label className="text-sm font-medium text-gray-700">Color Preview</label>
+                        <div
+                            className="w-full h-24 rounded-lg border border-gray-300 shadow-inner transition-colors duration-200"
+                            style={{ backgroundColor: tempCustomColor }}
+                        />
+                    </div>
+
+                    <div className="flex gap-4">
+                        {/* Hex Input */}
+                        <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Hex Code</label>
+                            <div className="relative">
+                                <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-gray-400">#</span>
+                                <input
+                                    type="text"
+                                    value={tempCustomColor.replace('#', '')}
+                                    onChange={(e) => {
+                                        const val = e.target.value;
+                                        // Allow typing, auto-add hash
+                                        if (/^[0-9A-Fa-f]*$/.test(val) && val.length <= 6) {
+                                            setTempCustomColor(`#${val.toUpperCase()}`);
+                                        }
+                                    }}
+                                    className="block w-full pl-7 pr-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm font-mono uppercase"
+                                    maxLength={6}
+                                />
+                            </div>
+                        </div>
+
+                        {/* System Picker Button */}
+                        <div className="flex-1">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">System Picker</label>
+                            <Button
+                                variant="secondary"
+                                className="w-full justify-center"
+                                onClick={() => colorInputRef.current?.click()}
+                            >
+                                <Icon name="eyedropper" className="w-4 h-4" />
+                                <span>Open Picker</span>
+                            </Button>
+                            <input
+                                ref={colorInputRef}
+                                type="color"
+                                value={tempCustomColor}
+                                onChange={(e) => setTempCustomColor(e.target.value)}
+                                className="sr-only"
+                                aria-hidden="true"
+                            />
+                        </div>
                     </div>
                 </div>
             </Modal>
