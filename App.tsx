@@ -1,10 +1,11 @@
+
 import React, { useState, useReducer, useCallback, useMemo, ChangeEvent, useRef, useEffect } from 'react';
 import { HashRouter, Routes, Route, NavLink, useLocation, useNavigate, Link } from 'react-router-dom';
-import { AnyProject, PatternType, PixelGridData, ProjectState, ProjectAction, YarnColor } from './types';
+import { AnyProject, PatternType, PixelGridData, ProjectState, ProjectAction, YarnColor, CellData, Symmetry } from './types';
 import { createNewProject, getProjects, saveProject, deleteProject, processImageToGrid } from './services/projectService';
 import { exportPixelGridToPDF } from './services/exportService';
 import { Icon, Button, Modal } from './components/ui/SharedComponents';
-import PixelGridEditor, { Symmetry } from './components/PixelGridEditor';
+import PixelGridEditor from './components/PixelGridEditor';
 import { BLANKET_SIZES, PIXEL_FONT } from './constants';
 
 // STATE MANAGEMENT (Context & Reducer)
@@ -248,10 +249,10 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
         }
     }, [project]);
 
-    const updateGrid = useCallback((newGrid: (string|null)[]) => {
+    const updateGrid = useCallback((newGrid: CellData[]) => {
         const usedYarnSet = new Set<string>();
         newGrid.forEach(cell => {
-            if (cell) usedYarnSet.add(cell);
+            if (cell.colorId) usedYarnSet.add(cell.colorId);
         });
         dispatch({ type: 'UPDATE_PROJECT_DATA', payload: { 
             grid: newGrid, 
@@ -259,7 +260,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
         } });
     }, [dispatch]);
 
-    const handleGridChange = (newGrid: (string|null)[]) => {
+    const handleGridChange = (newGrid: CellData[]) => {
         if (!project || !project.data || !('grid' in project.data)) return;
         updateGrid(newGrid);
     };
@@ -267,15 +268,17 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
     const handleFillCanvas = () => {
         const projectData = project?.data as PixelGridData;
         if (!projectData || selectedColorId === undefined) return;
-        const newGrid = Array(projectData.width * projectData.height).fill(selectedColorId);
+        const newGrid = Array.from({ length: projectData.width * projectData.height }, () => ({ colorId: selectedColorId }));
         updateGrid(newGrid);
     };
 
     const handleReplace = () => {
         const projectData = project?.data as PixelGridData;
         if (!projectData || replaceFromColor === undefined || replaceToColor === undefined) return;
-        const newGrid = projectData.grid.map(cellId => (cellId === replaceFromColor ? replaceToColor : cellId));
-        updateGrid(newGrid as (string | null)[]);
+        const newGrid = projectData.grid.map(cell => 
+            cell.colorId === replaceFromColor ? { ...cell, colorId: replaceToColor } : cell
+        );
+        updateGrid(newGrid as CellData[]);
         setReplaceFromColor(undefined);
         setReplaceToColor(undefined);
     };
@@ -285,7 +288,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
         if (!projectData) return;
         const { width, height, grid } = projectData;
         const index = gridY * width + gridX;
-        const clickedColorId = grid[index];
+        const clickedColorId = grid[index].colorId;
 
         if (activeTool === 'eyedropper') {
             setSelectedColorId(clickedColorId);
@@ -315,8 +318,8 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                         if (currentY >= 0 && currentY < height) {
                             for (let x = 0; x < width; x++) {
                                 const idx = currentY * width + x;
-                                if (newGrid[idx] !== selectedColorId) {
-                                    newGrid[idx] = selectedColorId;
+                                if (newGrid[idx].colorId !== selectedColorId) {
+                                    newGrid[idx] = { ...newGrid[idx], colorId: selectedColorId };
                                     changed = true;
                                 }
                             }
@@ -330,8 +333,8 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                         if (currentX >= 0 && currentX < width) {
                             for (let y = 0; y < height; y++) {
                                 const idx = y * width + currentX;
-                                if (newGrid[idx] !== selectedColorId) {
-                                    newGrid[idx] = selectedColorId;
+                                if (newGrid[idx].colorId !== selectedColorId) {
+                                    newGrid[idx] = { ...newGrid[idx], colorId: selectedColorId };
                                     changed = true;
                                 }
                             }
@@ -355,8 +358,8 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                                         const finalY = gridY + (yOffset * textSize) + scaleY;
                                         if (finalX >= 0 && finalX < width && finalY >= 0 && finalY < height) {
                                             const idx = finalY * width + finalX;
-                                            if (newGrid[idx] !== selectedColorId) {
-                                                newGrid[idx] = selectedColorId;
+                                            if (newGrid[idx].colorId !== selectedColorId) {
+                                                newGrid[idx] = { ...newGrid[idx], colorId: selectedColorId };
                                                 changed = true;
                                             }
                                         }
@@ -445,7 +448,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
         const oldHeight = projectData.height;
         const oldGrid = projectData.grid;
 
-        const newGrid = Array(newWidth * newHeight).fill(null);
+        const newGrid = Array.from({ length: newWidth * newHeight }, () => ({ colorId: null }));
 
         const offsetX = Math.floor((newWidth - oldWidth) / 2);
         const offsetY = Math.floor((newHeight - oldHeight) / 2);
@@ -468,7 +471,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
             payload: {
                 width: newWidth,
                 height: newHeight,
-                grid: newGrid,
+                grid: newGrid as CellData[],
             },
         });
     };
@@ -547,9 +550,9 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
         const projectData = project?.data as PixelGridData;
         if (!projectData || !project) return new Map<string, number>();
         const counts = new Map<string, number>();
-        projectData.grid.forEach(cellId => {
-            if (cellId) {
-                counts.set(cellId, (counts.get(cellId) || 0) + 1);
+        projectData.grid.forEach(cell => {
+            if (cell.colorId) {
+                counts.set(cell.colorId, (counts.get(cell.colorId) || 0) + 1);
             }
         });
         return counts;
@@ -573,7 +576,6 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
 
     const projectData = project?.data as PixelGridData | undefined;
     
-    // Calculate physical dimensions string
     const physicalSizeString = useMemo(() => {
         if (!projectData || !project?.settings) return null;
         const width = projectData.width;
@@ -623,7 +625,6 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
         <div className="flex-1 flex h-full overflow-hidden">
             {isProcessing && <div className="absolute inset-0 bg-white/70 z-30 flex items-center justify-center"><div className="text-lg font-semibold">Processing Image...</div></div>}
 
-            {/* Backdrop for mobile */}
             {isPanelOpen && (
                 <div
                     className="lg:hidden fixed inset-0 bg-black/50 z-30"
@@ -651,7 +652,6 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                     onZoomChange={onZoomChange}
                 />
 
-                {/* Mobile Toggle Button */}
                 <div className="lg:hidden absolute bottom-4 right-4 z-20">
                     <Button onClick={() => setIsPanelOpen(true)}>
                         <Icon name="palette" className="w-5 h-5" />
@@ -706,7 +706,6 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                             </div>
                             <Button className="w-full mt-2" onClick={handleResize} disabled={!hasSizeChanged}>Resize Canvas</Button>
 
-                            {/* PHYSICAL DIMENSIONS & SETTINGS TRIGGER */}
                             <div className="mt-4 pt-3 border-t border-dashed">
                                 <div className="flex justify-between items-center mb-1">
                                     <span className="text-xs font-medium text-gray-500">Est. Physical Size</span>

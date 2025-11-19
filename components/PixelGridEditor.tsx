@@ -1,21 +1,16 @@
 
-import React, { useState, useRef, useLayoutEffect, useCallback } from 'react';
-import { PixelGridData, YarnColor } from '../types';
+import React, { useState, useRef, useLayoutEffect } from 'react';
+import { PixelGridData, YarnColor, Symmetry, CellData } from '../types';
 import { PIXEL_FONT } from '../constants';
+import { useCanvasLogic } from '../hooks/useCanvasLogic';
 
 type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column' | 'eyedropper' | 'text';
-export type Symmetry = {
-    vertical: boolean;
-    horizontal: boolean;
-};
 
 interface PixelGridEditorProps {
   data: PixelGridData;
-  // settings: Record<string, any>; // Removed, handled in App.tsx
   yarnPalette: YarnColor[];
   selectedColorId: string | null;
-  onGridChange: (newGrid: (string | null)[]) => void;
-  // onUpdateSettings: (settings: Record<string, any>) => void; // Removed
+  onGridChange: (newGrid: CellData[]) => void;
   showGridLines: boolean;
   activeTool: Tool;
   onCanvasClick: (gridX: number, gridY: number) => void;
@@ -29,7 +24,7 @@ interface PixelGridEditorProps {
   onZoomChange: (newZoom: number) => void;
 }
 
-const RULER_SIZE = 2; // Units for ruler size
+const RULER_SIZE = 2;
 
 const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, selectedColorId, onGridChange, showGridLines, activeTool, onCanvasClick, brushSize, rowFillSize, colFillSize, textToolInput, textSize, symmetry, zoom, onZoomChange }) => {
   const { width, height, grid } = data;
@@ -42,6 +37,9 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
   const [hoveredCell, setHoveredCell] = useState<{ x: number; y: number } | null>(null);
   
   const yarnColorMap = React.useMemo(() => new Map(yarnPalette.map(yc => [yc.id, yc.hex])), [yarnPalette]);
+  
+  // Use custom hook for logic
+  const { getSymmetryPoints, getBrushPoints } = useCanvasLogic(width, height, symmetry);
 
   useLayoutEffect(() => {
     const container = containerRef.current;
@@ -84,27 +82,7 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
       return Math.sqrt(Math.pow(t1.clientX - t2.clientX, 2) + Math.pow(t1.clientY - t2.clientY, 2));
   }
 
-  const paintAt = useCallback((gridX: number, gridY: number, newPaintedCells: Set<number>) => {
-    const offset = Math.floor((brushSize - 1) / 2);
-    const startX = gridX - offset;
-    const startY = gridY - offset;
-    
-    for (let i = 0; i < brushSize; i++) {
-        for (let j = 0; j < brushSize; j++) {
-            const currentX = startX + i;
-            const currentY = startY + j;
-
-            if (currentX >= 0 && currentX < width && currentY >= 0 && currentY < height) {
-                const index = currentY * width + currentX;
-                if (grid[index] !== selectedColorId && !paintedCells.has(index)) {
-                    newPaintedCells.add(index);
-                }
-            }
-        }
-    }
-  }, [brushSize, width, height, grid, selectedColorId, paintedCells]);
-
-  const handlePaint = useCallback((e: React.MouseEvent | React.TouchEvent) => {
+  const handlePaint = (e: React.MouseEvent | React.TouchEvent) => {
     const { x, y } = getMousePosition(e.nativeEvent as any);
     const gridX = Math.floor(x - RULER_SIZE);
     const gridY = Math.floor(y - RULER_SIZE);
@@ -113,29 +91,24 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
 
     const newPaintedCells = new Set<number>();
     
-    const pointsToPaint = [{x: gridX, y: gridY}];
-    
-    if (symmetry.vertical) {
-        pointsToPaint.push({ x: width - 1 - gridX, y: gridY });
-    }
-    if (symmetry.horizontal) {
-        pointsToPaint.push({ x: gridX, y: height - 1 - gridY });
-    }
-    if (symmetry.vertical && symmetry.horizontal) {
-        pointsToPaint.push({ x: width - 1 - gridX, y: height - 1 - gridY });
-    }
-    
-    // Use a Set to avoid painting the same cell twice (e.g., on center lines)
-    new Set(pointsToPaint.map(p => `${p.x},${p.y}`)).forEach(pStr => {
-      const [pX, pY] = pStr.split(',').map(Number);
-      paintAt(pX, pY, newPaintedCells);
+    // 1. Get all symmetrical center points
+    const symPoints = getSymmetryPoints(gridX, gridY);
+
+    // 2. For each center point, apply brush size
+    symPoints.forEach(p => {
+        const brushPoints = getBrushPoints(p.x, p.y, brushSize);
+        brushPoints.forEach(bp => {
+            const index = bp.y * width + bp.x;
+             if (grid[index].colorId !== selectedColorId && !paintedCells.has(index)) {
+                newPaintedCells.add(index);
+            }
+        });
     });
 
     if (newPaintedCells.size > 0) {
         setPaintedCells(prev => new Set([...prev, ...newPaintedCells]));
     }
-
-  }, [paintAt, symmetry, width, height, brushSize]);
+  };
 
   const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
     if ('touches' in e.nativeEvent && e.nativeEvent.touches.length === 2) {
@@ -149,11 +122,10 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
       setIsDrawing(true);
       setPaintedCells(new Set());
       handlePaint(e);
-    } else { // For all other tools that use single clicks
+    } else {
       const { x, y } = getMousePosition(e.nativeEvent as any);
       const gridX = Math.floor(x - RULER_SIZE);
       const gridY = Math.floor(y - RULER_SIZE);
-      // For text, we allow clicking outside the grid to start the text box
       if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height || activeTool === 'text') {
         onCanvasClick(gridX, gridY);
       }
@@ -217,7 +189,7 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
     if (isDrawing && paintedCells.size > 0 && activeTool === 'brush') {
       const newGrid = [...grid];
       paintedCells.forEach(index => {
-        newGrid[index] = selectedColorId;
+        newGrid[index] = { ...newGrid[index], colorId: selectedColorId };
       });
       onGridChange(newGrid);
     }
@@ -266,7 +238,7 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
     if (paintedCells.size === 0 || activeTool !== 'brush') return grid;
     const newGrid = [...grid];
     paintedCells.forEach(index => {
-        newGrid[index] = selectedColorId;
+        newGrid[index] = { ...newGrid[index], colorId: selectedColorId };
     });
     return newGrid;
   }, [grid, paintedCells, selectedColorId, activeTool]);
@@ -292,7 +264,7 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
       return 'pointer';
     }
     if (activeTool === 'eyedropper' || activeTool === 'replace') {
-        return 'copy'; // Good cross-platform cursor for picking
+        return 'copy';
     }
     if (activeTool === 'text') {
         return 'text';
@@ -307,33 +279,24 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
     const elements = [];
     const fillOpacity = isEraser ? 0.4 : 0.6;
     const stroke = isEraser ? '#ff0000' : '#ffffff';
-    const offset = Math.floor((brushSize - 1) / 2);
-    const startX = cellX - offset;
-    const startY = cellY - offset;
+    const points = getBrushPoints(cellX, cellY, brushSize);
 
-    for (let i = 0; i < brushSize; i++) {
-        for (let j = 0; j < brushSize; j++) {
-            const currentX = startX + i;
-            const currentY = startY + j;
-
-            if (currentX >= 0 && currentX < width && currentY >= 0 && currentY < height) {
-                elements.push(
-                    <rect
-                        key={`hover-${i}-${j}-${cellX}-${cellY}`}
-                        x={currentX}
-                        y={currentY}
-                        width="1"
-                        height="1"
-                        fill={color}
-                        fillOpacity={fillOpacity}
-                        stroke={stroke}
-                        strokeOpacity={0.8}
-                        strokeWidth={0.05}
-                    />
-                );
-            }
-        }
-    }
+    points.forEach(p => {
+        elements.push(
+            <rect
+                key={`hover-${p.x}-${p.y}`}
+                x={p.x}
+                y={p.y}
+                width="1"
+                height="1"
+                fill={color}
+                fillOpacity={fillOpacity}
+                stroke={stroke}
+                strokeOpacity={0.8}
+                strokeWidth={0.05}
+            />
+        );
+    });
     return elements;
   }
 
@@ -350,20 +313,14 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
     };
 
     if (activeTool === 'brush') {
-        const points = [{x: hoveredCell.x, y: hoveredCell.y}];
-        if (symmetry.vertical) points.push({ x: width - 1 - hoveredCell.x, y: hoveredCell.y });
-        if (symmetry.horizontal) points.push({ x: hoveredCell.x, y: height - 1 - hoveredCell.y });
-        if (symmetry.vertical && symmetry.horizontal) points.push({ x: width - 1 - hoveredCell.x, y: height - 1 - hoveredCell.y });
-        
-        new Set(points.map(p => `${p.x},${p.y}`)).forEach((pStr, index) => {
-            const [pX, pY] = pStr.split(',').map(Number);
-            addPreview(`brush-${index}`, () => renderBrushPreview(pX, pY, color, isEraser));
+        const symPoints = getSymmetryPoints(hoveredCell.x, hoveredCell.y);
+        symPoints.forEach((p, index) => {
+            addPreview(`brush-${index}`, () => renderBrushPreview(p.x, p.y, color, isEraser));
         });
     }
 
     if (activeTool === 'fill-row') {
         const offset = Math.floor((rowFillSize - 1) / 2);
-        
         const mainY = hoveredCell.y - offset;
         const mainRectY = Math.max(0, mainY);
         const mainRectH = Math.min(mainY + rowFillSize, height) - mainRectY;
@@ -379,7 +336,6 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
 
     if (activeTool === 'fill-column') {
         const offset = Math.floor((colFillSize - 1) / 2);
-        
         const mainX = hoveredCell.x - offset;
         const mainRectX = Math.max(0, mainX);
         const mainRectW = Math.min(mainX + colFillSize, width) - mainRectX;
@@ -458,19 +414,17 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
             </pattern>
         </defs>
 
-        {/* Ruler Backgrounds */}
         <rect x={0} y={0} width={svgTotalWidth} height={RULER_SIZE} fill="#f8f9fa" />
         <rect x={0} y={0} width={RULER_SIZE} height={svgTotalHeight} fill="#f8f9fa" />
         <rect x={RULER_SIZE + width} y={0} width={RULER_SIZE} height={svgTotalHeight} fill="#f8f9fa" />
         <rect x={0} y={height + RULER_SIZE} width={svgTotalWidth} height={RULER_SIZE} fill="#f8f9fa" />
         
-        {/* Grid Area */}
         <g transform={`translate(${RULER_SIZE}, ${RULER_SIZE})`}>
           <rect x={0} y={0} width={width} height={height} fill="#fff" />
-          {temporaryGrid.map((colorId, i) => {
+          {temporaryGrid.map((cell, i) => {
             const x = i % width;
             const y = Math.floor(i / width);
-            const color = colorId ? yarnColorMap.get(colorId) : 'transparent';
+            const color = cell.colorId ? yarnColorMap.get(cell.colorId) : 'transparent';
             return color !== 'transparent' && (
               <rect
                 key={i}
@@ -487,22 +441,18 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
               <rect x="0" y="0" width={width} height={height} fill="url(#grid-pattern)" />
           }
 
-          {/* Hover Previews */}
           {getHoverPreviews()}
         </g>
          
-        {/* Rulers and Lines */}
         <g>
-            {/* Lines separating rulers from grid */}
             <line x1={RULER_SIZE} y1={0} x2={RULER_SIZE} y2={svgTotalHeight} stroke="#ccc" strokeWidth={0.02} />
             <line x1={RULER_SIZE + width} y1={0} x2={RULER_SIZE + width} y2={svgTotalHeight} stroke="#ccc" strokeWidth={0.02} />
             <line x1={0} y1={RULER_SIZE} x2={svgTotalWidth} y2={RULER_SIZE} stroke="#ccc" strokeWidth={0.02} />
             <line x1={0} y1={height + RULER_SIZE} x2={svgTotalWidth} y2={height + RULER_SIZE} stroke="#ccc" strokeWidth={0.02} />
 
-            {/* Top Ruler (Even Numbers) */}
             {Array.from({ length: width }).map((_, i) => {
                 const num = i + 1;
-                if (num % 2 !== 0) return null; // Even numbers only
+                if (num % 2 !== 0) return null; 
                 if (num % stepX !== 0 && stepX > 1) return null;
                 
                 const text = String(num);
@@ -522,10 +472,9 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
                 );
             })}
             
-            {/* Bottom Ruler (Odd Numbers) */}
             {Array.from({ length: width }).map((_, i) => {
                 const num = i + 1;
-                if (num % 2 === 0) return null; // Odd numbers only
+                if (num % 2 === 0) return null; 
                 if (num % stepX !== 0 && stepX > 1) return null;
                 
                 const text = String(num);
@@ -545,10 +494,9 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
                 );
             })}
 
-            {/* Left Ruler (Odd Numbers) */}
             {Array.from({ length: height }).map((_, i) => {
                 const num = i + 1;
-                if (num % 2 === 0) return null; // Odd numbers only
+                if (num % 2 === 0) return null; 
                 if (num % stepY !== 0) return null;
                 
                 const text = String(num);
@@ -568,10 +516,9 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ data, yarnPalette, se
                 );
             })}
 
-            {/* Right Ruler (Even Numbers) */}
             {Array.from({ length: height }).map((_, i) => {
                 const num = i + 1;
-                if (num % 2 !== 0) return null; // Even numbers only
+                if (num % 2 !== 0) return null; 
                 if (num % stepY !== 0) return null;
                 
                 const text = String(num);

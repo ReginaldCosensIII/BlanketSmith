@@ -1,13 +1,27 @@
 
-import { AnyProject, PatternType, PixelGridData, YarnColor } from '../types';
+import { AnyProject, PatternType, PixelGridData, YarnColor, CellData } from '../types';
 import { YARN_PALETTE } from '../constants';
 
 const PROJECTS_KEY = 'blanketsmith_projects';
 
+// Helper to migrate legacy string[] grids to CellData[] grids
+const migrateProjectData = (project: AnyProject): AnyProject => {
+  if (project.type === 'pixel' && project.data && 'grid' in project.data) {
+    const pData = project.data as any;
+    // Check if the grid contains strings or nulls directly (legacy format)
+    if (pData.grid.length > 0 && (typeof pData.grid[0] === 'string' || pData.grid[0] === null) && !pData.grid[0]?.colorId) {
+      // Migrate to object format
+      pData.grid = pData.grid.map((colorId: string | null) => ({ colorId, iconId: undefined }));
+    }
+  }
+  return project;
+};
+
 export const getProjects = (): AnyProject[] => {
   try {
     const projectsJson = localStorage.getItem(PROJECTS_KEY);
-    return projectsJson ? JSON.parse(projectsJson) : [];
+    const projects = projectsJson ? JSON.parse(projectsJson) : [];
+    return projects.map(migrateProjectData);
   } catch (error) {
     console.error('Failed to load projects from localStorage', error);
     return [];
@@ -65,7 +79,8 @@ export const createNewProject = (
         data: {
           width,
           height,
-          grid: Array(width * height).fill(null),
+          // Initialize with CellData objects
+          grid: Array.from({ length: width * height }, () => ({ colorId: null })),
           palette: [],
         }
       };
@@ -78,7 +93,7 @@ export const createNewProject = (
         data: {
           width: 50,
           height: 50,
-          grid: Array(2500).fill(null),
+          grid: Array.from({ length: 2500 }, () => ({ colorId: null })),
           palette: [],
         }
       };
@@ -194,10 +209,13 @@ export const processImageToGrid = (
       if (cell) finalUsedYarnSet.add(cell);
     });
 
+    // Convert string grid to CellData grid
+    const objectGrid = finalGrid.map(colorId => ({ colorId }));
+
     resolve({
       width: gridWidth,
       height: gridHeight,
-      grid: finalGrid,
+      grid: objectGrid,
       palette: Array.from(finalUsedYarnSet),
     });
   });

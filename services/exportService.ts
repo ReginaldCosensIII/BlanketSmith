@@ -1,8 +1,9 @@
+
 // @ts-nocheck
 // This service uses global objects from CDNs (jspdf)
-import { PixelGridData, YarnColor } from '../types';
+import { PixelGridData, YarnColor, CellData } from '../types';
 
-const generateNumberingData = (grid: (string | null)[], width: number, height: number): string[] => {
+const generateNumberingData = (grid: CellData[], width: number, height: number): string[] => {
     const numbers = Array(width * height).fill('');
     for (let y = 0; y < height; y++) {
         let count = 0;
@@ -20,7 +21,7 @@ const generateNumberingData = (grid: (string | null)[], width: number, height: n
 
         for (const x of xCoordinates) {
             const index = y * width + x;
-            const cellColor = grid[index];
+            const cellColor = grid[index].colorId;
 
             if (cellColor === null) {
                 count = 0;
@@ -83,7 +84,6 @@ export const exportPixelGridToPDF = (
           align: 'center', 
           baseline: 'middle',
       };
-      // For multi-digit numbers, reduce character spacing to improve readability in tight columns
       if (text.length > 1) {
           options.charSpace = -0.35;
       }
@@ -95,7 +95,6 @@ export const exportPixelGridToPDF = (
           align: 'center', 
           baseline: 'middle',
       };
-      // For multi-digit numbers, reduce character spacing to improve readability
       if (text.length > 1) {
           options.charSpace = -0.35;
       }
@@ -124,7 +123,8 @@ export const exportPixelGridToPDF = (
   for (let y = 0; y < gridData.height; y++) {
     for (let x = 0; x < gridData.width; x++) {
       const index = y * gridData.width + x;
-      const colorId = gridData.grid[index];
+      const cell = gridData.grid[index];
+      const colorId = cell.colorId;
       const cellX = startX + x * cellSize;
       const cellY = startY + y * cellSize;
       

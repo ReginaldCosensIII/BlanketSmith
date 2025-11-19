@@ -9,10 +9,20 @@ export interface YarnColor {
   rgb: [number, number, number];
 }
 
+export interface CellData {
+  colorId: string | null;
+  iconId?: string; // For future stitch icons
+}
+
+export interface Symmetry {
+    vertical: boolean;
+    horizontal: boolean;
+}
+
 export interface PixelGridData {
   width: number;
   height: number;
-  grid: (string | null)[]; // Array of yarnColor IDs or null for empty
+  grid: CellData[]; 
   palette: string[]; // Array of yarnColor IDs used in the grid
 }
 
