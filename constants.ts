@@ -1,22 +1,22 @@
 import { YarnColor } from './types';
 
 export const YARN_PALETTE: YarnColor[] = [
-  { id: 'yarn-1', brand: 'Stylecraft', name: 'White', hex: '#FFFFFF', rgb: [255, 255, 255] },
-  { id: 'yarn-2', brand: 'Stylecraft', name: 'Cream', hex: '#FDF4DC', rgb: [253, 244, 220] },
-  { id: 'yarn-3', brand: 'Stylecraft', name: 'Silver', hex: '#C0C0C0', rgb: [192, 192, 192] },
-  { id: 'yarn-4', brand: 'Stylecraft', name: 'Graphite', hex: '#5A5A5A', rgb: [90, 90, 90] },
-  { id: 'yarn-5', brand: 'Stylecraft', name: 'Black', hex: '#000000', rgb: [0, 0, 0] },
-  { id: 'yarn-6', brand: 'Stylecraft', name: 'Lipstick', hex: '#C70039', rgb: [199, 0, 57] },
-  { id: 'yarn-7', brand: 'Stylecraft', name: 'Matador', hex: '#B22222', rgb: [178, 34, 34] },
-  { id: 'yarn-8', brand: 'Stylecraft', name: 'Claret', hex: '#7A1F3D', rgb: [122, 31, 61] },
-  { id: 'yarn-9', brand: 'Stylecraft', name: 'Sunshine', hex: '#FFDF00', rgb: [255, 223, 0] },
-  { id: 'yarn-10', brand: 'Stylecraft', name: 'Mustard', hex: '#FFDB58', rgb: [255, 219, 88] },
-  { id: 'yarn-11', brand: 'Stylecraft', name: 'Kelly Green', hex: '#4CBB17', rgb: [76, 187, 23] },
-  { id: 'yarn-12', brand: 'Stylecraft', name: 'Sage', hex: '#9DC183', rgb: [157, 193, 131] },
-  { id: 'yarn-13', brand: 'Stylecraft', name: 'Royal Blue', hex: '#002366', rgb: [0, 35, 102] },
-  { id: 'yarn-14', brand: 'Stylecraft', name: 'Lapis', hex: '#26619C', rgb: [38, 97, 156] },
-  { id: 'yarn-15', brand: 'Stylecraft', name: 'Lavender', hex: '#E6E6FA', rgb: [230, 230, 250] },
-  { id: 'yarn-16', brand: 'Stylecraft', name: 'Deep Purple', hex: '#301934', rgb: [48, 25, 52] },
+  { id: 'yarn-1', brand: 'Stylecraft', name: 'White', hex: '#FFFFFF', rgb: [255, 255, 255], skeinLength: 295 },
+  { id: 'yarn-2', brand: 'Stylecraft', name: 'Cream', hex: '#FDF4DC', rgb: [253, 244, 220], skeinLength: 295 },
+  { id: 'yarn-3', brand: 'Stylecraft', name: 'Silver', hex: '#C0C0C0', rgb: [192, 192, 192], skeinLength: 295 },
+  { id: 'yarn-4', brand: 'Stylecraft', name: 'Graphite', hex: '#5A5A5A', rgb: [90, 90, 90], skeinLength: 295 },
+  { id: 'yarn-5', brand: 'Stylecraft', name: 'Black', hex: '#000000', rgb: [0, 0, 0], skeinLength: 295 },
+  { id: 'yarn-6', brand: 'Stylecraft', name: 'Lipstick', hex: '#C70039', rgb: [199, 0, 57], skeinLength: 295 },
+  { id: 'yarn-7', brand: 'Stylecraft', name: 'Matador', hex: '#B22222', rgb: [178, 34, 34], skeinLength: 295 },
+  { id: 'yarn-8', brand: 'Stylecraft', name: 'Claret', hex: '#7A1F3D', rgb: [122, 31, 61], skeinLength: 295 },
+  { id: 'yarn-9', brand: 'Stylecraft', name: 'Sunshine', hex: '#FFDF00', rgb: [255, 223, 0], skeinLength: 295 },
+  { id: 'yarn-10', brand: 'Stylecraft', name: 'Mustard', hex: '#FFDB58', rgb: [255, 219, 88], skeinLength: 295 },
+  { id: 'yarn-11', brand: 'Stylecraft', name: 'Kelly Green', hex: '#4CBB17', rgb: [76, 187, 23], skeinLength: 295 },
+  { id: 'yarn-12', brand: 'Stylecraft', name: 'Sage', hex: '#9DC183', rgb: [157, 193, 131], skeinLength: 295 },
+  { id: 'yarn-13', brand: 'Stylecraft', name: 'Royal Blue', hex: '#002366', rgb: [0, 35, 102], skeinLength: 295 },
+  { id: 'yarn-14', brand: 'Stylecraft', name: 'Lapis', hex: '#26619C', rgb: [38, 97, 156], skeinLength: 295 },
+  { id: 'yarn-15', brand: 'Stylecraft', name: 'Lavender', hex: '#E6E6FA', rgb: [230, 230, 250], skeinLength: 295 },
+  { id: 'yarn-16', brand: 'Stylecraft', name: 'Deep Purple', hex: '#301934', rgb: [48, 25, 52], skeinLength: 295 },
 ];
 
 export const BLANKET_SIZES = [

@@ -7,6 +7,8 @@ export interface YarnColor {
   name: string;
   hex: string;
   rgb: [number, number, number];
+  skeinLength?: number; // Length in yards
+  yarnWeight?: string; // e.g. 'DK', 'Worsted'
 }
 
 export interface CellData {

@@ -301,7 +301,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
     
     const [mirrorConfirm, setMirrorConfirm] = useState<{isOpen: boolean, direction: MirrorDirection | null}>({isOpen: false, direction: null});
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-    const [settingsForm, setSettingsForm] = useState({ unit: 'in', stitchesPerUnit: 4, rowsPerUnit: 4, hookSize: '' });
+    const [settingsForm, setSettingsForm] = useState({ unit: 'in', stitchesPerUnit: 4, rowsPerUnit: 4, hookSize: '', yarnPerStitch: 1 });
 
     // Color Picker Modal State
     const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
@@ -705,7 +705,8 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
             unit: project?.settings?.unit || 'in',
             stitchesPerUnit: project?.settings?.stitchesPerUnit || 4,
             rowsPerUnit: project?.settings?.rowsPerUnit || 4,
-            hookSize: project?.settings?.hookSize || ''
+            hookSize: project?.settings?.hookSize || '',
+            yarnPerStitch: project?.settings?.yarnPerStitch || 1
         });
         setIsSettingsModalOpen(true);
     };
@@ -761,7 +762,8 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
             brand: 'Custom',
             name: `Custom ${hex}`,
             hex: hex,
-            rgb: [parseInt(hex.slice(1,3), 16), parseInt(hex.slice(3,5), 16), parseInt(hex.slice(5,7), 16)]
+            rgb: [parseInt(hex.slice(1,3), 16), parseInt(hex.slice(3,5), 16), parseInt(hex.slice(5,7), 16)],
+            skeinLength: 295, // Default
         };
         const newPalette = [...project.yarnPalette, newColor];
         dispatch({ type: 'SET_PALETTE', payload: newPalette });
@@ -1137,16 +1139,30 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
 
                     <div>
                          {/* ... Yarn Usage ... */}
-                        <h4 className="font-semibold mb-2 text-gray-700">Yarn Usage</h4>
+                        <h4 className="font-semibold mb-2 text-gray-700">Yarn Usage & Supply</h4>
                         <ul className="text-sm space-y-2">
                         {projectData.palette.sort((a,b) => (yarnUsage.get(b) || 0) - (yarnUsage.get(a) || 0) ).map(yarnId => {
                             const yarn = project.yarnPalette.find(y => y.id === yarnId);
                             if (!yarn) return null;
+                            
+                            const stitchCount = yarnUsage.get(yarnId) || 0;
+                            const yarnPerStitch = project.settings?.yarnPerStitch || 1; // Default 1 inch per stitch
+                            const totalInches = stitchCount * yarnPerStitch;
+                            const totalYards = Math.ceil(totalInches / 36);
+                            const skeinLength = yarn.skeinLength || 295; // Default 295 yards
+                            const skeinsNeeded = Math.ceil(totalYards / skeinLength);
+
                             return (
-                                <li key={yarnId} className="flex items-center gap-2">
-                                    <div className="w-4 h-4 rounded" style={{ backgroundColor: yarn.hex }} />
-                                    <span className="flex-1 text-gray-800">{yarn.name}</span>
-                                    <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-800">{yarnUsage.get(yarnId) || 0}</span>
+                                <li key={yarnId} className="flex flex-col gap-1 border-b border-gray-100 pb-2 last:border-0">
+                                    <div className="flex items-center gap-2">
+                                        <div className="w-4 h-4 rounded" style={{ backgroundColor: yarn.hex }} />
+                                        <span className="flex-1 font-medium text-gray-800">{yarn.name}</span>
+                                        <span className="font-mono bg-gray-100 px-2 py-0.5 rounded text-gray-800">{stitchCount} sts</span>
+                                    </div>
+                                    <div className="flex justify-between text-xs text-gray-500 pl-6">
+                                        <span>Est. {totalYards} yds</span>
+                                        <span className="font-semibold text-indigo-600">{skeinsNeeded} skein{skeinsNeeded !== 1 ? 's' : ''}</span>
+                                    </div>
                                 </li>
                             );
                         })}
@@ -1244,6 +1260,19 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                             />
                              <p className="text-xs text-gray-500 mt-1">Vertical Gauge</p>
                         </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">Avg. Yarn per Stitch (inches)</label>
+                         <input
+                            type="number"
+                            min="0.1"
+                            step="0.1"
+                            value={settingsForm.yarnPerStitch}
+                            onChange={(e) => setSettingsForm({...settingsForm, yarnPerStitch: parseFloat(e.target.value)})}
+                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">Used to calculate total yardage needed.</p>
                     </div>
 
                     <div>
