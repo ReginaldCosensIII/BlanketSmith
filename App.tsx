@@ -1171,8 +1171,22 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                     
                     <div className="pt-4">
                         <h4 className="font-semibold mb-2 text-gray-700">Export</h4>
-                        <div className="flex gap-2">
-                            <Button variant="secondary" onClick={() => exportPixelGridToPDF(project.name, projectData, project.yarnPalette, yarnUsage)}>PDF</Button>
+                        <div className="grid grid-cols-2 gap-2">
+                            <Button 
+                                variant="secondary" 
+                                onClick={() => exportPixelGridToPDF(project.name, projectData, project.yarnPalette, yarnUsage, { forceSinglePage: true })}
+                                title="Best for digital viewing"
+                                className="justify-center text-xs"
+                            >
+                                PDF Overview
+                            </Button>
+                             <Button 
+                                onClick={() => exportPixelGridToPDF(project.name, projectData, project.yarnPalette, yarnUsage, { forceSinglePage: false })}
+                                title="Best for printing"
+                                className="justify-center text-xs"
+                            >
+                                PDF Chart
+                            </Button>
                         </div>
                     </div>
                 </div>

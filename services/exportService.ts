@@ -1,7 +1,32 @@
 
 // @ts-nocheck
-// This service uses global objects from CDNs (jspdf)
 import { PixelGridData, YarnColor, CellData } from '../types';
+
+// Configuration for PDF layout
+const PDF_CONFIG = {
+    pageSize: 'a4',
+    orientation: 'portrait', // We might flip this dynamically
+    margin: 30,
+    headerHeight: 40,
+    minCellSize: 18, // Minimum pixel size in points for readability.
+    fontSize: {
+        title: 24,
+        header: 14,
+        cell: 7,
+        legend: 10,
+        ruler: 8
+    }
+};
+
+const getTextColor = (hex: string): string => {
+    if (!hex) return '#000000';
+    const rgb = parseInt(hex.slice(1), 16);
+    const r = (rgb >> 16) & 0xff;
+    const g = (rgb >> 8) & 0xff;
+    const b = (rgb >> 0) & 0xff;
+    const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    return luma < 128 ? '#FFFFFF' : '#000000';
+};
 
 const generateNumberingData = (grid: CellData[], width: number, height: number): string[] => {
     const numbers = Array(width * height).fill('');
@@ -9,9 +34,9 @@ const generateNumberingData = (grid: CellData[], width: number, height: number):
         let count = 0;
         let currentColor = null;
 
-        // y is 0-indexed. Crochet rows are 1-indexed.
-        // Row 1 (y=0) is odd, Row 2 (y=1) is even.
-        // Even rows should be numbered right-to-left.
+        // Even rows (1-indexed) are numbered Right-to-Left for crochet standard
+        // y=0 is Row 1 (Odd, L->R)
+        // y=1 is Row 2 (Even, R->L)
         const isEvenRow = (y + 1) % 2 === 0;
 
         const xCoordinates = Array.from({ length: width }, (_, i) => i);
@@ -45,141 +70,265 @@ export const exportPixelGridToPDF = (
     projectName: string,
     gridData: PixelGridData,
     yarnPalette: YarnColor[],
-    yarnUsage: Map<string, number>
+    yarnUsage: Map<string, number>,
+    options: { forceSinglePage?: boolean } = {}
 ) => {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({
-    orientation: gridData.width > gridData.height ? 'landscape' : 'portrait',
+    orientation: 'portrait',
     unit: 'pt',
     format: 'a4',
   });
 
   const pageW = doc.internal.pageSize.getWidth();
   const pageH = doc.internal.pageSize.getHeight();
-  const margin = 30;
+  const margin = PDF_CONFIG.margin;
   
   const yarnColorMap = new Map(yarnPalette.map(yc => [yc.id, yc]));
-
-  doc.setFontSize(16);
-  doc.setTextColor('#000000');
-  doc.text(projectName, margin, margin + 10);
-
-  const availableGridW = pageW - margin * 2 - 40; // Space for rulers
-  const availableGridH = pageH - margin * 2 - 120; // Space for title and legend
-  const cellSize = Math.min(availableGridW / gridData.width, availableGridH / gridData.height);
-  const gridWidthPt = gridData.width * cellSize;
-  const gridHeightPt = gridData.height * cellSize;
-
-  const startX = (pageW - gridWidthPt) / 2;
-  const startY = margin + 40;
-  
-  const rulerFontSize = Math.max(6, cellSize * 0.7);
-  doc.setFontSize(rulerFontSize);
-  doc.setTextColor('#555555');
-  
-  // Rulers
-  for (let x = 0; x < gridData.width; x++) {
-      const text = String(x + 1);
-      const options: any = { 
-          align: 'center', 
-          baseline: 'middle',
-      };
-      if (text.length > 1) {
-          options.charSpace = -0.35;
-      }
-      doc.text(text, startX + (x + 0.5) * cellSize, startY + gridHeightPt + cellSize * 1.5, options);
-  }
-  for (let y = 0; y < gridData.height; y++) {
-      const text = String(y + 1);
-      const options: any = { 
-          align: 'center', 
-          baseline: 'middle',
-      };
-      if (text.length > 1) {
-          options.charSpace = -0.35;
-      }
-
-      if ((y + 1) % 2 !== 0) {
-          doc.text(text, startX - cellSize, startY + (y + 0.5) * cellSize, options);
-      } else {
-          doc.text(text, startX + gridWidthPt + cellSize, startY + (y + 0.5) * cellSize, options);
-      }
-  }
-
-  // Grid & Numbers
   const numbering = generateNumberingData(gridData.grid, gridData.width, gridData.height);
-  const getTextColor = (hex: string): string => {
-    if (!hex) return '#000000';
-    const rgb = parseInt(hex.slice(1), 16);
-    const r = (rgb >> 16) & 0xff;
-    const g = (rgb >> 8) & 0xff;
-    const b = (rgb >> 0) & 0xff;
-    const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-    return luma < 128 ? '#FFFFFF' : '#000000';
-  };
-  
-  doc.setFontSize(Math.max(4, cellSize * 0.6));
 
-  for (let y = 0; y < gridData.height; y++) {
-    for (let x = 0; x < gridData.width; x++) {
-      const index = y * gridData.width + x;
-      const cell = gridData.grid[index];
-      const colorId = cell.colorId;
-      const cellX = startX + x * cellSize;
-      const cellY = startY + y * cellSize;
+  // --- STEP 1: CALCULATE LAYOUT ---
+  // Determine if we need to paginate
+  const availableW = pageW - margin * 2;
+  const availableH = pageH - margin * 2 - 60; // Minus header
+
+  // Calculate ideal single-page size
+  const singlePageCellW = (availableW - 40) / gridData.width; // -40 for rulers
+  const singlePageCellH = (availableH - 40) / gridData.height;
+  const singlePageCellSize = Math.min(singlePageCellW, singlePageCellH);
+
+  let pagesX = 1;
+  let pagesY = 1;
+  let cellSize = singlePageCellSize;
+
+  // If cells are too small AND we are NOT forcing single page, we paginate
+  if (singlePageCellSize < PDF_CONFIG.minCellSize && !options.forceSinglePage) {
+      cellSize = PDF_CONFIG.minCellSize;
+      // How many cells fit on a page?
+      const cellsPerW = Math.floor((availableW - 40) / cellSize); // -40 for Rulers
+      const cellsPerH = Math.floor((availableH - 40) / cellSize);
       
-      doc.setDrawColor('#BBBBBB');
-      doc.rect(cellX, cellY, cellSize, cellSize, 'S');
-
-      if (colorId) {
-        const color = yarnColorMap.get(colorId);
-        if (color) {
-          doc.setFillColor(color.hex);
-          doc.rect(cellX, cellY, cellSize, cellSize, 'F');
-          
-          const textColor = getTextColor(color.hex);
-          doc.setTextColor(textColor);
-          doc.text(numbering[index], cellX + cellSize / 2, cellY + cellSize / 2, { align: 'center', baseline: 'middle' });
-        }
-      }
-    }
+      pagesX = Math.ceil(gridData.width / cellsPerW);
+      pagesY = Math.ceil(gridData.height / cellsPerH);
   }
 
-  // Legend
-  let legendY = startY + gridHeightPt + cellSize * 2.5 + 20;
-  doc.setTextColor('#000000');
-  doc.setFontSize(12);
-  doc.text('Legend & Yarn Count', margin, legendY);
-  legendY += 20;
-  doc.setFontSize(9);
+  // --- STEP 2: GENERATE COVER PAGE (Only for Multi-Page or if forcing single page but with extra info) ---
+  // For Overview mode, we might just put everything on one page if possible, but consistent Cover Page is nice.
   
-  let legendX = margin;
-  const colorSwatchSize = 10;
-  const colWidth = (pageW - margin*2) / 3;
-  const rowHeight = 15;
-  let colIndex = 0;
-  const itemsPerCol = Math.floor((pageH - legendY - margin) / rowHeight);
-  let itemCount = 0;
+  doc.setFontSize(PDF_CONFIG.fontSize.title);
+  doc.text(projectName, margin, margin + 20);
+  
+  doc.setFontSize(12);
+  doc.text(`Dimensions: ${gridData.width} x ${gridData.height} stitches`, margin, margin + 50);
+  doc.text(`Generated by BlanketSmith`, margin, margin + 65);
+  if (options.forceSinglePage) {
+       doc.setTextColor(100);
+       doc.text("(Overview Mode)", margin + 200, margin + 20);
+       doc.setTextColor(0);
+  }
 
-  gridData.palette.sort((a,b) => (yarnUsage.get(b) || 0) - (yarnUsage.get(a) || 0) ).forEach(yarnId => {
-    const yarn = yarnColorMap.get(yarnId);
-    if (yarn) {
-        if(itemCount > 0 && itemCount % itemsPerCol === 0){
-            colIndex++;
-            legendX = margin + colIndex * colWidth;
-            legendY -= itemsPerCol * rowHeight;
-        }
-        
-        doc.setFillColor(yarn.hex);
-        doc.setDrawColor('#000000');
-        doc.rect(legendX, legendY - colorSwatchSize, colorSwatchSize, colorSwatchSize, 'FD');
+  // Draw Yarn Legend on Cover Page
+  let legendY = margin + 100;
+  doc.setFontSize(14);
+  doc.text("Yarn Requirements", margin, legendY);
+  legendY += 20;
 
-        const legendText = `${yarn.name}: ${yarnUsage.get(yarnId) || 0}`;
-        doc.text(legendText, legendX + colorSwatchSize + 5, legendY - 1);
-        legendY += rowHeight;
-        itemCount++;
-    }
+  const swatchSize = 15;
+  doc.setFontSize(10);
+  
+  // Sort by usage
+  const sortedYarns = gridData.palette
+    .sort((a,b) => (yarnUsage.get(b) || 0) - (yarnUsage.get(a) || 0));
+
+  sortedYarns.forEach(yarnId => {
+      const yarn = yarnColorMap.get(yarnId);
+      const count = yarnUsage.get(yarnId) || 0;
+      // Simple yarn estimation (assuming 1 inch per stitch, 36 inches per yard)
+      const estYards = Math.ceil((count * 1) / 36); 
+      
+      if (yarn) {
+          if (legendY > pageH - margin) {
+              doc.addPage();
+              legendY = margin;
+          }
+          
+          doc.setFillColor(yarn.hex);
+          doc.setDrawColor(0);
+          doc.rect(margin, legendY, swatchSize, swatchSize, 'FD');
+          
+          doc.text(`${yarn.name} (${yarn.brand})`, margin + 25, legendY + 11);
+          doc.text(`${count} sts  |  ~${estYards} yds`, margin + 200, legendY + 11);
+          
+          legendY += 25;
+      }
   });
+  
+  // Draw "Mini Map" if multipage (Just strictly multipage check)
+  if (pagesX > 1 || pagesY > 1) {
+      // Only draw if we have space on the cover, otherwise skip or add new page
+      if (legendY + 150 < pageH) {
+           const mapY = legendY + 40;
+           doc.setFontSize(14);
+           doc.text("Pattern Overview", margin, mapY - 10);
+           
+           const mapW = Math.min(300, pageW - margin*2);
+           const mapScale = mapW / gridData.width;
+           const mapH = gridData.height * mapScale;
+           
+           for (let y = 0; y < gridData.height; y++) {
+               for (let x = 0; x < gridData.width; x++) {
+                   const cell = gridData.grid[y * gridData.width + x];
+                   if (cell.colorId) {
+                       const c = yarnColorMap.get(cell.colorId);
+                       if (c) {
+                           doc.setFillColor(c.hex);
+                           // Draw tiny rectangles without stroke for speed/look
+                           doc.rect(margin + x * mapScale, mapY + y * mapScale, mapScale, mapScale, 'F');
+                       }
+                   }
+               }
+           }
+           // Draw Page Grid Overlay on Mini Map
+           doc.setDrawColor(0);
+           doc.setLineWidth(1);
+           const cellsPerW = Math.floor((availableW - 40) / cellSize);
+           const cellsPerH = Math.floor((availableH - 40) / cellSize);
+           
+           for(let py = 0; py < pagesY; py++) {
+               for(let px = 0; px < pagesX; px++) {
+                   const sx = px * cellsPerW;
+                   const sy = py * cellsPerH;
+                   const w = Math.min(cellsPerW, gridData.width - sx);
+                   const h = Math.min(cellsPerH, gridData.height - sy);
+                   
+                   doc.rect(
+                       margin + sx * mapScale, 
+                       mapY + sy * mapScale, 
+                       w * mapScale, 
+                       h * mapScale, 
+                       'S'
+                   );
+                   
+                   // Label page number
+                   const pageNum = (py * pagesX) + px + 1;
+                   doc.setFontSize(10);
+                   doc.setTextColor('#FF0000');
+                   doc.text(
+                       String(pageNum), 
+                       margin + (sx + w/2) * mapScale, 
+                       mapY + (sy + h/2) * mapScale, 
+                       { align: 'center', baseline: 'middle' }
+                   );
+                   doc.setTextColor(0);
+               }
+           }
+      }
+  }
 
-  doc.save(`${projectName}_pattern.pdf`);
+  // --- STEP 3: GENERATE PATTERN PAGES ---
+  // If we force single page, we treat it as 1x1 pages, but we add a new page for it if the cover page was taken up.
+  if (options.forceSinglePage) {
+      doc.addPage();
+  }
+
+  const cellsPerW = options.forceSinglePage ? gridData.width : Math.floor((availableW - 40) / cellSize);
+  const cellsPerH = options.forceSinglePage ? gridData.height : Math.floor((availableH - 40) / cellSize);
+
+  for (let py = 0; py < pagesY; py++) {
+      for (let px = 0; px < pagesX; px++) {
+          if (!options.forceSinglePage) doc.addPage(); // In multipage, every chunk is a new page. In single page, we added it above.
+          
+          // Calculate slice
+          const startX = px * cellsPerW;
+          const startY = py * cellsPerH;
+          const endX = Math.min(startX + cellsPerW, gridData.width);
+          const endY = Math.min(startY + cellsPerH, gridData.height);
+          
+          const sliceW = endX - startX;
+          const sliceH = endY - startY;
+          
+          // Center on page
+          const drawX = margin + 40; // Room for Left Ruler
+          const drawY = margin + 30; // Room for Top Ruler
+          
+          // Page Header
+          doc.setFontSize(10);
+          if (options.forceSinglePage) {
+               doc.text(`Full Pattern Chart`, margin, margin);
+          } else {
+               doc.text(`Page ${((py * pagesX) + px + 1)} of ${pagesX * pagesY}`, margin, margin);
+               doc.text(`Cols ${startX+1}-${endX} | Rows ${startY+1}-${endY}`, pageW - margin, margin, { align: 'right' });
+          }
+
+          doc.setFontSize(PDF_CONFIG.fontSize.ruler);
+          
+          // Only show detailed rulers if cells are big enough
+          const showRulers = cellSize > 5; 
+
+          if (showRulers) {
+              // Top Ruler
+              for (let i = 0; i < sliceW; i++) {
+                  const gridX = startX + i;
+                  if (i % 5 === 0) // Optimize: Only draw every 5th number if small
+                    doc.text(String(gridX + 1), drawX + (i + 0.5) * cellSize, drawY - 5, { align: 'center' });
+              }
+              
+              // Left Ruler
+              for (let i = 0; i < sliceH; i++) {
+                  const gridY = startY + i;
+                  if (i % 5 === 0)
+                    doc.text(String(gridY + 1), drawX - 5, drawY + (i + 0.5) * cellSize, { align: 'right', baseline: 'middle' });
+              }
+          }
+
+          // Draw Grid
+          // Don't render text numbers if cells are tiny (Overview Mode)
+          const renderNumbers = cellSize >= 10;
+
+          doc.setLineWidth(0.5);
+          doc.setDrawColor('#CCCCCC');
+
+          for (let y = 0; y < sliceH; y++) {
+              for (let x = 0; x < sliceW; x++) {
+                  const gridX = startX + x;
+                  const gridY = startY + y;
+                  const index = gridY * gridData.width + gridX;
+                  const cell = gridData.grid[index];
+                  
+                  const cx = drawX + x * cellSize;
+                  const cy = drawY + y * cellSize;
+                  
+                  // Draw Cell Background
+                  doc.setFillColor(255, 255, 255);
+                  if (cell.colorId) {
+                      const c = yarnColorMap.get(cell.colorId);
+                      if (c) doc.setFillColor(c.hex);
+                  }
+                  doc.rect(cx, cy, cellSize, cellSize, 'FD');
+                  
+                  // Draw Number
+                  if (renderNumbers && cell.colorId) {
+                      const c = yarnColorMap.get(cell.colorId);
+                      const textColor = c ? getTextColor(c.hex) : '#000000';
+                      doc.setTextColor(textColor);
+                      doc.setFontSize(cellSize * 0.6);
+                      doc.text(
+                          numbering[index], 
+                          cx + cellSize/2, 
+                          cy + cellSize/2, 
+                          { align: 'center', baseline: 'middle' }
+                      );
+                  }
+              }
+          }
+          
+          // Reset text color
+          doc.setTextColor(0);
+      }
+  }
+
+  const fileName = options.forceSinglePage 
+    ? `${projectName}_overview.pdf`
+    : `${projectName}_chart.pdf`;
+  doc.save(fileName);
 };
