@@ -23,15 +23,15 @@ interface PixelGridEditorProps {
   symmetry: Symmetry;
   zoom: number;
   onZoomChange: (newZoom: number) => void;
-  // Phase 4 Props
   showCenterGuides: boolean;
   selection: { x: number, y: number, w: number, h: number } | null;
   onSelectionChange: (sel: { x: number, y: number, w: number, h: number } | null) => void;
+  onContextMenu: (x: number, y: number) => void;
 }
 
 const RULER_SIZE = 2;
 
-const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ 
+export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({ 
   data, 
   yarnPalette, 
   primaryColorId, 
@@ -50,7 +50,8 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
   onZoomChange,
   showCenterGuides,
   selection,
-  onSelectionChange
+  onSelectionChange,
+  onContextMenu
 }) => {
   const { width, height, grid } = data;
   const containerRef = useRef<HTMLDivElement>(null);
@@ -67,14 +68,31 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
   
   const { getSymmetryPoints, getBrushPoints } = useCanvasLogic(width, height, symmetry);
 
-  // Initial Zoom calculation
+  // Initial Zoom calculation - FIXED: Added missing logic
   useLayoutEffect(() => {
     const container = containerRef.current;
     if (container && zoom === 1) { 
-       // Only auto-fit if zoom is default/reset
-       // Logic removed to prevent Error #185 loop, relies on manual or parent init
+        const rect = container.getBoundingClientRect();
+        if (rect.width > 0 && rect.height > 0) {
+            const svgTotalWidth = width + RULER_SIZE * 2;
+            const svgTotalHeight = height + RULER_SIZE * 2;
+            
+            // Calculate ratios to fit with padding
+            const fitW = (rect.width - 40) / svgTotalWidth;
+            const fitH = (rect.height - 40) / svgTotalHeight;
+            
+            let newZoom = Math.min(fitW, fitH);
+            
+            // Clamp zoom to reasonable limits
+            newZoom = Math.max(0.5, Math.min(newZoom, 20));
+            
+            // Apply
+            if (Math.abs(newZoom - zoom) > 0.1) {
+                onZoomChange(newZoom);
+            }
+        }
     }
-  }, [width, height]);
+  }, [width, height]); // Only re-run if dimensions change
   
   const getMousePosition = (e: React.MouseEvent | React.TouchEvent) => {
     if (!svgRef.current) return { x: 0, y: 0 };
@@ -151,12 +169,17 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const gridX = Math.floor(x - RULER_SIZE);
     const gridY = Math.floor(y - RULER_SIZE);
 
-    // --- SELECTION TOOL LOGIC ---
     if (activeTool === 'select') {
+        if (isRightClick) {
+            if ('clientX' in e) {
+                onContextMenu(e.clientX, e.clientY);
+            }
+            return;
+        }
+        
         if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height) {
-            setIsDrawing(true); // reuse drawing state for dragging
+            setIsDrawing(true); 
             setSelectionStart({ x: gridX, y: gridY });
-            // Start new selection of 1x1
             onSelectionChange({ x: gridX, y: gridY, w: 1, h: 1 });
         } else {
             onSelectionChange(null);
@@ -177,7 +200,6 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
   };
 
   const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
-     // Pinch Logic
      if ('touches' in e.nativeEvent && e.nativeEvent.touches.length === 2 && pinchDistRef.current !== null) {
         e.preventDefault();
         const container = containerRef.current;
@@ -222,12 +244,10 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
       setHoveredCell({ x: gridX, y: gridY });
     }
     
-    // --- SELECTION DRAG LOGIC ---
     if (isDrawing && activeTool === 'select' && selectionStart) {
         const startX = selectionStart.x;
         const startY = selectionStart.y;
         
-        // Clamp to grid bounds
         const currentX = Math.max(0, Math.min(width - 1, gridX));
         const currentY = Math.max(0, Math.min(height - 1, gridY));
         
@@ -384,12 +404,10 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
   const getHoverPreviews = () => {
     if (!hoveredCell || isDrawing) return null;
-
     const previews: React.ReactNode[] = [];
     const color = primaryColorId ? yarnColorMap.get(primaryColorId) : '#ff0000';
     const isEraser = primaryColorId === null;
     const fillOpacity = isEraser ? 0.4 : 0.6;
-
     const addPreview = (previewKey: string, generator: () => React.ReactNode | React.ReactNode[]) => {
       previews.push(<g key={previewKey}>{generator()}</g>);
     };
@@ -436,7 +454,6 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             const textElements: React.ReactNode[] = [];
             let currentX = hoveredCell.x;
             const startY = hoveredCell.y;
-
             textToolInput.toUpperCase().split('').forEach((char, charIndex) => {
                 const charData = PIXEL_FONT[char];
                 if (charData) {
@@ -466,10 +483,7 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         });
     }
 
-    return <g style={{ pointerEvents: 'none' }}>{previews}</g>;
-  };
-
-  return (
+    return (
     <div
       ref={containerRef}
       className="w-full h-full bg-gray-200 overflow-auto grid place-items-center touch-none"
@@ -537,7 +551,6 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
               <rect x="0" y="0" width={width} height={height} fill="url(#grid-pattern)" />
           }
 
-          {/* CENTER GUIDES */}
           {showCenterGuides && (
               <g pointerEvents="none">
                   <line 
@@ -553,7 +566,6 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
           {getHoverPreviews()}
 
-          {/* SELECTION MARQUEE */}
           {selection && (
               <rect 
                 x={selection.x} 
@@ -567,7 +579,6 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         </g>
          
         <g>
-            {/* Ruler Background Lines */}
             <line x1={RULER_SIZE} y1={0} x2={RULER_SIZE} y2={svgTotalHeight} stroke="#ccc" strokeWidth={0.02} />
             <line x1={RULER_SIZE + width} y1={0} x2={RULER_SIZE + width} y2={svgTotalHeight} stroke="#ccc" strokeWidth={0.02} />
             <line x1={0} y1={RULER_SIZE} x2={svgTotalWidth} y2={RULER_SIZE} stroke="#ccc" strokeWidth={0.02} />
@@ -657,5 +668,3 @@ const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     </div>
   );
 };
-
-export default PixelGridEditor;

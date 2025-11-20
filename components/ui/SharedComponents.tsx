@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 export const Icon: React.FC<{ name: string; className?: string }> = ({ name, className = 'w-6 h-6' }) => {
   const icons: { [key: string]: React.ReactNode } = {
@@ -28,6 +28,7 @@ export const Icon: React.FC<{ name: string; className?: string }> = ({ name, cla
     'mirror-r-l': <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v18m3-9h-1.5m-1.5 0H9m-3 0l3 3m0 0l3-3m-3 3V9" />,
     'mirror-t-b': <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18m-9-3v1.5m0 1.5v1.5m0 3l3-3m0 0l-3-3m3 3H9" />,
     'mirror-b-t': <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18m-9 3v-1.5m0-1.5V9m0-3l3 3m0 0l-3 3m3-3H9" />,
+    'plus': <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />,
   };
 
   return (
@@ -69,5 +70,68 @@ export const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: stri
         </div>
       </div>
     </div>
+  );
+};
+
+export interface ContextMenuItem {
+  label: string;
+  action: () => void;
+  shortcut?: string;
+  separator?: boolean;
+}
+
+export const ContextMenu: React.FC<{
+  x: number;
+  y: number;
+  options: ContextMenuItem[];
+  onClose: () => void;
+}> = ({ x, y, options, onClose }) => {
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+    // Delay attaching to avoid immediate close from trigger click
+    setTimeout(() => {
+        document.addEventListener('click', handleClickOutside);
+        document.addEventListener('contextmenu', handleClickOutside);
+    }, 0);
+    
+    return () => {
+      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('contextmenu', handleClickOutside);
+    };
+  }, [onClose]);
+
+  return (
+    <>
+        <div className="fixed inset-0 z-40" onClick={onClose} onContextMenu={(e) => { e.preventDefault(); onClose(); }}></div>
+        <div 
+        ref={menuRef}
+        className="fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px]"
+        style={{ top: y, left: x }}
+        >
+        {options.map((option, index) => (
+            option.separator ? (
+                <div key={index} className="border-t border-gray-200 my-1"></div>
+            ) : (
+                <button
+                key={index}
+                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex justify-between items-center"
+                onClick={() => {
+                    option.action();
+                    onClose();
+                }}
+                >
+                <span>{option.label}</span>
+                {option.shortcut && <span className="text-xs text-gray-400 ml-4">{option.shortcut}</span>}
+                </button>
+            )
+        ))}
+        </div>
+    </>
   );
 };
