@@ -5,10 +5,10 @@ import { PixelGridData, YarnColor, CellData } from '../types';
 // Configuration for PDF layout
 const PDF_CONFIG = {
     pageSize: 'a4',
-    orientation: 'portrait', // We might flip this dynamically
+    orientation: 'portrait',
     margin: 30,
     headerHeight: 40,
-    minCellSize: 18, // Minimum pixel size in points for readability.
+    minCellSize: 18, 
     fontSize: {
         title: 24,
         header: 14,
@@ -28,19 +28,31 @@ const getTextColor = (hex: string): string => {
     return luma < 128 ? '#FFFFFF' : '#000000';
 };
 
-const generateNumberingData = (grid: CellData[], width: number, height: number): string[] => {
+const generateNumberingData = (grid: CellData[], width: number, height: number, isLeftHanded: boolean): string[] => {
     const numbers = Array(width * height).fill('');
     for (let y = 0; y < height; y++) {
         let count = 0;
         let currentColor = null;
 
-        // Even rows (1-indexed) are numbered Right-to-Left for crochet standard
-        // y=0 is Row 1 (Odd, L->R)
-        // y=1 is Row 2 (Even, R->L)
-        const isEvenRow = (y + 1) % 2 === 0;
+        // Numbering Direction Logic:
+        // Standard (Right-Handed):
+        //   Row 1 (Odd): Left -> Right (indices increase) [User Spec: "Odd numbers on Left"]
+        //   Row 2 (Even): Right -> Left (indices decrease) [User Spec: "Even numbers on Right"]
+        
+        // Left-Handed (Mirrored):
+        //   Row 1 (Odd): Right -> Left (indices decrease)
+        //   Row 2 (Even): Left -> Right (indices increase)
+
+        const rowNumber = y + 1;
+        const isOddRow = rowNumber % 2 !== 0;
+        
+        // Determine if we should reverse the x-coordinates (count Right-to-Left)
+        // Default: Even rows reverse.
+        // Left-Handed: Odd rows reverse.
+        const shouldReverse = isLeftHanded ? isOddRow : !isOddRow;
 
         const xCoordinates = Array.from({ length: width }, (_, i) => i);
-        if (isEvenRow) {
+        if (shouldReverse) {
             xCoordinates.reverse();
         }
 
@@ -71,7 +83,9 @@ export const exportPixelGridToPDF = (
     gridData: PixelGridData,
     yarnPalette: YarnColor[],
     yarnUsage: Map<string, number>,
-    options: { forceSinglePage?: boolean } = {}
+    options: { forceSinglePage?: boolean } = {},
+    projectSettings: any = {},
+    isLeftHanded: boolean = false
 ) => {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({
@@ -85,15 +99,13 @@ export const exportPixelGridToPDF = (
   const margin = PDF_CONFIG.margin;
   
   const yarnColorMap = new Map(yarnPalette.map(yc => [yc.id, yc]));
-  const numbering = generateNumberingData(gridData.grid, gridData.width, gridData.height);
+  const numbering = generateNumberingData(gridData.grid, gridData.width, gridData.height, isLeftHanded);
 
   // --- STEP 1: CALCULATE LAYOUT ---
-  // Determine if we need to paginate
   const availableW = pageW - margin * 2;
-  const availableH = pageH - margin * 2 - 60; // Minus header
+  const availableH = pageH - margin * 2 - 60; 
 
-  // Calculate ideal single-page size
-  const singlePageCellW = (availableW - 40) / gridData.width; // -40 for rulers
+  const singlePageCellW = (availableW - 40) / gridData.width; 
   const singlePageCellH = (availableH - 40) / gridData.height;
   const singlePageCellSize = Math.min(singlePageCellW, singlePageCellH);
 
@@ -101,20 +113,16 @@ export const exportPixelGridToPDF = (
   let pagesY = 1;
   let cellSize = singlePageCellSize;
 
-  // If cells are too small AND we are NOT forcing single page, we paginate
   if (singlePageCellSize < PDF_CONFIG.minCellSize && !options.forceSinglePage) {
       cellSize = PDF_CONFIG.minCellSize;
-      // How many cells fit on a page?
-      const cellsPerW = Math.floor((availableW - 40) / cellSize); // -40 for Rulers
+      const cellsPerW = Math.floor((availableW - 40) / cellSize); 
       const cellsPerH = Math.floor((availableH - 40) / cellSize);
       
       pagesX = Math.ceil(gridData.width / cellsPerW);
       pagesY = Math.ceil(gridData.height / cellsPerH);
   }
 
-  // --- STEP 2: GENERATE COVER PAGE (Only for Multi-Page or if forcing single page but with extra info) ---
-  // For Overview mode, we might just put everything on one page if possible, but consistent Cover Page is nice.
-  
+  // --- STEP 2: GENERATE COVER PAGE ---
   doc.setFontSize(PDF_CONFIG.fontSize.title);
   doc.text(projectName, margin, margin + 20);
   
@@ -126,8 +134,13 @@ export const exportPixelGridToPDF = (
        doc.text("(Overview Mode)", margin + 200, margin + 20);
        doc.setTextColor(0);
   }
+  if (isLeftHanded) {
+      doc.setTextColor(100);
+      doc.text("(Left-Handed Mode)", margin + 200, margin + 35);
+      doc.setTextColor(0);
+  }
 
-  // Draw Yarn Legend on Cover Page
+  // Draw Yarn Legend
   let legendY = margin + 100;
   doc.setFontSize(14);
   doc.text("Yarn Requirements", margin, legendY);
@@ -136,15 +149,24 @@ export const exportPixelGridToPDF = (
   const swatchSize = 15;
   doc.setFontSize(10);
   
-  // Sort by usage
   const sortedYarns = gridData.palette
     .sort((a,b) => (yarnUsage.get(b) || 0) - (yarnUsage.get(a) || 0));
+    
+  // Header for legend
+  doc.setFont("helvetica", "bold");
+  doc.text("Color", margin + 25, legendY);
+  doc.text("Details", margin + 150, legendY);
+  doc.text("Usage", margin + 350, legendY);
+  doc.setFont("helvetica", "normal");
+  legendY += 15;
 
   sortedYarns.forEach(yarnId => {
       const yarn = yarnColorMap.get(yarnId);
       const count = yarnUsage.get(yarnId) || 0;
-      // Simple yarn estimation (assuming 1 inch per stitch, 36 inches per yard)
-      const estYards = Math.ceil((count * 1) / 36); 
+      
+      const yarnPerStitch = projectSettings?.yarnPerStitch || 1;
+      const totalYards = Math.ceil((count * yarnPerStitch) / 36);
+      const skeinsNeeded = Math.ceil(totalYards / (yarn?.skeinLength || 295));
       
       if (yarn) {
           if (legendY > pageH - margin) {
@@ -156,16 +178,18 @@ export const exportPixelGridToPDF = (
           doc.setDrawColor(0);
           doc.rect(margin, legendY, swatchSize, swatchSize, 'FD');
           
-          doc.text(`${yarn.name} (${yarn.brand})`, margin + 25, legendY + 11);
-          doc.text(`${count} sts  |  ~${estYards} yds`, margin + 200, legendY + 11);
+          doc.text(`${yarn.name}`, margin + 25, legendY + 11);
+          doc.setFontSize(8);
+          doc.text(`${yarn.brand} | ${yarn.yarnWeight || 'DK'}`, margin + 150, legendY + 11);
+          doc.setFontSize(10);
+          doc.text(`${count} sts  |  ${totalYards} yds  |  ${skeinsNeeded} skein${skeinsNeeded !== 1 ? 's' : ''}`, margin + 350, legendY + 11);
           
           legendY += 25;
       }
   });
   
-  // Draw "Mini Map" if multipage (Just strictly multipage check)
+  // Mini Map for Multipage
   if (pagesX > 1 || pagesY > 1) {
-      // Only draw if we have space on the cover, otherwise skip or add new page
       if (legendY + 150 < pageH) {
            const mapY = legendY + 40;
            doc.setFontSize(14);
@@ -173,7 +197,6 @@ export const exportPixelGridToPDF = (
            
            const mapW = Math.min(300, pageW - margin*2);
            const mapScale = mapW / gridData.width;
-           const mapH = gridData.height * mapScale;
            
            for (let y = 0; y < gridData.height; y++) {
                for (let x = 0; x < gridData.width; x++) {
@@ -182,13 +205,13 @@ export const exportPixelGridToPDF = (
                        const c = yarnColorMap.get(cell.colorId);
                        if (c) {
                            doc.setFillColor(c.hex);
-                           // Draw tiny rectangles without stroke for speed/look
                            doc.rect(margin + x * mapScale, mapY + y * mapScale, mapScale, mapScale, 'F');
                        }
                    }
                }
            }
-           // Draw Page Grid Overlay on Mini Map
+           
+           // Grid Overlay
            doc.setDrawColor(0);
            doc.setLineWidth(1);
            const cellsPerW = Math.floor((availableW - 40) / cellSize);
@@ -201,24 +224,12 @@ export const exportPixelGridToPDF = (
                    const w = Math.min(cellsPerW, gridData.width - sx);
                    const h = Math.min(cellsPerH, gridData.height - sy);
                    
-                   doc.rect(
-                       margin + sx * mapScale, 
-                       mapY + sy * mapScale, 
-                       w * mapScale, 
-                       h * mapScale, 
-                       'S'
-                   );
+                   doc.rect(margin + sx * mapScale, mapY + sy * mapScale, w * mapScale, h * mapScale, 'S');
                    
-                   // Label page number
                    const pageNum = (py * pagesX) + px + 1;
                    doc.setFontSize(10);
                    doc.setTextColor('#FF0000');
-                   doc.text(
-                       String(pageNum), 
-                       margin + (sx + w/2) * mapScale, 
-                       mapY + (sy + h/2) * mapScale, 
-                       { align: 'center', baseline: 'middle' }
-                   );
+                   doc.text(String(pageNum), margin + (sx + w/2) * mapScale, mapY + (sy + h/2) * mapScale, { align: 'center', baseline: 'middle' });
                    doc.setTextColor(0);
                }
            }
@@ -226,7 +237,6 @@ export const exportPixelGridToPDF = (
   }
 
   // --- STEP 3: GENERATE PATTERN PAGES ---
-  // If we force single page, we treat it as 1x1 pages, but we add a new page for it if the cover page was taken up.
   if (options.forceSinglePage) {
       doc.addPage();
   }
@@ -236,9 +246,8 @@ export const exportPixelGridToPDF = (
 
   for (let py = 0; py < pagesY; py++) {
       for (let px = 0; px < pagesX; px++) {
-          if (!options.forceSinglePage) doc.addPage(); // In multipage, every chunk is a new page. In single page, we added it above.
+          if (!options.forceSinglePage) doc.addPage(); 
           
-          // Calculate slice
           const startX = px * cellsPerW;
           const startY = py * cellsPerH;
           const endX = Math.min(startX + cellsPerW, gridData.width);
@@ -247,11 +256,9 @@ export const exportPixelGridToPDF = (
           const sliceW = endX - startX;
           const sliceH = endY - startY;
           
-          // Center on page
-          const drawX = margin + 40; // Room for Left Ruler
-          const drawY = margin + 30; // Room for Top Ruler
+          const drawX = margin + 40; 
+          const drawY = margin + 30; 
           
-          // Page Header
           doc.setFontSize(10);
           if (options.forceSinglePage) {
                doc.text(`Full Pattern Chart`, margin, margin);
@@ -261,32 +268,43 @@ export const exportPixelGridToPDF = (
           }
 
           doc.setFontSize(PDF_CONFIG.fontSize.ruler);
-          
-          // Only show detailed rulers if cells are big enough
           const showRulers = cellSize > 5; 
 
           if (showRulers) {
-              // Top Ruler
+              // Column Numbers (Top)
               for (let i = 0; i < sliceW; i++) {
                   const gridX = startX + i;
-                  if (i % 5 === 0) // Optimize: Only draw every 5th number if small
+                  if (i % 5 === 0 || options.forceSinglePage) // Show more frequently
                     doc.text(String(gridX + 1), drawX + (i + 0.5) * cellSize, drawY - 5, { align: 'center' });
               }
               
-              // Left Ruler
+              // Row Numbers (Sides)
               for (let i = 0; i < sliceH; i++) {
                   const gridY = startY + i;
-                  if (i % 5 === 0)
-                    doc.text(String(gridY + 1), drawX - 5, drawY + (i + 0.5) * cellSize, { align: 'right', baseline: 'middle' });
+                  const rowNum = gridY + 1;
+                  const isOdd = rowNum % 2 !== 0;
+                  
+                  // Logic for Side Placement
+                  // Default: Odd on Left, Even on Right
+                  // Left-Handed: Odd on Right, Even on Left
+                  
+                  const showOnLeft = isLeftHanded ? !isOdd : isOdd;
+                  
+                  if (showOnLeft) {
+                       doc.text(String(rowNum), drawX - 5, drawY + (i + 0.5) * cellSize, { align: 'right', baseline: 'middle' });
+                  } else {
+                       // Show on Right
+                       // The right edge of the grid slice is at: drawX + (sliceW * cellSize)
+                       doc.text(String(rowNum), drawX + (sliceW * cellSize) + 5, drawY + (i + 0.5) * cellSize, { align: 'left', baseline: 'middle' });
+                  }
               }
           }
 
-          // Draw Grid
-          // Don't render text numbers if cells are tiny (Overview Mode)
-          const renderNumbers = cellSize >= 10;
-
           doc.setLineWidth(0.5);
           doc.setDrawColor('#CCCCCC');
+
+          const forceNumbers = options.forceSinglePage;
+          const renderNumbers = cellSize >= 10 || forceNumbers;
 
           for (let y = 0; y < sliceH; y++) {
               for (let x = 0; x < sliceW; x++) {
@@ -298,7 +316,6 @@ export const exportPixelGridToPDF = (
                   const cx = drawX + x * cellSize;
                   const cy = drawY + y * cellSize;
                   
-                  // Draw Cell Background
                   doc.setFillColor(255, 255, 255);
                   if (cell.colorId) {
                       const c = yarnColorMap.get(cell.colorId);
@@ -306,12 +323,14 @@ export const exportPixelGridToPDF = (
                   }
                   doc.rect(cx, cy, cellSize, cellSize, 'FD');
                   
-                  // Draw Number
                   if (renderNumbers && cell.colorId) {
                       const c = yarnColorMap.get(cell.colorId);
                       const textColor = c ? getTextColor(c.hex) : '#000000';
                       doc.setTextColor(textColor);
-                      doc.setFontSize(cellSize * 0.6);
+                      
+                      const dynamicFontSize = forceNumbers ? Math.max(2, cellSize * 0.7) : cellSize * 0.6;
+                      doc.setFontSize(dynamicFontSize);
+                      
                       doc.text(
                           numbering[index], 
                           cx + cellSize/2, 
@@ -321,8 +340,6 @@ export const exportPixelGridToPDF = (
                   }
               }
           }
-          
-          // Reset text color
           doc.setTextColor(0);
       }
   }

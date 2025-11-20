@@ -9,6 +9,11 @@ import PixelGridEditor from './components/PixelGridEditor';
 import { BLANKET_SIZES, PIXEL_FONT } from './constants';
 import { useCanvasLogic } from './hooks/useCanvasLogic';
 
+// --- STATIC PAGES (Moved to top to fix ReferenceError) ---
+const PlaceholderPage: React.FC<{title: string}> = ({title}) => ( <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 p-8 text-center"> <h2 className="text-2xl font-bold text-gray-700 mb-2">{title}</h2> <p className="text-gray-500">This tool is under construction.</p> </div> );
+const ContactPage: React.FC = () => ( <div className="p-8 max-w-2xl mx-auto"> <h2 className="text-3xl font-bold text-gray-800 mb-4">Contact Us</h2> <p className="text-gray-600 mb-6">Email: contact@blanketsmith.com</p> </div> );
+const PartnerPage: React.FC = () => ( <div className="p-8 max-w-2xl mx-auto"> <h2 className="text-3xl font-bold text-gray-800 mb-4">Partner With Us</h2> <p className="text-gray-600 mb-6">Email: partners@blanketsmith.com</p> </div> );
+
 // STATE MANAGEMENT (Context & Reducer)
 const ProjectContext = React.createContext<{
   state: ProjectState;
@@ -155,7 +160,7 @@ const NavItem: React.FC<{ to: string; icon: string; label: string }> = ({ to, ic
 );
 
 // --- LAYOUT COMPONENTS ---
-const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () => void; }> = ({ isSidebarVisible, onToggleSidebar }) => {
+const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () => void; isLeftHanded: boolean; onToggleLeftHanded: () => void; }> = ({ isSidebarVisible, onToggleSidebar, isLeftHanded, onToggleLeftHanded }) => {
     const { state, saveCurrentProject } = useProject();
     const navigate = useNavigate();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -203,6 +208,21 @@ const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () => void;
                             >
                                 <span
                                     className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ease-in-out ${isSidebarVisible ? 'translate-x-6' : 'translate-x-1'}`}
+                                />
+                            </button>
+                        </div>
+                        <div className="flex items-center justify-between p-2">
+                             <label htmlFor="left-handed-toggle" className="text-sm font-medium text-gray-700">Left-Handed Mode</label>
+                             <button
+                                type="button"
+                                role="switch"
+                                aria-checked={isLeftHanded}
+                                id="left-handed-toggle"
+                                onClick={(e) => { e.stopPropagation(); onToggleLeftHanded(); }}
+                                className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${isLeftHanded ? 'bg-indigo-600' : 'bg-gray-200'}`}
+                            >
+                                <span
+                                    className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ease-in-out ${isLeftHanded ? 'translate-x-6' : 'translate-x-1'}`}
                                 />
                             </button>
                         </div>
@@ -269,7 +289,7 @@ const Footer: React.FC<{ zoom: number, onZoomChange: (newZoom: number) => void }
 
 // --- PAGES / TOOLS ---
 
-const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) => void; }> = ({ zoom, onZoomChange }) => {
+const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) => void; isLeftHanded: boolean }> = ({ zoom, onZoomChange, isLeftHanded }) => {
     type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column' | 'eyedropper' | 'text' | 'select';
     type MirrorDirection = 'left-to-right' | 'right-to-left' | 'top-to-bottom' | 'bottom-to-top';
     type ColorMode = 'HEX' | 'RGB' | 'HSL';
@@ -872,6 +892,14 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                         <div>
                             <Button variant="secondary" className="w-full" onClick={() => imageUploadRef.current?.click()}> <Icon name="upload" className="w-4 h-4"/> Upload Image </Button>
                             <input type="file" ref={imageUploadRef} className="hidden" accept="image/*" onChange={handleImageUpload} />
+                            
+                            <div className="mt-2">
+                                <label className="flex justify-between text-xs font-medium text-gray-600 mb-1">
+                                    <span>Max Colors</span>
+                                    <span className="font-mono bg-gray-100 px-2 rounded">{maxImportColors}</span>
+                                </label>
+                                <input type="range" min="2" max="32" value={maxImportColors} onChange={(e) => setMaxImportColors(parseInt(e.target.value))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
+                            </div>
                         </div>
                          <div> <h4 className="font-semibold mb-2 text-sm text-gray-700">Pattern Dimensions</h4> <div className="flex items-center gap-2"> <input type="number" value={newWidth} onChange={e => setNewWidth(parseInt(e.target.value, 10) || 0)} className="w-full text-center px-2 py-1 border border-gray-300 rounded-md shadow-sm"/> <span className="text-gray-500">x</span> <input type="number" value={newHeight} onChange={e => setNewHeight(parseInt(e.target.value, 10) || 0)} className="w-full text-center px-2 py-1 border border-gray-300 rounded-md shadow-sm"/> </div> <Button className="w-full mt-2" onClick={handleResize} disabled={!hasSizeChanged}>Resize Canvas</Button> 
                             <div className="mt-4 pt-3 border-t border-dashed">
@@ -890,7 +918,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                         <h4 className="font-semibold mb-2 text-gray-700">Advanced Tools</h4>
                         <div className="grid grid-cols-3 gap-2 mb-2">
                             <ToolButton tool="brush" label="Brush (B)" icon="edit"/>
-                            <ToolButton tool="select" label="Select (S)" icon="grid"/>
+                            <ToolButton tool="select" label="Select (S)" icon="grid"/> 
                             <ToolButton tool="fill" label="Fill (F)"/>
                             <ToolButton tool="fill-row" label="Row Fill"/>
                             <ToolButton tool="fill-column" label="Col Fill"/>
@@ -904,8 +932,51 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                                 <label className="flex items-center justify-between text-sm font-medium text-gray-700"> <span>Brush Size</span> <span className="font-mono bg-white px-2 py-0.5 rounded">{brushSize}</span> </label> <input type="range" min="1" max="10" value={brushSize} onChange={(e) => setBrushSize(parseInt(e.target.value, 10))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
                             </div>
                         )}
+                        {activeTool === 'fill-row' && (
+                            <div className="p-2 border rounded-md bg-gray-50 space-y-2">
+                                <label className="flex items-center justify-between text-sm font-medium text-gray-700"> <span>Row Height</span> <span className="font-mono bg-white px-2 py-0.5 rounded">{rowFillSize}</span> </label> <input type="range" min="1" max="10" value={rowFillSize} onChange={(e) => setRowFillSize(parseInt(e.target.value, 10))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
+                            </div>
+                        )}
+                        {activeTool === 'fill-column' && (
+                            <div className="p-2 border rounded-md bg-gray-50 space-y-2">
+                                <label className="flex items-center justify-between text-sm font-medium text-gray-700"> <span>Col Width</span> <span className="font-mono bg-white px-2 py-0.5 rounded">{colFillSize}</span> </label> <input type="range" min="1" max="10" value={colFillSize} onChange={(e) => setColFillSize(parseInt(e.target.value, 10))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
+                            </div>
+                        )}
                          {activeTool === 'text' && (
                             <div className="p-2 border rounded-md bg-gray-50 space-y-2"> <label className="text-sm font-medium text-gray-700">Text</label> <input type="text" value={textToolInput} onChange={(e) => setTextToolInput(e.target.value)} className="block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm sm:text-sm" /> <label className="flex items-center justify-between text-sm font-medium text-gray-700"> <span>Size</span> <span className="font-mono bg-white px-2 py-0.5 rounded">{textSize}x</span> </label> <input type="range" min="1" max="5" value={textSize} onChange={(e) => setTextSize(parseInt(e.target.value, 10))} className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" /> </div>
+                        )}
+                        {activeTool === 'fill' && (
+                             <div className="p-2 border rounded-md bg-gray-50 space-y-2">
+                                 <p className="text-xs text-gray-500">Click any colored area to flood fill.</p>
+                                 <Button variant="secondary" className="w-full justify-center text-xs" onClick={handleFillCanvas}>Fill Entire Canvas</Button>
+                             </div>
+                        )}
+                        {activeTool === 'replace' && (
+                            <div className="p-2 border rounded-md bg-gray-50 space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex flex-col items-center gap-1">
+                                        <span className="text-xs text-gray-500">From</span>
+                                        <div 
+                                            className={`w-8 h-8 border-2 rounded cursor-pointer ${replaceTarget === 'from' ? 'ring-2 ring-indigo-500 border-indigo-600' : 'border-gray-300'}`}
+                                            style={{ backgroundColor: replaceFromColor ? yarnColorMap.get(replaceFromColor)?.hex : '#fff' }}
+                                            onClick={() => setReplaceTarget('from')}
+                                        />
+                                    </div>
+                                    <Icon name="redo" className="w-4 h-4 text-gray-400" />
+                                    <div className="flex flex-col items-center gap-1">
+                                        <span className="text-xs text-gray-500">To</span>
+                                        <div 
+                                            className={`w-8 h-8 border-2 rounded cursor-pointer ${replaceTarget === 'to' ? 'ring-2 ring-indigo-500 border-indigo-600' : 'border-gray-300'}`}
+                                            style={{ backgroundColor: replaceToColor ? yarnColorMap.get(replaceToColor)?.hex : '#fff' }}
+                                            onClick={() => setReplaceTarget('to')}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="text-xs text-gray-500 text-center">
+                                    {replaceTarget ? 'Select color from palette/canvas' : 'Select From/To slots'}
+                                </div>
+                                <Button className="w-full justify-center" disabled={!replaceFromColor || !replaceToColor} onClick={handleReplace}>Replace All</Button>
+                            </div>
                         )}
                     </div>
                     
@@ -949,7 +1020,7 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                     
                     <div className="pt-4">
                         <h4 className="font-semibold mb-2 text-gray-700">Export</h4>
-                        <div className="grid grid-cols-2 gap-2"> <Button variant="secondary" onClick={() => exportPixelGridToPDF(project.name, projectData, project.yarnPalette, yarnUsage, { forceSinglePage: true })} className="justify-center text-xs">PDF Overview</Button> <Button onClick={() => exportPixelGridToPDF(project.name, projectData, project.yarnPalette, yarnUsage, { forceSinglePage: false })} className="justify-center text-xs">PDF Chart</Button> </div>
+                        <div className="grid grid-cols-2 gap-2"> <Button variant="secondary" onClick={() => exportPixelGridToPDF(project.name, projectData, project.yarnPalette, yarnUsage, { forceSinglePage: true }, project.settings, isLeftHanded)} className="justify-center text-xs">PDF Overview</Button> <Button onClick={() => exportPixelGridToPDF(project.name, projectData, project.yarnPalette, yarnUsage, { forceSinglePage: false }, project.settings, isLeftHanded)} className="justify-center text-xs">PDF Chart</Button> </div>
                     </div>
                 </div>
             </aside>
@@ -1001,8 +1072,8 @@ const ProjectsPage: React.FC = () => {
     const handleDeleteProject = (projectId: string) => { if (window.confirm("Are you sure you want to delete this project?")) { deleteProject(projectId); setProjects(getProjects()); } }
     const handleLoadProject = (project: AnyProject) => { dispatch({ type: 'LOAD_PROJECT', payload: project }); navigate('/'); }
     const handleExportProject = (project: AnyProject) => { try { const projectJson = JSON.stringify(project, null, 2); const blob = new Blob([projectJson], { type: 'application/json' }); const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${project.name.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.bsmith.json`; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url); } catch (error) { console.error("Failed to export project:", error); alert("Failed to export project."); } };
-    const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const text = e.target?.result; if (typeof text !== 'string') throw new Error("File content is not a string"); const importedProject = JSON.parse(text) as AnyProject; if (!importedProject.id || !importedProject.name || !importedProject.type || !importedProject.data) { throw new Error("Invalid project file format."); } importedProject.id = `proj-${Date.now()}`; importedProject.name = `${importedProject.name} (Imported)`; importedProject.createdAt = new Date().toISOString(); importedProject.updatedAt = new Date().toISOString(); saveProject(importedProject); setProjects(getProjects()); alert("Project imported successfully!"); } catch (error) { console.error("Failed to import project:", error); alert("Failed to import project. The file may be corrupt or in the wrong format."); } finally { if(event.target) { event.target.value = ''; } } }; reader.readAsText(file); };
-    const PatternTypeCard: React.FC<{type: PatternType, icon: string, label: string, enabled: boolean}> = ({type, icon, label, enabled}) => ( <div onClick={() => enabled && setSelectedProjectType(type)} className={`p-4 border-2 rounded-lg text-center cursor-pointer transition-all duration-200 ${selectedProjectType === type ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-500' : 'border-gray-300 bg-white hover:border-indigo-400'} ${!enabled && 'opacity-50 cursor-not-allowed bg-gray-100'}`}> <Icon name={icon} className="w-10 h-10 mx-auto mb-2 text-indigo-600" /> <h4 className="font-semibold text-gray-800">{label}</h4> {!enabled && <span className="text-xs text-gray-500 block">Coming Soon</span>} </div> );
+    const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => { const file = event.target.files?.[0]; if (!file) return; const reader = new FileReader(); reader.onload = (e) => { try { const text = e.target?.result; if (typeof text !== 'string') throw new Error("File content is not a string"); const importedProject = JSON.parse(text) as AnyProject; if (!importedProject.id || !importedProject.name || !importedProject.type || !importedProject.data) { throw new Error("Invalid project file format."); } importedProject.id = `proj-${Date.now()}`; importedProject.name = `${importedProject.name} (Imported)`; importedProject.createdAt = new Date().toISOString(); importedProject.updatedAt = new Date().toISOString(); saveProject(importedProject); setProjects(getProjects()); alert("Project imported successfully!"); } catch (error) { console.error("Failed to export project:", error); alert("Failed to import project. The file may be corrupt or in the wrong format."); } finally { if(event.target) { event.target.value = ''; } } }; reader.readAsText(file); };
+    const PatternTypeCard: React.FC<{type: PatternType, icon: string, label: string, enabled: boolean}> = ({type, icon, label, enabled}) => ( <div onClick={() => enabled && setSelectedProjectType(type)} className={`p-4 border-2 rounded-lg text-center cursor-pointer transition-all duration-200 ${selectedProjectType === type ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-500' : 'border-gray-300 bg-white hover:border-indigo-400'} ${!enabled && 'opacity-50 cursor-not-allowed bg-gray-100'}`}> <Icon name="grid" className="w-10 h-10 mx-auto mb-2 text-indigo-600" /> <h4 className="font-semibold text-gray-800">{label}</h4> {!enabled && <span className="text-xs text-gray-500 block">Coming Soon</span>} </div> );
 
     return (
         <div className="p-4 sm:p-6 lg:p-8">
@@ -1014,28 +1085,31 @@ const ProjectsPage: React.FC = () => {
     );
 };
 
-const PlaceholderPage: React.FC<{title: string}> = ({title}) => ( <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 p-8 text-center"> <h2 className="text-2xl font-bold text-gray-700 mb-2">{title}</h2> <p className="text-gray-500">This tool is under construction.</p> </div> );
-const ContactPage: React.FC = () => ( <div className="p-8 max-w-2xl mx-auto"> <h2 className="text-3xl font-bold text-gray-800 mb-4">Contact Us</h2> <p className="text-gray-600 mb-6">Email: contact@blanketsmith.com</p> </div> );
-const PartnerPage: React.FC = () => ( <div className="p-8 max-w-2xl mx-auto"> <h2 className="text-3xl font-bold text-gray-800 mb-4">Partner With Us</h2> <p className="text-gray-600 mb-6">Email: partners@blanketsmith.com</p> </div> );
-
 const MainLayout: React.FC = () => {
     const { state } = useProject();
     const location = useLocation();
     const [zoom, setZoom] = useState(1);
     const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+    const [isLeftHanded, setIsLeftHanded] = useState(false); 
+
     useEffect(() => { if (!state.project) { setZoom(1); } }, [state.project]);
     const isEditorPage = ['/', '/c2c', '/stripes', '/granny'].includes(location.pathname);
     const mainContainerClasses = isEditorPage ? 'flex-1 overflow-hidden' : 'flex-1 overflow-y-auto';
 
     return (
         <div className="h-screen w-screen bg-gray-100 flex flex-col">
-            <Header isSidebarVisible={isSidebarVisible} onToggleSidebar={() => setIsSidebarVisible(!isSidebarVisible)} />
+            <Header 
+                isSidebarVisible={isSidebarVisible} 
+                onToggleSidebar={() => setIsSidebarVisible(!isSidebarVisible)} 
+                isLeftHanded={isLeftHanded}
+                onToggleLeftHanded={() => setIsLeftHanded(!isLeftHanded)}
+            />
             <div className="flex-1 flex overflow-hidden">
                 {isSidebarVisible && <Sidebar/>}
                 <div className="flex-1 flex flex-col overflow-hidden">
                     <main className={mainContainerClasses}>
                         <Routes>
-                            <Route path="/" element={<PixelGraphPage zoom={zoom} onZoomChange={setZoom} />} />
+                            <Route path="/" element={<PixelGraphPage zoom={zoom} onZoomChange={setZoom} isLeftHanded={isLeftHanded} />} />
                             <Route path="/c2c" element={<PlaceholderPage title="C2C Pattern Generator" />} />
                             <Route path="/stripes" element={<PlaceholderPage title="Stripe Generator" />} />
                             <Route path="/granny" element={<PlaceholderPage title="Granny Square Planner" />} />
