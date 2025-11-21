@@ -1,7 +1,7 @@
 
-import React, { useState, useRef, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PixelGridData, YarnColor, Symmetry, CellData } from '../types';
-import { PIXEL_FONT } from '../constants';
+import { PIXEL_FONT, MIN_ZOOM, MAX_ZOOM } from '../constants';
 import { useCanvasLogic } from '../hooks/useCanvasLogic';
 
 type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column' | 'eyedropper' | 'text' | 'select';
@@ -68,32 +68,53 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
   
   const { getSymmetryPoints, getBrushPoints } = useCanvasLogic(width, height, symmetry);
 
-  // Initial Zoom calculation - FIXED: Added missing logic
-  useLayoutEffect(() => {
+  // --- ROBUST AUTO-ZOOM LOGIC (ResizeObserver) ---
+  // This specifically fixes the "Missing Canvas" bug by waiting for the container 
+  // to have a valid width before calculating the initial zoom.
+  useEffect(() => {
     const container = containerRef.current;
-    if (container && zoom === 1) { 
-        const rect = container.getBoundingClientRect();
-        if (rect.width > 0 && rect.height > 0) {
-            const svgTotalWidth = width + RULER_SIZE * 2;
-            const svgTotalHeight = height + RULER_SIZE * 2;
-            
-            // Calculate ratios to fit with padding
-            const fitW = (rect.width - 40) / svgTotalWidth;
-            const fitH = (rect.height - 40) / svgTotalHeight;
-            
-            let newZoom = Math.min(fitW, fitH);
-            
-            // Clamp zoom to reasonable limits
-            newZoom = Math.max(0.5, Math.min(newZoom, 20));
-            
-            // Apply
-            if (Math.abs(newZoom - zoom) > 0.1) {
-                onZoomChange(newZoom);
+    if (!container) return;
+
+    const handleResize = () => {
+        // Only auto-fit if we are near default zoom (1) or undefined
+        // This prevents the canvas from snapping back if the user is actively zooming
+        if (Math.abs(zoom - 1) < 0.01 || zoom === 1) {
+            const rect = container.getBoundingClientRect();
+            // Ensure we have meaningful dimensions (avoid 0-width bug in iframes)
+            if (rect.width > 50 && rect.height > 50) {
+                const svgTotalWidth = width + RULER_SIZE * 2;
+                const svgTotalHeight = height + RULER_SIZE * 2;
+                
+                // Calculate fit ratio with 40px padding for rulers/scrollbars
+                const fitW = (rect.width - 40) / svgTotalWidth;
+                const fitH = (rect.height - 40) / svgTotalHeight;
+                
+                let newZoom = Math.min(fitW, fitH);
+                
+                // Apply global clamp constants
+                newZoom = Math.max(MIN_ZOOM, Math.min(newZoom, MAX_ZOOM));
+                
+                // Force update if different
+                if (Math.abs(newZoom - zoom) > 0.05) {
+                    onZoomChange(newZoom);
+                }
             }
         }
-    }
-  }, [width, height]); // Only re-run if dimensions change
-  
+    };
+
+    // Observer triggers when the sidebar opens/closes or window resizes
+    const resizeObserver = new ResizeObserver(() => {
+        window.requestAnimationFrame(handleResize);
+    });
+    
+    resizeObserver.observe(container);
+    
+    // Try immediately in case layout is already ready
+    handleResize();
+
+    return () => resizeObserver.disconnect();
+  }, [width, height]); // Re-run if pattern dimensions change
+
   const getMousePosition = (e: React.MouseEvent | React.TouchEvent) => {
     if (!svgRef.current) return { x: 0, y: 0 };
     const CTM = svgRef.current.getScreenCTM();
@@ -209,7 +230,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         if (newDist === 0) return;
         
         const scale = newDist / pinchDistRef.current;
-        const newZoom = Math.max(0.1, Math.min(zoom * scale, 100));
+        const newZoom = Math.max(MIN_ZOOM, Math.min(zoom * scale, MAX_ZOOM));
 
         const rect = container.getBoundingClientRect();
         const touch1 = e.nativeEvent.touches[0];
@@ -318,8 +339,8 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
     const prevZoom = zoom;
     const newZoom = e.deltaY < 0 
-        ? Math.min(zoom * 1.2, 100)
-        : Math.max(zoom / 1.2, 0.1);
+        ? Math.min(zoom * 1.2, MAX_ZOOM)
+        : Math.max(zoom / 1.2, MIN_ZOOM);
 
     const pointX = (container.scrollLeft + viewportCenterX) / prevZoom;
     const pointY = (container.scrollTop + viewportCenterY) / prevZoom;
@@ -547,7 +568,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             );
           })}
           
-          {showGridLines && zoom > 8 &&
+          {showGridLines && zoom > 4 &&
               <rect x="0" y="0" width={width} height={height} fill="url(#grid-pattern)" />
           }
 

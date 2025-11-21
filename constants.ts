@@ -1,4 +1,8 @@
+
 import { YarnColor } from './types';
+
+export const MIN_ZOOM = 0.1; // 10%
+export const MAX_ZOOM = 30.0; // 3000%
 
 export const YARN_PALETTE: YarnColor[] = [
   { id: 'yarn-1', brand: 'Stylecraft', name: 'White', hex: '#FFFFFF', rgb: [255, 255, 255], skeinLength: 295 },

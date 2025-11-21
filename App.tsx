@@ -1,4 +1,3 @@
-
 import React, { useState, useReducer, useCallback, useMemo, ChangeEvent, useRef, useEffect } from 'react';
 import { HashRouter, Routes, Route, NavLink, useLocation, useNavigate, Link } from 'react-router-dom';
 import { AnyProject, PatternType, PixelGridData, ProjectState, ProjectAction, YarnColor, CellData, Symmetry } from './types';
@@ -6,7 +5,7 @@ import { createNewProject, getProjects, saveProject, deleteProject, processImage
 import { exportPixelGridToPDF } from './services/exportService';
 import { Icon, Button, Modal, ContextMenu, ContextMenuItem } from './components/ui/SharedComponents';
 import { PixelGridEditor } from './components/PixelGridEditor';
-import { BLANKET_SIZES, PIXEL_FONT } from './constants';
+import { BLANKET_SIZES, PIXEL_FONT, MIN_ZOOM, MAX_ZOOM } from './constants';
 import { useCanvasLogic } from './hooks/useCanvasLogic';
 
 // --- STATIC PAGES ---
@@ -263,8 +262,8 @@ const Footer: React.FC<{ zoom: number, onZoomChange: (newZoom: number) => void }
     const canUndo = state.historyIndex > 0;
     const canRedo = state.historyIndex < state.history.length - 1;
 
-    const handleZoomIn = () => onZoomChange(Math.min(zoom * 1.25, 100));
-    const handleZoomOut = () => onZoomChange(Math.max(zoom / 1.25, 0.1));
+    const handleZoomIn = () => onZoomChange(Math.min(zoom * 1.25, MAX_ZOOM));
+    const handleZoomOut = () => onZoomChange(Math.max(zoom / 1.25, MIN_ZOOM));
     const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => { onZoomChange(Number(e.target.value) / 100); };
 
     return (
@@ -275,7 +274,7 @@ const Footer: React.FC<{ zoom: number, onZoomChange: (newZoom: number) => void }
             </div>
             <div className="flex items-center gap-2">
                 <Button variant="secondary" onClick={handleZoomOut} className="p-2"><Icon name="zoom-out" className="w-4 h-4"/></Button>
-                <input type="range" min="10" max="1000" value={zoom * 100} onChange={handleSliderChange} className="w-24 md:w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
+                <input type="range" min={MIN_ZOOM * 100} max={MAX_ZOOM * 100} value={zoom * 100} onChange={handleSliderChange} className="w-24 md:w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
                 <Button variant="secondary" onClick={handleZoomIn} className="p-2"><Icon name="zoom-in" className="w-4 h-4"/></Button>
                 <span className="text-sm font-mono text-gray-600 w-16 text-center">{Math.round(zoom * 100)}%</span>
             </div>
@@ -949,44 +948,62 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
 
 // --- MAIN LAYOUT ---
 const MainLayout: React.FC = () => {
-    const { state } = useProject();
-    const location = useLocation();
-    const [zoom, setZoom] = useState(1);
-    const [isSidebarVisible, setIsSidebarVisible] = useState(true);
-    const [isLeftHanded, setIsLeftHanded] = useState(false); 
+  const { state } = useProject();
+  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
+  const [isLeftHanded, setIsLeftHanded] = useState(false);
+  const [zoom, setZoom] = useState(1.0);
+  const location = useLocation();
 
-    useEffect(() => { if (!state.project) { setZoom(1); } }, [state.project]);
-    const isEditorPage = ['/', '/c2c', '/stripes', '/granny'].includes(location.pathname);
-    const mainContainerClasses = isEditorPage ? 'flex-1 overflow-hidden' : 'flex-1 overflow-y-auto';
+  const isEditorRoute = ['/', '/c2c', '/stripes', '/granny'].includes(location.pathname);
+  const hasProject = !!state.project;
+  const showChrome = isEditorRoute && hasProject;
 
-    return (
-        <div className="h-screen w-screen bg-gray-100 flex flex-col">
-            <Header 
-                isSidebarVisible={isSidebarVisible} 
-                onToggleSidebar={() => setIsSidebarVisible(!isSidebarVisible)} 
-                isLeftHanded={isLeftHanded}
-                onToggleLeftHanded={() => setIsLeftHanded(!isLeftHanded)}
-            />
-            <div className="flex-1 flex overflow-hidden">
-                {isSidebarVisible && <Sidebar/>}
-                <div className="flex-1 flex flex-col overflow-hidden">
-                    <main className={mainContainerClasses}>
-                        <Routes>
-                            <Route path="/" element={<PixelGraphPage zoom={zoom} onZoomChange={setZoom} isLeftHanded={isLeftHanded} />} />
-                            <Route path="/c2c" element={<PlaceholderPage title="C2C Pattern Generator" />} />
-                            <Route path="/stripes" element={<PlaceholderPage title="Stripe Generator" />} />
-                            <Route path="/granny" element={<PlaceholderPage title="Granny Square Planner" />} />
-                            <Route path="/projects" element={<ProjectsPage />} />
-                            <Route path="/contact" element={<ContactPage />} />
-                            <Route path="/partner" element={<PartnerPage />} />
-                        </Routes>
-                    </main>
-                    {state.project && isEditorPage && <Footer zoom={zoom} onZoomChange={setZoom} />}
-                </div>
-            </div>
+  const ProtectedEditor: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+      if (!hasProject) return <ProjectsPage />;
+      return <>{children}</>;
+  };
+
+  return (
+    <div className="flex flex-col h-screen bg-gray-50 overflow-hidden">
+      <Header 
+        isSidebarVisible={isSidebarVisible} 
+        onToggleSidebar={() => setIsSidebarVisible(!isSidebarVisible)} 
+        isLeftHanded={isLeftHanded}
+        onToggleLeftHanded={() => setIsLeftHanded(!isLeftHanded)}
+      />
+      
+      <div className="flex flex-1 overflow-hidden relative">
+        {showChrome && isSidebarVisible && (
+          <div className="w-20 flex-shrink-0 border-r bg-indigo-700 z-30 flex flex-col">
+            <Sidebar />
+          </div>
+        )}
+        
+        <div className="flex-1 flex flex-col overflow-hidden relative bg-gray-100">
+          <Routes>
+            <Route path="/projects" element={<ProjectsPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/partner" element={<PartnerPage />} />
+            
+            <Route path="/" element={
+               <ProtectedEditor>
+                  <PixelGraphPage zoom={zoom} onZoomChange={setZoom} isLeftHanded={isLeftHanded} />
+               </ProtectedEditor>
+            } />
+            
+            <Route path="/c2c" element={<ProtectedEditor><PlaceholderPage title="C2C Editor" /></ProtectedEditor>} />
+            <Route path="/stripes" element={<ProtectedEditor><PlaceholderPage title="Stripes Editor" /></ProtectedEditor>} />
+            <Route path="/granny" element={<ProtectedEditor><PlaceholderPage title="Granny Square Editor" /></ProtectedEditor>} />
+          </Routes>
         </div>
-    );
-}
+      </div>
+
+      {showChrome && (
+        <Footer zoom={zoom} onZoomChange={setZoom} />
+      )}
+    </div>
+  );
+};
 
 // --- APP ENTRY ---
 export default function App() {
