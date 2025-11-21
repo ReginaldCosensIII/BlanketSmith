@@ -504,7 +504,12 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         });
     }
 
-    return (
+    // ✅ Return all collected hover previews
+    return previews.length ? previews : null;
+  };
+
+  // ✅ Main component render must be OUTSIDE getHoverPreviews
+  return (
     <div
       ref={containerRef}
       className="w-full h-full bg-gray-200 overflow-auto grid place-items-center touch-none"
