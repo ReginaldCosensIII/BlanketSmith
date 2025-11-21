@@ -804,6 +804,18 @@ const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) =
                 )}
             </main>
 
+            {/* Mobile / tablet Tools toggle button */}
+            <div className="lg:hidden absolute bottom-4 right-4 z-20">
+            <Button
+                variant="primary"
+                className="shadow-lg rounded-full px-4 py-2 flex items-center gap-2"
+                onClick={() => setIsPanelOpen(prev => !prev)}
+            >
+                <Icon name="grid" className="w-4 h-4" />
+                <span>Tools</span>
+            </Button>
+            </div>
+
             <aside className={`w-72 bg-white border-l flex flex-col transition-transform duration-300 ease-in-out fixed inset-y-0 right-0 z-40 lg:static lg:z-auto lg:translate-x-0 ${isPanelOpen ? 'translate-x-0' : 'translate-x-full'}`}>
                 <div className="p-4 flex justify-between items-center mb-0 flex-shrink-0 border-b">
                     <h3 className="font-bold text-lg text-gray-800">Tools & Info</h3>
