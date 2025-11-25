@@ -8,7 +8,7 @@
     "scripts": {
         "dev:tool": "npm run dev -w @blanketsmith/tool",
         "dev:web": "npm run dev -w @blanketsmith/web",
-        "build": "npm run build --workspaces"
+        "build": "npm run build -w @blanketsmith/tool && npm run build -w @blanketsmith/web"
     },
     "dependencies": {
         "react": "^18.2.0",
