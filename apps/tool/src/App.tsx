@@ -1,0 +1,68 @@
+import React, { useState, useEffect } from 'react';
+import { HashRouter, Routes, Route } from 'react-router-dom';
+import { ProjectProvider } from './context/ProjectContext';
+import { Header, Sidebar, Footer } from './components/layout/Layout';
+import { ProjectsPage } from './pages/ProjectsPage';
+import { PixelGraphPage } from './pages/PixelGraphPage';
+
+// --- STATIC PAGES ---
+const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
+    <div className="flex-1 flex flex-col items-center justify-center bg-gray-50 p-8 text-center">
+        <h2 className="text-2xl font-bold text-gray-700 mb-2">{title}</h2>
+        <p className="text-gray-500">This tool is under construction.</p>
+    </div>
+);
+const ContactPage: React.FC = () => (
+    <div className="p-8 max-w-2xl mx-auto">
+        <h2 className="text-3xl font-bold text-gray-800 mb-4">Contact Us</h2>
+        <p className="text-gray-600 mb-6">Email: contact@blanketsmith.com</p>
+    </div>
+);
+const PartnerPage: React.FC = () => (
+    <div className="p-8 max-w-2xl mx-auto">
+        <h2 className="text-3xl font-bold text-gray-800 mb-4">Partner With Us</h2>
+        <p className="text-gray-600 mb-6">Email: partners@blanketsmith.com</p>
+    </div>
+);
+
+const App: React.FC = () => {
+    const [isSidebarVisible, setIsSidebarVisible] = useState(() => localStorage.getItem('app_isSidebarVisible') !== 'false'); // Default true
+    const [isLeftHanded, setIsLeftHanded] = useState(() => localStorage.getItem('app_isLeftHanded') === 'true'); // Default false
+    const [zoom, setZoom] = useState(1);
+
+    useEffect(() => { localStorage.setItem('app_isSidebarVisible', String(isSidebarVisible)); }, [isSidebarVisible]);
+    useEffect(() => { localStorage.setItem('app_isLeftHanded', String(isLeftHanded)); }, [isLeftHanded]);
+
+    return (
+        <ProjectProvider>
+            <HashRouter>
+                <div className="flex flex-col h-screen bg-gray-100">
+                    <Header
+                        isSidebarVisible={isSidebarVisible}
+                        onToggleSidebar={() => setIsSidebarVisible(!isSidebarVisible)}
+                    />
+
+                    <div className="flex flex-1 overflow-hidden">
+                        <div className={`transition-all duration-300 ${isSidebarVisible ? 'w-20' : 'w-0 overflow-hidden'}`}>
+                            <Sidebar />
+                        </div>
+
+                        <Routes>
+                            <Route path="/" element={<PixelGraphPage zoom={zoom} onZoomChange={setZoom} isLeftHanded={isLeftHanded} onToggleLeftHanded={() => setIsLeftHanded(!isLeftHanded)} />} />
+                            <Route path="/projects" element={<ProjectsPage />} />
+                            <Route path="/c2c" element={<PlaceholderPage title="C2C Crochet" />} />
+                            <Route path="/stripes" element={<PlaceholderPage title="Stripe Generator" />} />
+                            <Route path="/granny" element={<PlaceholderPage title="Granny Square Planner" />} />
+                            <Route path="/contact" element={<ContactPage />} />
+                            <Route path="/partner" element={<PartnerPage />} />
+                        </Routes>
+                    </div>
+
+                    <Footer zoom={zoom} onZoomChange={setZoom} />
+                </div>
+            </HashRouter>
+        </ProjectProvider>
+    );
+};
+
+export default App;

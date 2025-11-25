@@ -1,5 +1,6 @@
 
 import React, { useEffect, useRef } from 'react';
+import { ContextMenuItem } from '../../types';
 
 export const Icon: React.FC<{ name: string; className?: string }> = ({ name, className = 'w-6 h-6' }) => {
   const icons: { [key: string]: React.ReactNode } = {
@@ -73,12 +74,7 @@ export const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: stri
   );
 };
 
-export interface ContextMenuItem {
-  label: string;
-  action: () => void;
-  shortcut?: string;
-  separator?: boolean;
-}
+
 
 export const ContextMenu: React.FC<{
   x: number;
@@ -96,10 +92,10 @@ export const ContextMenu: React.FC<{
     };
     // Delay attaching to avoid immediate close from trigger click
     setTimeout(() => {
-        document.addEventListener('click', handleClickOutside);
-        document.addEventListener('contextmenu', handleClickOutside);
+      document.addEventListener('click', handleClickOutside);
+      document.addEventListener('contextmenu', handleClickOutside);
     }, 0);
-    
+
     return () => {
       document.removeEventListener('click', handleClickOutside);
       document.removeEventListener('contextmenu', handleClickOutside);
@@ -108,30 +104,33 @@ export const ContextMenu: React.FC<{
 
   return (
     <>
-        <div className="fixed inset-0 z-40" onClick={onClose} onContextMenu={(e) => { e.preventDefault(); onClose(); }}></div>
-        <div 
+      <div className="fixed inset-0 z-40" onClick={onClose} onContextMenu={(e) => { e.preventDefault(); onClose(); }}></div>
+      <div
         ref={menuRef}
         className="fixed z-50 bg-white rounded-lg shadow-lg border border-gray-200 py-1 min-w-[160px]"
         style={{ top: y, left: x }}
-        >
+      >
         {options.map((option, index) => (
-            option.separator ? (
-                <div key={index} className="border-t border-gray-200 my-1"></div>
-            ) : (
-                <button
-                key={index}
-                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex justify-between items-center"
-                onClick={() => {
-                    option.action();
-                    onClose();
-                }}
-                >
-                <span>{option.label}</span>
-                {option.shortcut && <span className="text-xs text-gray-400 ml-4">{option.shortcut}</span>}
-                </button>
-            )
+          option.separator ? (
+            <div key={index} className="border-t border-gray-200 my-1"></div>
+          ) : (
+            <button
+              key={index}
+              className={`w-full text-left px-4 py-2 text-sm flex justify-between items-center ${option.disabled ? 'text-gray-400 cursor-not-allowed' : 'text-gray-700 hover:bg-gray-100'}`}
+              onClick={() => {
+                if (!option.disabled) {
+                  option.action();
+                  onClose();
+                }
+              }}
+              disabled={option.disabled}
+            >
+              <span>{option.label}</span>
+              {option.shortcut && <span className={`text-xs ml-4 ${option.disabled ? 'text-gray-300' : 'text-gray-400'}`}>{option.shortcut}</span>}
+            </button>
+          )
         ))}
-        </div>
+      </div>
     </>
   );
 };
