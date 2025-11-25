@@ -17,14 +17,14 @@ export interface CellData {
 }
 
 export interface Symmetry {
-    vertical: boolean;
-    horizontal: boolean;
+  vertical: boolean;
+  horizontal: boolean;
 }
 
 export interface PixelGridData {
   width: number;
   height: number;
-  grid: CellData[]; 
+  grid: CellData[];
   palette: string[]; // Array of yarnColor IDs used in the grid
 }
 
@@ -82,3 +82,11 @@ export type ProjectAction =
   | { type: 'SET_PALETTE'; payload: YarnColor[] }
   | { type: 'UNDO' }
   | { type: 'REDO' };
+
+export interface ContextMenuItem {
+  label: string;
+  action: () => void;
+  shortcut?: string;
+  separator?: boolean;
+  disabled?: boolean;
+}
