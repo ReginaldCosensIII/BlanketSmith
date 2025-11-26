@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Bucket Fill Tool**: Implemented flood-fill algorithm for filling contiguous areas.
 - **Cursor Update**: Changed Fill tool cursor to `crosshair` for better precision.
 
+### Fixed
+- **Replace Tool**: Fixed workflow to auto-advance from "From" to "To" selection.
+- **Replace Tool**: Enabled canvas picking to set "From" and "To" colors.
+- **Replace Tool**: Added visual indicator (red X) for transparent color in swatches and fixed "Replace All" for transparent values.
+
 ## [v0.1.0-stable-baseline] - 2025-11-25
 
 ### Added
