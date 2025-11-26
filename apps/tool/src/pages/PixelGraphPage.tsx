@@ -622,11 +622,25 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             <p className="mb-2 font-semibold text-yellow-800">Color Replacement</p>
                             <div className="flex items-center justify-between mb-1">
                                 <span>From:</span>
-                                <button onClick={() => setReplaceTarget('from')} className={`w-6 h-6 border rounded ${replaceTarget === 'from' ? 'ring-2 ring-blue-500' : ''}`} style={{ backgroundColor: replaceFromColor ? yarnColorMap.get(replaceFromColor)?.hex : 'transparent' }} title="Click to set from palette/canvas"></button>
+                                <button onClick={() => setReplaceTarget('from')} className={`w-6 h-6 border rounded relative overflow-hidden ${replaceTarget === 'from' ? 'ring-2 ring-blue-500' : ''}`} style={{ backgroundColor: replaceFromColor ? yarnColorMap.get(replaceFromColor)?.hex : 'transparent' }} title="Click to set from palette/canvas">
+                                    {replaceFromColor === null && (
+                                        <>
+                                            <div className="absolute inset-0 bg-white opacity-50" style={{ backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)', backgroundSize: '8px 8px' }}></div>
+                                            <Icon name="close" className="w-3 h-3 absolute inset-0 m-auto text-red-500" />
+                                        </>
+                                    )}
+                                </button>
                             </div>
                             <div className="flex items-center justify-between mb-2">
                                 <span>To:</span>
-                                <button onClick={() => setReplaceTarget('to')} className={`w-6 h-6 border rounded ${replaceTarget === 'to' ? 'ring-2 ring-blue-500' : ''}`} style={{ backgroundColor: replaceToColor ? yarnColorMap.get(replaceToColor)?.hex : 'transparent' }} title="Click to set from palette/canvas"></button>
+                                <button onClick={() => setReplaceTarget('to')} className={`w-6 h-6 border rounded relative overflow-hidden ${replaceTarget === 'to' ? 'ring-2 ring-blue-500' : ''}`} style={{ backgroundColor: replaceToColor ? yarnColorMap.get(replaceToColor)?.hex : 'transparent' }} title="Click to set from palette/canvas">
+                                    {replaceToColor === null && (
+                                        <>
+                                            <div className="absolute inset-0 bg-white opacity-50" style={{ backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)', backgroundSize: '8px 8px' }}></div>
+                                            <Icon name="close" className="w-3 h-3 absolute inset-0 m-auto text-red-500" />
+                                        </>
+                                    )}
+                                </button>
                             </div>
                             <Button onClick={handleReplace} disabled={replaceFromColor === undefined || replaceToColor === undefined} className="w-full justify-center">Replace All</Button>
                         </div>
