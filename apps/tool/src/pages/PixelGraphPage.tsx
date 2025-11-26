@@ -141,6 +141,11 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         if (activeTool === 'select' && newTool !== 'select') {
             setSelection(null);
         }
+        if (newTool === 'replace') {
+            setReplaceTarget('from');
+        } else {
+            setReplaceTarget(null);
+        }
         setActiveTool(newTool);
     };
 
@@ -350,7 +355,17 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         const clickedColorId = grid[index].colorId;
 
         if (activeTool === 'eyedropper') { if (isRightClick) { setSecondaryColorId(clickedColorId); } else { setPrimaryColorId(clickedColorId); } handleToolChange('brush'); return; }
-        if (activeTool === 'replace' && replaceTarget) { if (replaceTarget === 'from') setReplaceFromColor(clickedColorId); if (replaceTarget === 'to') setReplaceToColor(clickedColorId); setReplaceTarget(null); return; }
+
+        if (activeTool === 'replace') {
+            if (replaceTarget === 'from') {
+                setReplaceFromColor(clickedColorId);
+                setReplaceTarget('to');
+            } else if (replaceTarget === 'to') {
+                setReplaceToColor(clickedColorId);
+                setReplaceTarget(null);
+            }
+            return;
+        }
 
         const colorToApply = isRightClick ? secondaryColorId : primaryColorId;
         let newGrid = [...grid];
@@ -416,7 +431,27 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const openSettingsModal = () => { setSettingsForm({ unit: project?.settings?.unit || 'in', stitchesPerUnit: project?.settings?.stitchesPerUnit || 4, rowsPerUnit: project?.settings?.rowsPerUnit || 4, hookSize: project?.settings?.hookSize || '', yarnPerStitch: project?.settings?.yarnPerStitch || 1 }); setIsSettingsModalOpen(true); };
     const saveSettings = () => { dispatch({ type: 'UPDATE_PROJECT_SETTINGS', payload: settingsForm }); setIsSettingsModalOpen(false); };
     const physicalSizeString = useMemo(() => { if (!projectData || !project?.settings) return null; const sts = Number(project.settings.stitchesPerUnit); const rows = Number(project.settings.rowsPerUnit); const unit = project.settings.unit || 'in'; if (!sts || !rows) return null; const pWidth = (projectData.width / sts).toFixed(1); const pHeight = (projectData.height / rows).toFixed(1); return `${pWidth} x ${pHeight} ${unit}`; }, [projectData, project?.settings]);
-    const handlePaletteClick = (colorId: string | null, e: React.MouseEvent) => { if (activeTool === 'replace' && replaceTarget) { if (replaceTarget === 'from') setReplaceFromColor(colorId); if (replaceTarget === 'to') setReplaceToColor(colorId); setReplaceTarget(null); return; } if (e.button === 2) { e.preventDefault(); setSecondaryColorId(colorId); } else { setPrimaryColorId(colorId); } };
+    const handlePaletteClick = (colorId: string | null, e: React.MouseEvent) => {
+        e.preventDefault();
+        if (activeTool === 'replace') {
+            if (replaceTarget === 'from') {
+                setReplaceFromColor(colorId);
+                setReplaceTarget('to');
+                return;
+            }
+            if (replaceTarget === 'to') {
+                setReplaceToColor(colorId);
+                setReplaceTarget(null);
+                return;
+            }
+        }
+
+        if (e.type === 'contextmenu') {
+            setSecondaryColorId(colorId);
+        } else {
+            setPrimaryColorId(colorId);
+        }
+    };
     const handleConfirmAddColor = () => { const hex = tempCustomColor; const newColor: YarnColor = { id: `custom-${Date.now()}`, brand: 'Custom', name: `Custom ${hex}`, hex: hex, rgb: [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)], skeinLength: 295 }; const newPalette = [...(project?.yarnPalette || []), newColor]; dispatch({ type: 'SET_PALETTE', payload: newPalette }); setPrimaryColorId(newColor.id); setIsColorPickerOpen(false); };
     const updateColorFromHsl = (h: number, s: number, l: number) => { setHsl([h, s, l]); const rgb = hslToRgb(h, s, l); setTempCustomColor(rgbToHex(rgb[0], rgb[1], rgb[2])); };
 
@@ -593,7 +628,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                 <span>To:</span>
                                 <button onClick={() => setReplaceTarget('to')} className={`w-6 h-6 border rounded ${replaceTarget === 'to' ? 'ring-2 ring-blue-500' : ''}`} style={{ backgroundColor: replaceToColor ? yarnColorMap.get(replaceToColor)?.hex : 'transparent' }} title="Click to set from palette/canvas"></button>
                             </div>
-                            <Button onClick={handleReplace} disabled={!replaceFromColor || !replaceToColor} className="w-full justify-center">Replace All</Button>
+                            <Button onClick={handleReplace} disabled={replaceFromColor === undefined || replaceToColor === undefined} className="w-full justify-center">Replace All</Button>
                         </div>
                     )}
 
@@ -601,8 +636,8 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                         <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Palette</h4>
                         <div className="grid grid-cols-5 gap-1 mb-2">
                             <button
-                                onClick={() => setPrimaryColorId(null)}
-                                onContextMenu={(e) => { e.preventDefault(); setSecondaryColorId(null); }}
+                                onClick={(e) => handlePaletteClick(null, e)}
+                                onContextMenu={(e) => handlePaletteClick(null, e)}
                                 className={`w-8 h-8 rounded border-2 relative ${primaryColorId === null ? 'border-black z-10' : 'border-gray-200'} ${secondaryColorId === null ? 'ring-2 ring-red-500 ring-offset-1' : ''}`}
                                 title="Eraser (Left: Primary, Right: Secondary)"
                             >
@@ -612,8 +647,8 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             {project.yarnPalette.map(yarn => (
                                 <button
                                     key={yarn.id}
-                                    onClick={() => setPrimaryColorId(yarn.id)}
-                                    onContextMenu={(e) => { e.preventDefault(); setSecondaryColorId(yarn.id); }}
+                                    onClick={(e) => handlePaletteClick(yarn.id, e)}
+                                    onContextMenu={(e) => handlePaletteClick(yarn.id, e)}
                                     className={`w-8 h-8 rounded border-2 ${primaryColorId === yarn.id ? 'border-black z-10' : 'border-gray-200'} ${secondaryColorId === yarn.id ? 'ring-2 ring-red-500 ring-offset-1' : ''}`}
                                     style={{ backgroundColor: yarn.hex }}
                                     title={`${yarn.name} (${yarn.brand})`}
