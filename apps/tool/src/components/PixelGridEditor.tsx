@@ -393,7 +393,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
     const getCursor = () => {
         if (activeTool === 'select') return 'crosshair';
-        if (activeTool === 'brush') return 'crosshair';
+        if (activeTool === 'brush' || activeTool === 'fill') return 'crosshair';
         if (activeTool === 'fill-row' || activeTool === 'fill-column') return 'pointer';
         if (activeTool === 'eyedropper' || activeTool === 'replace') return 'copy';
         if (activeTool === 'text') return 'text';

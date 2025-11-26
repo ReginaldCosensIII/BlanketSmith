@@ -355,6 +355,33 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         const colorToApply = isRightClick ? secondaryColorId : primaryColorId;
         let newGrid = [...grid];
         let changed = false;
+
+        // --- FLOOD FILL ALGORITHM ---
+        const floodFill = (startX: number, startY: number, targetColor: string | null, replacementColor: string | null) => {
+            if (targetColor === replacementColor) return;
+
+            const queue: [number, number][] = [[startX, startY]];
+            const visited = new Set<number>();
+
+            while (queue.length > 0) {
+                const [x, y] = queue.pop()!;
+                const idx = y * width + x;
+
+                if (visited.has(idx)) continue;
+                visited.add(idx);
+
+                if (newGrid[idx].colorId === targetColor) {
+                    newGrid[idx] = { ...newGrid[idx], colorId: replacementColor };
+                    changed = true;
+
+                    if (x + 1 < width) queue.push([x + 1, y]);
+                    if (x - 1 >= 0) queue.push([x - 1, y]);
+                    if (y + 1 < height) queue.push([x, y + 1]);
+                    if (y - 1 >= 0) queue.push([x, y - 1]);
+                }
+            }
+        };
+
         const applyFill = (points: { x: number, y: number }[], tool: 'fill-row' | 'fill-column') => {
             points.forEach(point => {
                 if (tool === 'fill-row') {
@@ -367,7 +394,9 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             });
         };
 
-        if (activeTool === 'text') {
+        if (activeTool === 'fill') {
+            floodFill(gridX, gridY, clickedColorId, colorToApply);
+        } else if (activeTool === 'text') {
             let currentX = gridX; textToolInput.toUpperCase().split('').forEach(char => { const charData = PIXEL_FONT[char]; if (charData) { charData.forEach((row, yOffset) => { row.forEach((pixel, xOffset) => { if (pixel === 1) { for (let scaleY = 0; scaleY < textSize; scaleY++) { for (let scaleX = 0; scaleX < textSize; scaleX++) { const finalX = currentX + (xOffset * textSize) + scaleX; const finalY = gridY + (yOffset * textSize) + scaleY; if (finalX >= 0 && finalX < width && finalY >= 0 && finalY < height) { const idx = finalY * width + finalX; if (newGrid[idx].colorId !== colorToApply) { newGrid[idx] = { ...newGrid[idx], colorId: colorToApply }; changed = true; } } } } } }); }); currentX += (charData[0].length * textSize) + (1 * textSize); } });
         } else if (activeTool === 'fill-row' || activeTool === 'fill-column') {
             const pointsToFill = [{ x: gridX, y: gridY }];
