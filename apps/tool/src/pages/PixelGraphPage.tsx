@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo, ChangeEvent }
 import { PixelGridData, YarnColor, CellData, Symmetry, ContextMenuItem } from '../types';
 import { useProject } from '../context/ProjectContext';
 import { PixelGridEditor } from '../components/PixelGridEditor';
+import { useFloatingSelection } from '../context/FloatingSelectionContext';
 import { processImageToGrid, findClosestYarnColor } from '../services/projectService';
 import { Button, Icon, ContextMenu, Modal } from '../components/ui/SharedComponents';
 import { PIXEL_FONT } from '../constants';
@@ -110,6 +111,18 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [clipboard, setClipboard] = useState<{ width: number, height: number, data: CellData[] } | null>(null);
     const [showCenterGuides, setShowCenterGuides] = useState(() => localStorage.getItem('editor_showCenterGuides') === 'true');
 
+    // --- RESTORED SELECTION STATE ---
+    const [floatingSelection, setFloatingSelection] = useState<{ x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean } | null>(null);
+    const [preRotationState, setPreRotationState] = useState<{ grid: CellData[], selection: { x: number, y: number, w: number, h: number } } | null>(null);
+    const [toolbarPosition, setToolbarPosition] = useState<{ x: number, y: number } | null>(null);
+
+    const { setHasFloatingSelection } = useFloatingSelection();
+
+    // Sync floating selection presence with global context
+    useEffect(() => {
+        setHasFloatingSelection(!!floatingSelection);
+    }, [floatingSelection, setHasFloatingSelection]);
+
     useEffect(() => { localStorage.setItem('editor_showCenterGuides', String(showCenterGuides)); }, [showCenterGuides]);
     const [replaceFromColor, setReplaceFromColor] = useState<string | null | undefined>(undefined);
     const [replaceToColor, setReplaceToColor] = useState<string | null | undefined>(undefined);
@@ -138,6 +151,9 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
     // --- TOOL CHANGE HANDLER (Transition Logic) ---
     const handleToolChange = (newTool: Tool) => {
+        if (floatingSelection) {
+            handleCommit();
+        }
         if (activeTool === 'select' && newTool !== 'select') {
             setSelection(null);
         }
@@ -156,6 +172,44 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     }, [dispatch]);
 
     // --- SELECTION ACTIONS ---
+    const handleCommit = useCallback(() => {
+        if (!floatingSelection || !projectData) return;
+
+        const newGrid = [...projectData.grid];
+        const { x, y, w, h, data } = floatingSelection;
+
+        for (let row = 0; row < h; row++) {
+            for (let col = 0; col < w; col++) {
+                const destX = x + col;
+                const destY = y + row;
+                if (destX >= 0 && destX < projectData.width && destY >= 0 && destY < projectData.height) {
+                    const srcIdx = row * w + col;
+                    const destIdx = destY * projectData.width + destX;
+                    if (data[srcIdx].colorId) {
+                        newGrid[destIdx] = data[srcIdx];
+                    }
+                }
+            }
+        }
+
+        updateGrid(newGrid);
+        setFloatingSelection(null);
+    }, [floatingSelection, projectData, updateGrid]);
+
+    const handleFloatingSelectionChange = (newFloating: { x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean } | null) => {
+        setFloatingSelection(newFloating);
+        if (newFloating) {
+            setSelection({ x: newFloating.x, y: newFloating.y, w: newFloating.w, h: newFloating.h });
+        }
+    };
+
+    const handleSelectionChangeWrapper = (newSel: { x: number, y: number, w: number, h: number } | null) => {
+        if (floatingSelection) {
+            handleCommit();
+        }
+        setSelection(newSel);
+    };
+
     const handleCopy = () => {
         if (!selection || !projectData) return;
         const { x, y, w, h } = selection;
@@ -168,26 +222,55 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         }
         setClipboard({ width: w, height: h, data });
     };
+
     const handlePaste = () => {
         if (!clipboard || !projectData) return;
-        const startX = selection ? selection.x : 0;
-        const startY = selection ? selection.y : 0;
-        const newGrid = [...projectData.grid];
-        for (let row = 0; row < clipboard.height; row++) {
-            for (let col = 0; col < clipboard.width; col++) {
-                const destX = startX + col;
-                const destY = startY + row;
-                if (destX < projectData.width && destY < projectData.height) {
-                    const srcIdx = row * clipboard.width + col;
-                    const destIdx = destY * projectData.width + destX;
-                    newGrid[destIdx] = clipboard.data[srcIdx];
-                }
-            }
+
+        if (floatingSelection) {
+            handleCommit();
         }
-        updateGrid(newGrid);
+
+        // Switch to select tool if not already active
+        if (activeTool !== 'select') {
+            setActiveTool('select');
+        }
+
+        let startX = 0;
+        let startY = 0;
+
+        if (selection) {
+            startX = selection.x;
+            startY = selection.y;
+        } else {
+            startX = Math.floor((projectData.width - clipboard.width) / 2);
+            startY = Math.floor((projectData.height - clipboard.height) / 2);
+        }
+
+        const newFloating = {
+            x: startX,
+            y: startY,
+            w: clipboard.width,
+            h: clipboard.height,
+            data: clipboard.data,
+            isRotated: false
+        };
+
+        setFloatingSelection(newFloating);
+        setSelection({
+            x: startX,
+            y: startY,
+            w: clipboard.width,
+            h: clipboard.height
+        });
     };
-    const handleClearSelection = () => {
+
+    const handleClearSelection = useCallback(() => {
         if (!selection || !projectData) return;
+        if (floatingSelection) {
+            setFloatingSelection(null);
+            setSelection(null);
+            return;
+        }
         const newGrid = [...projectData.grid];
         const { x, y, w, h } = selection;
         for (let row = 0; row < h; row++) {
@@ -197,10 +280,18 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             }
         }
         updateGrid(newGrid);
-    };
+    }, [selection, projectData, floatingSelection, updateGrid]);
+
     const handleCut = () => { handleCopy(); handleClearSelection(); };
+
     const handleFlipSelection = (direction: 'horizontal' | 'vertical') => {
         if (!selection || !projectData) return;
+        if (floatingSelection) {
+            const { w, h, data } = floatingSelection;
+            const flippedData = flipSubGrid(data, w, h, direction);
+            setFloatingSelection({ ...floatingSelection, data: flippedData });
+            return;
+        }
         const { x, y, w, h } = selection;
         const subGrid: CellData[] = [];
         for (let row = 0; row < h; row++) {
@@ -218,8 +309,12 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         }
         updateGrid(newGrid);
     };
+
     const handleRotateSelection = () => {
         if (!selection || !projectData) return;
+        if (floatingSelection) {
+            handleCommit();
+        }
         const { x, y, w, h } = selection;
         if (w !== h) { if (!window.confirm("Rotation is currently best supported for square selections. Continue?")) return; }
         const subGrid: CellData[] = [];
@@ -241,9 +336,9 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         }
     };
 
-    // --- SELECTION HANDLERS ---
     const handleSelectAll = () => {
         if (!projectData) return;
+        if (floatingSelection) handleCommit();
         setSelection({ x: 0, y: 0, w: projectData.width, h: projectData.height });
     };
 
@@ -310,40 +405,6 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             setContextMenu({ x, y });
         }
     };
-
-    // ... KEYBOARD SHORTCUTS ...
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-            const key = e.key.toLowerCase();
-            const isCtrl = e.ctrlKey || e.metaKey;
-
-            if (isCtrl && key === 'z') { e.preventDefault(); dispatch({ type: 'UNDO' }); return; }
-            if (isCtrl && key === 'y') { e.preventDefault(); dispatch({ type: 'REDO' }); return; }
-            if (isCtrl && key === 'c') { e.preventDefault(); handleCopy(); return; }
-            if (isCtrl && key === 'v') { e.preventDefault(); handlePaste(); return; }
-            if (isCtrl && key === 'x') { e.preventDefault(); handleCut(); return; }
-            if (isCtrl && key === 'a') { e.preventDefault(); handleSelectAll(); return; }
-            if (key === 'delete' || key === 'backspace') { handleClearSelection(); return; }
-
-            switch (key) {
-                case 'b': handleToolChange('brush'); break;
-                case 'f': handleToolChange('fill'); break;
-                case 'e': handleToolChange('eyedropper'); break;
-                case 'r': handleToolChange('replace'); break;
-                case 't': handleToolChange('text'); break;
-                case 's': handleToolChange('select'); break;
-                case 'c': setShowCenterGuides(prev => !prev); break;
-                case 'x': { if (!isCtrl) { const temp = primaryColorId; setPrimaryColorId(secondaryColorId); setSecondaryColorId(temp); } break; }
-            }
-        };
-        window.addEventListener('keydown', handleKeyDown);
-        return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [primaryColorId, secondaryColorId, dispatch, selection, clipboard]);
-
-    useEffect(() => { if (project && !primaryColorId) { if (project.yarnPalette.length > 0) setPrimaryColorId(project.yarnPalette[0].id); } }, [project]);
-    useEffect(() => { if (isColorPickerOpen) { const rgb = hexToRgb(tempCustomColor); setHsl(rgbToHsl(rgb[0], rgb[1], rgb[2])); } }, [isColorPickerOpen]);
-    useEffect(() => { if (project?.data && 'width' in project.data) { setNewWidth(project.data.width); setNewHeight(project.data.height); } }, [project]);
 
     const handleGridChange = (newGrid: CellData[]) => { if (!project || !project.data || !('grid' in project.data)) return; updateGrid(newGrid); };
     const handleFillCanvas = () => { if (!projectData || primaryColorId === undefined) return; const newGrid = Array.from({ length: projectData.width * projectData.height }, () => ({ colorId: primaryColorId })); updateGrid(newGrid); };
@@ -499,7 +560,9 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                     onZoomChange={onZoomChange}
                     showCenterGuides={showCenterGuides}
                     selection={selection}
-                    onSelectionChange={setSelection}
+                    onSelectionChange={handleSelectionChangeWrapper}
+                    floatingSelection={floatingSelection}
+                    onFloatingSelectionChange={handleFloatingSelectionChange}
                     onContextMenu={handleOpenContextMenu}
                 />
 
