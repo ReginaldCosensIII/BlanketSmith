@@ -116,7 +116,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [preRotationState, setPreRotationState] = useState<{ grid: CellData[], selection: { x: number, y: number, w: number, h: number } } | null>(null);
     const [toolbarPosition, setToolbarPosition] = useState<{ x: number, y: number } | null>(null);
 
-    const { setHasFloatingSelection } = useFloatingSelection();
+    const { setHasFloatingSelection, registerUndoHandler, registerRedoHandler } = useFloatingSelection();
 
     // Sync floating selection presence with global context
     useEffect(() => {
@@ -235,16 +235,9 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             setActiveTool('select');
         }
 
-        let startX = 0;
-        let startY = 0;
-
-        if (selection) {
-            startX = selection.x;
-            startY = selection.y;
-        } else {
-            startX = Math.floor((projectData.width - clipboard.width) / 2);
-            startY = Math.floor((projectData.height - clipboard.height) / 2);
-        }
+        // Always center the paste
+        const startX = Math.floor((projectData.width - clipboard.width) / 2);
+        const startY = Math.floor((projectData.height - clipboard.height) / 2);
 
         const newFloating = {
             x: startX,
@@ -261,6 +254,25 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             y: startY,
             w: clipboard.width,
             h: clipboard.height
+        });
+
+        // Register Undo/Redo handlers for this floating selection state
+
+        // Undo: Clear the floating selection
+        registerUndoHandler(() => {
+            setFloatingSelection(null);
+            setSelection(null);
+        });
+
+        // Redo: Restore the floating selection
+        registerRedoHandler(() => {
+            setFloatingSelection(newFloating);
+            setSelection({
+                x: startX,
+                y: startY,
+                w: clipboard.width,
+                h: clipboard.height
+            });
         });
     };
 
@@ -310,30 +322,210 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         updateGrid(newGrid);
     };
 
+    // --- ROTATION SESSION STATE ---
+    interface RotationSession {
+        baseRect: { x: number, y: number, w: number, h: number };
+        baseCells: CellData[];
+        boundingBox: { x: number, y: number, w: number, h: number };
+        boundingBoxCells: CellData[];
+        step: 0 | 1 | 2 | 3;
+    }
+    const [rotationSession, setRotationSession] = useState<RotationSession | null>(null);
+    const isRotatingRef = useRef(false);
+
+    // Reset rotation session if selection changes externally
+    useEffect(() => {
+        if (isRotatingRef.current) {
+            isRotatingRef.current = false;
+            return;
+        }
+        setRotationSession(null);
+    }, [selection, projectData]);
+
+    const rotateBaseCells = (baseCells: CellData[], w: number, h: number, step: 0 | 1 | 2 | 3): { cells: CellData[], newW: number, newH: number } => {
+        if (step === 0) {
+            return { cells: [...baseCells], newW: w, newH: h };
+        }
+
+        let newW = w;
+        let newH = h;
+        if (step === 1 || step === 3) {
+            newW = h;
+            newH = w;
+        }
+
+        const rotated = new Array(newW * newH).fill({ colorId: null });
+
+        for (let r = 0; r < h; r++) {
+            for (let c = 0; c < w; c++) {
+                const srcIdx = r * w + c;
+                let destCol = 0;
+                let destRow = 0;
+
+                if (step === 1) {
+                    destCol = r;
+                    destRow = w - 1 - c;
+                } else if (step === 2) {
+                    destCol = w - 1 - c;
+                    destRow = h - 1 - r;
+                } else if (step === 3) {
+                    destCol = h - 1 - r;
+                    destRow = c;
+                }
+
+                const destIdx = destRow * newW + destCol;
+                rotated[destIdx] = baseCells[srcIdx];
+            }
+        }
+        return { cells: rotated, newW, newH };
+    };
+
+    const calculateRotationBoundingBox = (baseRect: { x: number, y: number, w: number, h: number }) => {
+        const { x, y, w, h } = baseRect;
+        const positions = [];
+
+        for (let step = 0; step < 4; step++) {
+            let newW = w;
+            let newH = h;
+            if (step === 1 || step === 3) {
+                newW = h;
+                newH = w;
+            }
+
+            const newX = x + Math.trunc((w - newW) / 2);
+            const newY = y + Math.trunc((h - newH) / 2);
+
+            positions.push({ x: newX, y: newY, w: newW, h: newH });
+        }
+
+        const minX = Math.min(...positions.map(p => p.x));
+        const minY = Math.min(...positions.map(p => p.y));
+        const maxX = Math.max(...positions.map(p => p.x + p.w));
+        const maxY = Math.max(...positions.map(p => p.y + p.h));
+
+        return {
+            x: minX,
+            y: minY,
+            w: maxX - minX,
+            h: maxY - minY
+        };
+    };
+
     const handleRotateSelection = () => {
         if (!selection || !projectData) return;
         if (floatingSelection) {
             handleCommit();
         }
-        const { x, y, w, h } = selection;
-        if (w !== h) { if (!window.confirm("Rotation is currently best supported for square selections. Continue?")) return; }
-        const subGrid: CellData[] = [];
-        for (let row = 0; row < h; row++) {
-            for (let col = 0; col < w; col++) {
-                subGrid.push(projectData.grid[(y + row) * projectData.width + (x + col)]);
-            }
-        }
-        const rotated = rotateSubGrid(subGrid, w, h);
-        if (w === h) {
-            const newGrid = [...projectData.grid];
+
+        let currentSession = rotationSession;
+
+        if (!currentSession ||
+            currentSession.baseRect.x !== selection.x ||
+            currentSession.baseRect.y !== selection.y ||
+            currentSession.baseRect.w !== selection.w ||
+            currentSession.baseRect.h !== selection.h) {
+
+            const { x, y, w, h } = selection;
+
+            const baseCells: CellData[] = [];
             for (let row = 0; row < h; row++) {
                 for (let col = 0; col < w; col++) {
-                    const idx = (y + row) * projectData.width + (x + col);
-                    newGrid[idx] = rotated[row * w + col];
+                    baseCells.push(projectData.grid[(y + row) * projectData.width + (x + col)]);
                 }
             }
-            updateGrid(newGrid);
+
+            const boundingBox = calculateRotationBoundingBox({ x, y, w, h });
+
+            const boundingBoxCells: CellData[] = [];
+            for (let row = 0; row < boundingBox.h; row++) {
+                for (let col = 0; col < boundingBox.w; col++) {
+                    const gridX = boundingBox.x + col;
+                    const gridY = boundingBox.y + row;
+                    if (gridX >= 0 && gridX < projectData.width && gridY >= 0 && gridY < projectData.height) {
+                        boundingBoxCells.push(projectData.grid[gridY * projectData.width + gridX]);
+                    } else {
+                        boundingBoxCells.push({ colorId: null });
+                    }
+                }
+            }
+
+            currentSession = {
+                baseRect: { x, y, w, h },
+                baseCells,
+                boundingBox,
+                boundingBoxCells,
+                step: 0
+            };
         }
+
+        const nextStep = ((currentSession.step + 1) % 4) as 0 | 1 | 2 | 3;
+
+        const { cells: rotatedCells, newW, newH } = rotateBaseCells(
+            currentSession.baseCells,
+            currentSession.baseRect.w,
+            currentSession.baseRect.h,
+            nextStep
+        );
+
+        const { x: baseX, y: baseY, w: baseW, h: baseH } = currentSession.baseRect;
+
+        let newX = baseX + Math.trunc((baseW - newW) / 2);
+        let newY = baseY + Math.trunc((baseH - newH) / 2);
+
+        if (newX < 0) newX = 0;
+        if (newY < 0) newY = 0;
+        if (newX + newW > projectData.width) newX = projectData.width - newW;
+        if (newY + newH > projectData.height) newY = projectData.height - newH;
+
+        const newGrid = [...projectData.grid];
+
+        // Clear current selection
+        for (let row = 0; row < selection.h; row++) {
+            for (let col = 0; col < selection.w; col++) {
+                const gridX = selection.x + col;
+                const gridY = selection.y + row;
+                if (gridX >= 0 && gridX < projectData.width && gridY >= 0 && gridY < projectData.height) {
+                    const gridIdx = gridY * projectData.width + gridX;
+                    newGrid[gridIdx] = { colorId: null };
+                }
+            }
+        }
+
+        // If returning to step 0, restore entire bounding box
+        if (nextStep === 0) {
+            const { boundingBox, boundingBoxCells } = currentSession;
+            for (let row = 0; row < boundingBox.h; row++) {
+                for (let col = 0; col < boundingBox.w; col++) {
+                    const gridX = boundingBox.x + col;
+                    const gridY = boundingBox.y + row;
+                    if (gridX >= 0 && gridX < projectData.width && gridY >= 0 && gridY < projectData.height) {
+                        const gridIdx = gridY * projectData.width + gridX;
+                        const bbIdx = row * boundingBox.w + col;
+                        newGrid[gridIdx] = boundingBoxCells[bbIdx];
+                    }
+                }
+            }
+        }
+
+        // Write rotated content
+        for (let r = 0; r < newH; r++) {
+            for (let c = 0; c < newW; c++) {
+                const destX = newX + c;
+                const destY = newY + r;
+
+                if (destX >= 0 && destX < projectData.width && destY >= 0 && destY < projectData.height) {
+                    const gridIdx = destY * projectData.width + destX;
+                    const rotIdx = r * newW + c;
+                    newGrid[gridIdx] = rotatedCells[rotIdx];
+                }
+            }
+        }
+
+        updateGrid(newGrid);
+
+        isRotatingRef.current = true;
+        setSelection({ x: newX, y: newY, w: newW, h: newH });
+        setRotationSession({ ...currentSession, step: nextStep });
     };
 
     const handleSelectAll = () => {
