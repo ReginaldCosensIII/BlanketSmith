@@ -328,6 +328,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         baseCells: CellData[];
         boundingBox: { x: number, y: number, w: number, h: number };
         boundingBoxCells: CellData[];
+        currentRect: { x: number, y: number, w: number, h: number }; // Track current rotation position
         step: 0 | 1 | 2 | 3;
     }
     const [rotationSession, setRotationSession] = useState<RotationSession | null>(null);
@@ -436,13 +437,29 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
             const boundingBox = calculateRotationBoundingBox({ x, y, w, h });
 
+            // Capture bounding box cells
+            // IMPORTANT: We treat the area covered by the *initial selection* (baseRect) as "empty" (null)
+            // in the snapshot. This allows us to "erase" the selection when it moves during rotation.
+            // Areas outside baseRect are captured as-is (preserving background).
             const boundingBoxCells: CellData[] = [];
             for (let row = 0; row < boundingBox.h; row++) {
                 for (let col = 0; col < boundingBox.w; col++) {
                     const gridX = boundingBox.x + col;
                     const gridY = boundingBox.y + row;
+
+                    // Check if this pixel is inside the base selection
+                    const inBaseRect =
+                        gridX >= x && gridX < x + w &&
+                        gridY >= y && gridY < y + h;
+
                     if (gridX >= 0 && gridX < projectData.width && gridY >= 0 && gridY < projectData.height) {
-                        boundingBoxCells.push(projectData.grid[gridY * projectData.width + gridX]);
+                        if (inBaseRect) {
+                            // It's the selection itself -> capture as NULL so we can "clear" it later
+                            boundingBoxCells.push({ colorId: null });
+                        } else {
+                            // It's background -> capture as-is
+                            boundingBoxCells.push(projectData.grid[gridY * projectData.width + gridX]);
+                        }
                     } else {
                         boundingBoxCells.push({ colorId: null });
                     }
@@ -454,6 +471,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 baseCells,
                 boundingBox,
                 boundingBoxCells,
+                currentRect: { x, y, w, h }, // Initialize currentRect with initial selection
                 step: 0
             };
         }
@@ -479,21 +497,35 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
         const newGrid = [...projectData.grid];
 
-        // Clear current selection
-        for (let row = 0; row < selection.h; row++) {
-            for (let col = 0; col < selection.w; col++) {
-                const gridX = selection.x + col;
-                const gridY = selection.y + row;
+        // FIRST: Clear the PREVIOUS rotation position (currentRect)
+        // We restore the background from the boundingBox snapshot for the area covered by currentRect
+        // This ensures we don't leave "ghosts" of the previous rotation
+        const { currentRect, boundingBox, boundingBoxCells } = currentSession;
+
+        for (let row = 0; row < currentRect.h; row++) {
+            for (let col = 0; col < currentRect.w; col++) {
+                const gridX = currentRect.x + col;
+                const gridY = currentRect.y + row;
+
                 if (gridX >= 0 && gridX < projectData.width && gridY >= 0 && gridY < projectData.height) {
-                    const gridIdx = gridY * projectData.width + gridX;
-                    newGrid[gridIdx] = { colorId: null };
+                    // Calculate position in bounding box to restore background
+                    const bbCol = gridX - boundingBox.x;
+                    const bbRow = gridY - boundingBox.y;
+
+                    if (bbCol >= 0 && bbCol < boundingBox.w && bbRow >= 0 && bbRow < boundingBox.h) {
+                        const gridIdx = gridY * projectData.width + gridX;
+                        const bbIdx = bbRow * boundingBox.w + bbCol;
+                        newGrid[gridIdx] = boundingBoxCells[bbIdx];
+                    }
                 }
             }
         }
 
-        // If returning to step 0, restore entire bounding box
+        // If returning to step 0, we might want to ensure the *entire* bounding box is clean
+        // just to be absolutely safe against any floating point drifts or edge cases,
+        // although the per-step clearing above should theoretically handle it.
+        // Let's keep the full restore on step 0 as a safety net.
         if (nextStep === 0) {
-            const { boundingBox, boundingBoxCells } = currentSession;
             for (let row = 0; row < boundingBox.h; row++) {
                 for (let col = 0; col < boundingBox.w; col++) {
                     const gridX = boundingBox.x + col;
@@ -525,7 +557,11 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
         isRotatingRef.current = true;
         setSelection({ x: newX, y: newY, w: newW, h: newH });
-        setRotationSession({ ...currentSession, step: nextStep });
+        setRotationSession({
+            ...currentSession,
+            step: nextStep,
+            currentRect: { x: newX, y: newY, w: newW, h: newH } // Update currentRect for next time
+        });
     };
 
     const handleSelectAll = () => {
