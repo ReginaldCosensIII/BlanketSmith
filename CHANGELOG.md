@@ -14,9 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Replace Tool**: Fixed workflow to auto-advance from "From" to "To" selection.
 - **Replace Tool**: Enabled canvas picking to set "From" and "To" colors.
 - **Replace Tool**: Added visual indicator (red X) for transparent color in swatches and fixed "Replace All" for transparent values.
-- **Select Tool**: Fixed rotation accumulation issue by clearing previous rotation position.
-- **Select Tool**: Restored "Paste" functionality with proper centering and undo/redo support.
-- **Select Tool**: Fixed coordinate drift during rotation using `Math.trunc`.
+- **Select Tool**: Implemented advanced rotation logic with 4-step lossless cycle and drift prevention.
+- **Select Tool**: Implemented "Paste" functionality with auto-centering and Undo/Redo integration.
 
 ## [v0.1.0-stable-baseline] - 2025-11-25
 
