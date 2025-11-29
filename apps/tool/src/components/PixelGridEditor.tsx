@@ -29,6 +29,8 @@ interface PixelGridEditorProps {
     showCenterGuides: boolean;
     selection: { x: number, y: number, w: number, h: number } | null;
     onSelectionChange: (sel: { x: number, y: number, w: number, h: number } | null) => void;
+    floatingSelection: { x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean } | null;
+    onFloatingSelectionChange: (sel: { x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean } | null) => void;
     onContextMenu: (x: number, y: number) => void;
 }
 
@@ -54,6 +56,8 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     showCenterGuides,
     selection,
     onSelectionChange,
+    floatingSelection,
+    onFloatingSelectionChange,
     onContextMenu
 }) => {
     const { width, height, grid } = data;
@@ -66,6 +70,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const [paintedCells, setPaintedCells] = useState<Set<number>>(new Set());
     const [hoveredCell, setHoveredCell] = useState<{ x: number; y: number } | null>(null);
     const [selectionStart, setSelectionStart] = useState<{ x: number, y: number } | null>(null);
+    const [floatingDragStart, setFloatingDragStart] = useState<{ x: number, y: number } | null>(null);
 
     const yarnColorMap = React.useMemo(() => new Map(yarnPalette.map(yc => [yc.id, yc.hex])), [yarnPalette]);
 
@@ -174,6 +179,15 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             // Right click on select tool is now handled by onContextMenu handler
             if (isRightClick) return;
 
+            // Check for floating selection drag
+            if (floatingSelection) {
+                if (gridX >= floatingSelection.x && gridX < floatingSelection.x + floatingSelection.w &&
+                    gridY >= floatingSelection.y && gridY < floatingSelection.y + floatingSelection.h) {
+                    setFloatingDragStart({ x: gridX, y: gridY });
+                    return;
+                }
+            }
+
             if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height) {
                 setIsDrawing(true);
                 setSelectionStart({ x: gridX, y: gridY });
@@ -247,6 +261,20 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             setHoveredCell({ x: gridX, y: gridY });
         }
 
+        if (floatingDragStart && floatingSelection) {
+            const dx = gridX - floatingDragStart.x;
+            const dy = gridY - floatingDragStart.y;
+            if (dx !== 0 || dy !== 0) {
+                onFloatingSelectionChange({
+                    ...floatingSelection,
+                    x: floatingSelection.x + dx,
+                    y: floatingSelection.y + dy
+                });
+                setFloatingDragStart({ x: gridX, y: gridY });
+            }
+            return;
+        }
+
         if (isDrawing && activeTool === 'select' && selectionStart) {
             const startX = selectionStart.x;
             const startY = selectionStart.y;
@@ -313,6 +341,11 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const handleMouseUp = () => {
         if (pinchDistRef.current !== null) {
             pinchDistRef.current = null;
+        }
+
+        if (floatingDragStart) {
+            setFloatingDragStart(null);
+            return;
         }
 
         if (activeTool === 'select') {
@@ -392,7 +425,15 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     }, [grid, paintedCells, drawingButton, primaryColorId, secondaryColorId, activeTool]);
 
     const getCursor = () => {
-        if (activeTool === 'select') return 'crosshair';
+        if (activeTool === 'select') {
+            if (floatingSelection && hoveredCell) {
+                if (hoveredCell.x >= floatingSelection.x && hoveredCell.x < floatingSelection.x + floatingSelection.w &&
+                    hoveredCell.y >= floatingSelection.y && hoveredCell.y < floatingSelection.y + floatingSelection.h) {
+                    return 'move';
+                }
+            }
+            return 'crosshair';
+        }
         if (activeTool === 'brush' || activeTool === 'fill') return 'crosshair';
         if (activeTool === 'fill-row' || activeTool === 'fill-column') return 'pointer';
         if (activeTool === 'eyedropper' || activeTool === 'replace') return 'copy';
@@ -552,6 +593,27 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                         showGridLines={showGridLines}
                         zoom={zoom}
                     />
+
+                    {floatingSelection && (
+                        <g transform={`translate(${floatingSelection.x}, ${floatingSelection.y})`}>
+                            {floatingSelection.data.map((cell, i) => {
+                                const col = i % floatingSelection.w;
+                                const row = Math.floor(i / floatingSelection.w);
+                                if (!cell.colorId) return null;
+                                const color = yarnColorMap.get(cell.colorId);
+                                return (
+                                    <rect
+                                        key={i}
+                                        x={col}
+                                        y={row}
+                                        width={1}
+                                        height={1}
+                                        fill={color || 'transparent'}
+                                    />
+                                );
+                            })}
+                        </g>
+                    )}
 
                     <EditorOverlay
                         width={width}

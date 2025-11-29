@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
 import { ProjectProvider } from './context/ProjectContext';
+import { FloatingSelectionProvider } from './context/FloatingSelectionContext';
 import { Header, Sidebar, Footer } from './components/layout/Layout';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { PixelGraphPage } from './pages/PixelGraphPage';
@@ -35,32 +36,34 @@ const App: React.FC = () => {
 
     return (
         <ProjectProvider>
-            <HashRouter>
-                <div className="flex flex-col h-screen bg-gray-100">
-                    <Header
-                        isSidebarVisible={isSidebarVisible}
-                        onToggleSidebar={() => setIsSidebarVisible(!isSidebarVisible)}
-                    />
+            <FloatingSelectionProvider>
+                <HashRouter>
+                    <div className="flex flex-col h-screen bg-gray-100">
+                        <Header
+                            isSidebarVisible={isSidebarVisible}
+                            onToggleSidebar={() => setIsSidebarVisible(!isSidebarVisible)}
+                        />
 
-                    <div className="flex flex-1 overflow-hidden">
-                        <div className={`transition-all duration-300 ${isSidebarVisible ? 'w-20' : 'w-0 overflow-hidden'}`}>
-                            <Sidebar />
+                        <div className="flex flex-1 overflow-hidden">
+                            <div className={`transition-all duration-300 ${isSidebarVisible ? 'w-20' : 'w-0 overflow-hidden'}`}>
+                                <Sidebar />
+                            </div>
+
+                            <Routes>
+                                <Route path="/" element={<PixelGraphPage zoom={zoom} onZoomChange={setZoom} isLeftHanded={isLeftHanded} onToggleLeftHanded={() => setIsLeftHanded(!isLeftHanded)} />} />
+                                <Route path="/projects" element={<ProjectsPage />} />
+                                <Route path="/c2c" element={<PlaceholderPage title="C2C Crochet" />} />
+                                <Route path="/stripes" element={<PlaceholderPage title="Stripe Generator" />} />
+                                <Route path="/granny" element={<PlaceholderPage title="Granny Square Planner" />} />
+                                <Route path="/contact" element={<ContactPage />} />
+                                <Route path="/partner" element={<PartnerPage />} />
+                            </Routes>
                         </div>
 
-                        <Routes>
-                            <Route path="/" element={<PixelGraphPage zoom={zoom} onZoomChange={setZoom} isLeftHanded={isLeftHanded} onToggleLeftHanded={() => setIsLeftHanded(!isLeftHanded)} />} />
-                            <Route path="/projects" element={<ProjectsPage />} />
-                            <Route path="/c2c" element={<PlaceholderPage title="C2C Crochet" />} />
-                            <Route path="/stripes" element={<PlaceholderPage title="Stripe Generator" />} />
-                            <Route path="/granny" element={<PlaceholderPage title="Granny Square Planner" />} />
-                            <Route path="/contact" element={<ContactPage />} />
-                            <Route path="/partner" element={<PartnerPage />} />
-                        </Routes>
+                        <Footer zoom={zoom} onZoomChange={setZoom} />
                     </div>
-
-                    <Footer zoom={zoom} onZoomChange={setZoom} />
-                </div>
-            </HashRouter>
+                </HashRouter>
+            </FloatingSelectionProvider>
         </ProjectProvider>
     );
 };

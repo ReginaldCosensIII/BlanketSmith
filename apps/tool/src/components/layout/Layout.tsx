@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, NavLink } from 'react-router-dom';
 import { useProject } from '../../context/ProjectContext';
+import { useFloatingSelection } from '../../context/FloatingSelectionContext';
 import { Button, Icon } from '../ui/SharedComponents';
 import { MIN_ZOOM, MAX_ZOOM } from '../../constants';
 
@@ -85,8 +86,26 @@ export const Sidebar: React.FC = () => (
 
 export const Footer: React.FC<{ zoom: number, onZoomChange: (newZoom: number) => void }> = ({ zoom, onZoomChange }) => {
     const { state, dispatch } = useProject();
+    const { hasFloatingSelection, performUndo, performRedo } = useFloatingSelection();
+
     const canUndo = state.historyIndex > 0;
     const canRedo = state.historyIndex < state.history.length - 1;
+
+    const handleUndo = () => {
+        if (hasFloatingSelection) {
+            performUndo();
+        } else {
+            dispatch({ type: 'UNDO' });
+        }
+    };
+
+    const handleRedo = () => {
+        if (hasFloatingSelection) {
+            performRedo();
+        } else {
+            dispatch({ type: 'REDO' });
+        }
+    };
 
     const handleZoomIn = () => onZoomChange(Math.min(zoom * 1.25, MAX_ZOOM));
     const handleZoomOut = () => onZoomChange(Math.max(zoom / 1.25, MIN_ZOOM));
@@ -95,8 +114,8 @@ export const Footer: React.FC<{ zoom: number, onZoomChange: (newZoom: number) =>
     return (
         <footer className="bg-gray-100 p-2 flex justify-between items-center z-20 border-t">
             <div className="flex gap-2">
-                <Button variant="secondary" onClick={() => dispatch({ type: 'UNDO' })} disabled={!canUndo}><Icon name="undo" className="w-4 h-4" /> Undo</Button>
-                <Button variant="secondary" onClick={() => dispatch({ type: 'REDO' })} disabled={!canRedo}><Icon name="redo" className="w-4 h-4" /> Redo</Button>
+                <Button variant="secondary" onClick={handleUndo} disabled={!canUndo && !hasFloatingSelection}><Icon name="undo" className="w-4 h-4" /> Undo</Button>
+                <Button variant="secondary" onClick={handleRedo} disabled={!canRedo && !hasFloatingSelection}><Icon name="redo" className="w-4 h-4" /> Redo</Button>
             </div>
             <div className="flex items-center gap-2">
                 <Button variant="secondary" onClick={handleZoomOut} className="p-2"><Icon name="zoom-out" className="w-4 h-4" /></Button>
