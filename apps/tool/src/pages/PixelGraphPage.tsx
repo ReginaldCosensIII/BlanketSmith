@@ -78,6 +78,8 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [isProcessing, setIsProcessing] = useState(false);
     const [showGridLines, setShowGridLines] = useState(() => localStorage.getItem('editor_showGridLines') !== 'false'); // Default true
     const imageUploadRef = useRef<HTMLInputElement>(null);
+    const previewCanvasRef = useRef<HTMLCanvasElement>(null);
+    const fullScreenCanvasRef = useRef<HTMLCanvasElement>(null);
     const [maxImportColors, setMaxImportColors] = useState(() => Number(localStorage.getItem('editor_maxImportColors')) || 16);
 
     const [brushSize, setBrushSize] = useState(() => Number(localStorage.getItem('editor_brushSize')) || 1);
@@ -140,6 +142,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [previewGrid, setPreviewGrid] = useState<PixelGridData | null>(null);
     const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
     const [isPreviewFullScreen, setIsPreviewFullScreen] = useState(false);
+    const [previewZoom, setPreviewZoom] = useState(1);
 
     const project = state.project?.type === 'pixel' ? state.project : null;
     const projectData = project?.data as PixelGridData | undefined;
@@ -778,6 +781,96 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         }
     }, [generatePreview, isGenerateModalOpen, importFile]);
 
+    // Canvas rendering for preview
+    useEffect(() => {
+        if (!previewGrid) return;
+
+        const renderToCanvas = (canvas: HTMLCanvasElement, includeGridLines: boolean = false, scale: number = 1) => {
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            // Set canvas size based on scale
+            const scaledWidth = previewGrid.width * scale;
+            const scaledHeight = previewGrid.height * scale;
+
+            canvas.width = scaledWidth;
+            canvas.height = scaledHeight;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, scaledWidth, scaledHeight);
+
+            // Draw pixels
+            previewGrid.grid.forEach((cell, i) => {
+                if (cell.colorId) {
+                    const x = (i % previewGrid.width) * scale;
+                    const y = Math.floor(i / previewGrid.width) * scale;
+                    const color = yarnColorMap.get(cell.colorId);
+                    if (color) {
+                        ctx.fillStyle = color.hex;
+                        ctx.fillRect(x, y, scale, scale);
+                    }
+                }
+            });
+
+            // Draw grid lines for full-screen preview
+            if (includeGridLines) {
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.lineWidth = Math.max(1, scale * 0.05); // At least 1px, scales with cell size
+
+                // Vertical lines
+                for (let x = 0; x <= previewGrid.width; x++) {
+                    ctx.beginPath();
+                    ctx.moveTo(x * scale, 0);
+                    ctx.lineTo(x * scale, scaledHeight);
+                    ctx.stroke();
+                }
+
+                // Horizontal lines
+                for (let y = 0; y <= previewGrid.height; y++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y * scale);
+                    ctx.lineTo(scaledWidth, y * scale);
+                    ctx.stroke();
+                }
+            }
+        };
+
+        if (isGenerateModalOpen && previewCanvasRef.current) {
+            renderToCanvas(previewCanvasRef.current, false, 1);
+        }
+
+        if (isPreviewFullScreen && fullScreenCanvasRef.current) {
+            // Calculate scale for full-screen preview (10px base * zoom)
+            const scale = 10 * previewZoom;
+            const showGridLines = scale >= 5; // Show grid lines if cells are >= 5px
+            renderToCanvas(fullScreenCanvasRef.current, showGridLines, scale);
+        }
+    }, [previewGrid, isGenerateModalOpen, isPreviewFullScreen, yarnColorMap, previewZoom]);
+
+    // Reset zoom when opening full screen
+    useEffect(() => {
+        if (isPreviewFullScreen && previewGrid) {
+            // Calculate initial zoom to fit ~80% of screen
+            const screenW = window.innerWidth * 0.8;
+            const screenH = window.innerHeight * 0.8;
+            const gridW = previewGrid.width * 10; // Base 10px per cell
+            const gridH = previewGrid.height * 10;
+
+            const scaleW = screenW / gridW;
+            const scaleH = screenH / gridH;
+            const fitZoom = Math.min(scaleW, scaleH);
+
+            // Ensure minimum zoom so grid lines are visible (cell size >= 5px)
+            const minZoomForGridLines = 0.5; // 10px * 0.5 = 5px per cell
+
+            // Use the larger of: fit zoom or minimum zoom for grid lines
+            const initialZoom = Math.max(fitZoom, minZoomForGridLines);
+
+            setPreviewZoom(Math.max(0.1, initialZoom));
+        }
+    }, [isPreviewFullScreen, previewGrid]);
+
+
     const handleImportConfirm = () => {
         if (previewGrid) {
             dispatch({ type: 'UPDATE_PROJECT_DATA', payload: previewGrid });
@@ -885,20 +978,26 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                         <p className="text-xs text-gray-500">More colors = more detail, but harder to crochet.</p>
                     </div>
 
-                    <div className="border rounded p-4 bg-gray-50 min-h-[200px] flex items-center justify-center relative group">
+                    <div className="border rounded p-4 bg-gray-50 h-[300px] flex items-center justify-center relative group">
                         {isGeneratingPreview ? (
                             <div className="text-gray-500 flex flex-col items-center">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mb-2"></div>
                                 Generating Preview...
                             </div>
                         ) : previewGrid ? (
-                            <div className="text-center relative">
-                                <p className="text-xs text-gray-500 mb-2">Preview ({previewGrid.width}x{previewGrid.height})</p>
-                                {/* Simple canvas preview could go here, for now just text or we can render a mini grid */}
-                                <div className="grid gap-px bg-gray-300 border border-gray-300 inline-block" style={{ gridTemplateColumns: `repeat(${previewGrid.width}, 2px)` }}>
-                                    {previewGrid.grid.map((cell, i) => (
-                                        <div key={i} className="w-0.5 h-0.5" style={{ backgroundColor: cell.colorId ? yarnColorMap.get(cell.colorId)?.hex : 'transparent' }} />
-                                    ))}
+                            <div className="text-center relative w-full h-full flex items-center justify-center">
+                                {/* Canvas Preview */}
+                                <canvas
+                                    ref={previewCanvasRef}
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'contain',
+                                        imageRendering: 'pixelated'
+                                    }}
+                                />
+                                <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                                    {previewGrid.width}x{previewGrid.height}
                                 </div>
                                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
                                     <Button variant="secondary" onClick={() => setIsPreviewFullScreen(true)}><Icon name="maximize" className="w-4 h-4 mr-2" /> Full Screen</Button>
@@ -920,15 +1019,32 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             {isPreviewFullScreen && previewGrid && (
                 <div className="fixed inset-0 z-50 bg-black/90 flex flex-col p-4">
                     <div className="flex justify-between items-center mb-4 text-white">
-                        <h3 className="text-lg font-bold">Pattern Preview</h3>
+                        <div className="flex items-center gap-4">
+                            <h3 className="text-lg font-bold">Pattern Preview</h3>
+                            <div className="flex items-center gap-2 bg-gray-800 rounded px-3 py-1">
+                                <span className="text-xs text-gray-400">Zoom:</span>
+                                <input
+                                    type="range"
+                                    min="0.1"
+                                    max="5"
+                                    step="0.1"
+                                    value={previewZoom}
+                                    onChange={(e) => setPreviewZoom(Number(e.target.value))}
+                                    className="w-32"
+                                />
+                                <span className="text-xs w-8 text-right">{previewZoom.toFixed(1)}x</span>
+                            </div>
+                        </div>
                         <Button variant="secondary" onClick={() => setIsPreviewFullScreen(false)}><Icon name="close" className="w-4 h-4 mr-2" /> Close</Button>
                     </div>
-                    <div className="flex-1 overflow-auto flex items-center justify-center">
-                        <div className="grid gap-px bg-gray-700 border border-gray-700 inline-block shadow-2xl" style={{ gridTemplateColumns: `repeat(${previewGrid.width}, 10px)` }}>
-                            {previewGrid.grid.map((cell, i) => (
-                                <div key={i} className="w-2.5 h-2.5" style={{ backgroundColor: cell.colorId ? yarnColorMap.get(cell.colorId)?.hex : 'transparent' }} />
-                            ))}
-                        </div>
+                    <div className="flex-1 overflow-auto flex items-center justify-center p-8">
+                        <canvas
+                            ref={fullScreenCanvasRef}
+                            style={{
+                                imageRendering: 'pixelated',
+                                boxShadow: '0 0 20px rgba(0,0,0,0.5)'
+                            }}
+                        />
                     </div>
                 </div>
             )}
