@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Replace Tool**: Added visual indicator (red X) for transparent color in swatches and fixed "Replace All" for transparent values.
 - **Select Tool**: Implemented advanced rotation logic with 4-step lossless cycle and drift prevention.
 - **Select Tool**: Implemented "Paste" functionality with auto-centering and Undo/Redo integration.
+- **Toolbar**: Refactored main toolbar to left sidebar with logical grouping (Drawing, Shapes, Palette, etc.).
+- **UI**: Added contextual tool inputs (Brush Size, etc.) below tool selection and sticky Settings button.
+- **Pattern Generation**: New "Generate Pattern" modal with canvas-based preview, responsive sizing, and full-screen zoom.
+- **Export**: Consolidated export options into a single modal with PDF (Pattern Pack, Chart Only) and PNG Image support.
 
 ## [v0.1.0-stable-baseline] - 2025-11-25
 
