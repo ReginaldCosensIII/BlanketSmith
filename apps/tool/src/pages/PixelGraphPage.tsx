@@ -1281,7 +1281,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
             {/* Modals */}
             <Modal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} title="Project Settings">
-                <div className="space-y-4">
+                <div className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
                     <div>
                         <label className="block text-sm font-medium text-gray-700">Pattern Dimensions</label>
                         <div className="flex items-center gap-2 mt-1">
@@ -1291,6 +1291,73 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             <Button onClick={handleResize} disabled={!hasSizeChanged} variant="secondary" className="ml-2">Resize</Button>
                         </div>
                         {hasSizeChanged && <p className="text-xs text-red-500 mt-1">Warning: Resizing may crop the pattern.</p>}
+                    </div>
+
+                    <div className="border-t pt-4">
+                        <h4 className="font-medium text-gray-900 mb-2">Gauge & Yarn Settings</h4>
+                        <div className="space-y-3">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Unit</label>
+                                <select
+                                    value={settingsForm.unit}
+                                    onChange={(e) => setSettingsForm({ ...settingsForm, unit: e.target.value })}
+                                    className="mt-1 w-full border rounded px-2 py-1"
+                                >
+                                    <option value="in">Inches (in)</option>
+                                    <option value="cm">Centimeters (cm)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Stitches per unit</label>
+                                <input
+                                    type="number"
+                                    min="0.1"
+                                    step="0.1"
+                                    value={settingsForm.stitchesPerUnit}
+                                    onChange={(e) => setSettingsForm({ ...settingsForm, stitchesPerUnit: Number(e.target.value) })}
+                                    className="mt-1 w-full border rounded px-2 py-1"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Rows per unit</label>
+                                <input
+                                    type="number"
+                                    min="0.1"
+                                    step="0.1"
+                                    value={settingsForm.rowsPerUnit}
+                                    onChange={(e) => setSettingsForm({ ...settingsForm, rowsPerUnit: Number(e.target.value) })}
+                                    className="mt-1 w-full border rounded px-2 py-1"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Yarn per stitch (inches)</label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={settingsForm.yarnPerStitch}
+                                    onChange={(e) => setSettingsForm({ ...settingsForm, yarnPerStitch: Number(e.target.value) })}
+                                    className="mt-1 w-full border rounded px-2 py-1"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Hook / needle size (optional)</label>
+                                <input
+                                    type="text"
+                                    value={settingsForm.hookSize}
+                                    onChange={(e) => setSettingsForm({ ...settingsForm, hookSize: e.target.value })}
+                                    className="mt-1 w-full border rounded px-2 py-1"
+                                    placeholder="e.g., 5mm, H/8"
+                                />
+                            </div>
+                            <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
+                                {physicalSizeString ? (
+                                    <span>✓ Estimated size: <strong>{physicalSizeString}</strong></span>
+                                ) : (
+                                    <span>Set stitches per unit and rows per unit to see the estimated size.</span>
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="border-t pt-4">
@@ -1307,6 +1374,10 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             <input type="checkbox" checked={isLeftHanded} onChange={onToggleLeftHanded} />
                             <span className="text-sm text-gray-700">Left-Handed Mode</span>
                         </label>
+                    </div>
+
+                    <div className="flex justify-end pt-4 border-t">
+                        <Button onClick={saveSettings}>Save Settings</Button>
                     </div>
                 </div>
             </Modal>
