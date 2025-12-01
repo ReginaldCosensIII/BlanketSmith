@@ -2,11 +2,12 @@ import React, { useState, useRef, useEffect, useCallback, useMemo, ChangeEvent }
 import { PixelGridData, YarnColor, CellData, Symmetry, ContextMenuItem } from '../types';
 import { useProject } from '../context/ProjectContext';
 import { PixelGridEditor } from '../components/PixelGridEditor';
-import { useFloatingSelection } from '../context/FloatingSelectionContext';
+import { exportPixelGridToPDF, exportPixelGridToImage } from '../services/exportService';
 import { processImageToGrid, findClosestYarnColor } from '../services/projectService';
 import { Button, Icon, ContextMenu, Modal } from '../components/ui/SharedComponents';
 import { PIXEL_FONT } from '../constants';
 import { useCanvasLogic } from '../hooks/useCanvasLogic';
+import { useFloatingSelection } from '../context/FloatingSelectionContext';
 
 // Helper functions
 const hexToRgb = (hex: string): [number, number, number] => {
@@ -77,6 +78,8 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [isProcessing, setIsProcessing] = useState(false);
     const [showGridLines, setShowGridLines] = useState(() => localStorage.getItem('editor_showGridLines') !== 'false'); // Default true
     const imageUploadRef = useRef<HTMLInputElement>(null);
+    const previewCanvasRef = useRef<HTMLCanvasElement>(null);
+    const fullScreenCanvasRef = useRef<HTMLCanvasElement>(null);
     const [maxImportColors, setMaxImportColors] = useState(() => Number(localStorage.getItem('editor_maxImportColors')) || 16);
 
     const [brushSize, setBrushSize] = useState(() => Number(localStorage.getItem('editor_brushSize')) || 1);
@@ -133,6 +136,13 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [hsl, setHsl] = useState<[number, number, number]>([0, 100, 50]);
     const colorInputRef = useRef<HTMLInputElement>(null);
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number } | null>(null);
+    const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+    const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+    const [importFile, setImportFile] = useState<File | null>(null);
+    const [previewGrid, setPreviewGrid] = useState<PixelGridData | null>(null);
+    const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
+    const [isPreviewFullScreen, setIsPreviewFullScreen] = useState(false);
+    const [previewZoom, setPreviewZoom] = useState(1);
 
     const project = state.project?.type === 'pixel' ? state.project : null;
     const projectData = project?.data as PixelGridData | undefined;
@@ -560,7 +570,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         setRotationSession({
             ...currentSession,
             step: nextStep,
-            currentRect: { x: newX, y: newY, w: newW, h: newH } // Update currentRect for next time
+            currentRect: { x: newX, y: newY, w: newW, h: newH }
         });
     };
 
@@ -568,6 +578,14 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         if (!projectData) return;
         if (floatingSelection) handleCommit();
         setSelection({ x: 0, y: 0, w: projectData.width, h: projectData.height });
+    };
+
+    const handleOpenContextMenu = (x: number, y: number) => {
+        setContextMenu({ x, y });
+    };
+
+    const handleReplace = () => {
+        handleToolChange('replace');
     };
 
     // --- CONTEXT MENU HANDLER ---
@@ -627,16 +645,23 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         return options;
     };
 
-    const handleOpenContextMenu = (x: number, y: number) => {
-        // Always open if we have options (which we now always do because of Select All)
-        if (getContextMenuOptions().length > 0) {
-            setContextMenu({ x, y });
-        }
+    const handleExportChartOnly = () => {
+        if (!projectData) return;
+        exportPixelGridToPDF(project?.name || 'Project', projectData, project?.yarnPalette || [], yarnUsage, { forceSinglePage: true }, project?.settings, isLeftHanded);
+    };
+
+    const handleExportPatternPack = () => {
+        if (!projectData) return;
+        exportPixelGridToPDF(project?.name || 'Project', projectData, project?.yarnPalette || [], yarnUsage, { forceSinglePage: false }, project?.settings, isLeftHanded);
+    };
+
+    const handleExportImage = () => {
+        if (!projectData) return;
+        exportPixelGridToImage(project?.name || 'Project', projectData, project?.yarnPalette || []);
     };
 
     const handleGridChange = (newGrid: CellData[]) => { if (!project || !project.data || !('grid' in project.data)) return; updateGrid(newGrid); };
-    const handleFillCanvas = () => { if (!projectData || primaryColorId === undefined) return; const newGrid = Array.from({ length: projectData.width * projectData.height }, () => ({ colorId: primaryColorId })); updateGrid(newGrid); };
-    const handleReplace = () => { if (!projectData || replaceFromColor === undefined || replaceToColor === undefined) return; const newGrid = projectData.grid.map(cell => cell.colorId === replaceFromColor ? { ...cell, colorId: replaceToColor } : cell); updateGrid(newGrid as CellData[]); setReplaceFromColor(undefined); setReplaceToColor(undefined); };
+
     const handleCanvasClick = (gridX: number, gridY: number, isRightClick: boolean) => {
         if (!projectData) return;
         const { width, height, grid } = projectData;
@@ -711,7 +736,149 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         } else { return; }
         if (changed) { updateGrid(newGrid); }
     };
-    const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>) => { const fileInput = e.target; if (!fileInput.files || fileInput.files.length === 0 || !project || !projectData) return; const file = fileInput.files[0]; const reader = new FileReader(); reader.onload = (event) => { const img = new Image(); img.onload = async () => { setIsProcessing(true); const canvas = document.createElement('canvas'); canvas.width = img.width; canvas.height = img.height; const ctx = canvas.getContext('2d'); if (!ctx) { setIsProcessing(false); return; } ctx.drawImage(img, 0, 0); const imageData = ctx.getImageData(0, 0, img.width, img.height); const newGridData = await processImageToGrid(imageData, projectData.width, projectData.height, maxImportColors, project.yarnPalette); dispatch({ type: 'UPDATE_PROJECT_DATA', payload: newGridData }); setIsProcessing(false); }; img.src = event.target?.result as string; }; reader.readAsDataURL(file); fileInput.value = ''; };
+    const handleImageUpload = (e: ChangeEvent<HTMLInputElement>) => {
+        const fileInput = e.target;
+        if (!fileInput.files || fileInput.files.length === 0) return;
+        const file = fileInput.files[0];
+        setImportFile(file);
+        setIsGenerateModalOpen(true);
+        fileInput.value = '';
+    };
+
+    const generatePreview = useCallback(async () => {
+        if (!importFile || !projectData || !project) return;
+        setIsGeneratingPreview(true);
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const img = new Image();
+            img.onload = async () => {
+                const canvas = document.createElement('canvas');
+                canvas.width = img.width;
+                canvas.height = img.height;
+                const ctx = canvas.getContext('2d');
+                if (!ctx) {
+                    setIsGeneratingPreview(false);
+                    return;
+                }
+                ctx.drawImage(img, 0, 0);
+                const imageData = ctx.getImageData(0, 0, img.width, img.height);
+                const newGridData = await processImageToGrid(imageData, projectData.width, projectData.height, maxImportColors, project.yarnPalette);
+                setPreviewGrid(newGridData as PixelGridData);
+                setIsGeneratingPreview(false);
+            };
+            img.src = event.target?.result as string;
+        };
+        reader.readAsDataURL(importFile);
+    }, [importFile, maxImportColors, projectData?.width, projectData?.height, project?.yarnPalette]);
+
+    useEffect(() => {
+        if (isGenerateModalOpen && importFile) {
+            const timer = setTimeout(() => {
+                generatePreview();
+            }, 500); // Debounce
+            return () => clearTimeout(timer);
+        }
+    }, [generatePreview, isGenerateModalOpen, importFile]);
+
+    // Canvas rendering for preview
+    useEffect(() => {
+        if (!previewGrid) return;
+
+        const renderToCanvas = (canvas: HTMLCanvasElement, includeGridLines: boolean = false, scale: number = 1) => {
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+
+            // Set canvas size based on scale
+            const scaledWidth = previewGrid.width * scale;
+            const scaledHeight = previewGrid.height * scale;
+
+            canvas.width = scaledWidth;
+            canvas.height = scaledHeight;
+
+            // Clear canvas
+            ctx.clearRect(0, 0, scaledWidth, scaledHeight);
+
+            // Draw pixels
+            previewGrid.grid.forEach((cell, i) => {
+                if (cell.colorId) {
+                    const x = (i % previewGrid.width) * scale;
+                    const y = Math.floor(i / previewGrid.width) * scale;
+                    const color = yarnColorMap.get(cell.colorId);
+                    if (color) {
+                        ctx.fillStyle = color.hex;
+                        ctx.fillRect(x, y, scale, scale);
+                    }
+                }
+            });
+
+            // Draw grid lines for full-screen preview
+            if (includeGridLines) {
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+                ctx.lineWidth = Math.max(1, scale * 0.05); // At least 1px, scales with cell size
+
+                // Vertical lines
+                for (let x = 0; x <= previewGrid.width; x++) {
+                    ctx.beginPath();
+                    ctx.moveTo(x * scale, 0);
+                    ctx.lineTo(x * scale, scaledHeight);
+                    ctx.stroke();
+                }
+
+                // Horizontal lines
+                for (let y = 0; y <= previewGrid.height; y++) {
+                    ctx.beginPath();
+                    ctx.moveTo(0, y * scale);
+                    ctx.lineTo(scaledWidth, y * scale);
+                    ctx.stroke();
+                }
+            }
+        };
+
+        if (isGenerateModalOpen && previewCanvasRef.current) {
+            renderToCanvas(previewCanvasRef.current, false, 1);
+        }
+
+        if (isPreviewFullScreen && fullScreenCanvasRef.current) {
+            // Calculate scale for full-screen preview (10px base * zoom)
+            const scale = 10 * previewZoom;
+            const showGridLines = scale >= 5; // Show grid lines if cells are >= 5px
+            renderToCanvas(fullScreenCanvasRef.current, showGridLines, scale);
+        }
+    }, [previewGrid, isGenerateModalOpen, isPreviewFullScreen, yarnColorMap, previewZoom]);
+
+    // Reset zoom when opening full screen
+    useEffect(() => {
+        if (isPreviewFullScreen && previewGrid) {
+            // Calculate initial zoom to fit ~80% of screen
+            const screenW = window.innerWidth * 0.8;
+            const screenH = window.innerHeight * 0.8;
+            const gridW = previewGrid.width * 10; // Base 10px per cell
+            const gridH = previewGrid.height * 10;
+
+            const scaleW = screenW / gridW;
+            const scaleH = screenH / gridH;
+            const fitZoom = Math.min(scaleW, scaleH);
+
+            // Ensure minimum zoom so grid lines are visible (cell size >= 5px)
+            const minZoomForGridLines = 0.5; // 10px * 0.5 = 5px per cell
+
+            // Use the larger of: fit zoom or minimum zoom for grid lines
+            const initialZoom = Math.max(fitZoom, minZoomForGridLines);
+
+            setPreviewZoom(Math.max(0.1, initialZoom));
+        }
+    }, [isPreviewFullScreen, previewGrid]);
+
+
+    const handleImportConfirm = () => {
+        if (previewGrid) {
+            dispatch({ type: 'UPDATE_PROJECT_DATA', payload: previewGrid });
+            setIsGenerateModalOpen(false);
+            setImportFile(null);
+            setPreviewGrid(null);
+        }
+    };
     const handleResize = () => { if (!projectData || !project || newWidth <= 0 || newHeight <= 0) return; if (projectData.width === newWidth && projectData.height === newHeight) return; const oldWidth = projectData.width; const oldHeight = projectData.height; const oldGrid = projectData.grid; const newGrid = Array.from({ length: newWidth * newHeight }, () => ({ colorId: null })); const offsetX = Math.floor((newWidth - oldWidth) / 2); const offsetY = Math.floor((newHeight - oldHeight) / 2); for (let y = 0; y < oldHeight; y++) { for (let x = 0; x < oldWidth; x++) { const newX = x + offsetX; const newY = y + offsetY; if (newX >= 0 && newX < newWidth && newY >= 0 && newY < newHeight) { const oldIndex = y * oldWidth + x; const newIndex = newY * newWidth + newX; newGrid[newIndex] = oldGrid[oldIndex]; } } } dispatch({ type: 'UPDATE_PROJECT_DATA', payload: { width: newWidth, height: newHeight, grid: newGrid as CellData[] } }); };
     const confirmationMessages = { 'left-to-right': 'This will overwrite the right half of the pattern with a mirrored copy of the left half.', 'right-to-left': 'This will overwrite the left half of the pattern with a mirrored copy of the right half.', 'top-to-bottom': 'This will overwrite the bottom half of the pattern with a mirrored copy of the top half.', 'bottom-to-top': 'This will overwrite the top half of the pattern with a mirrored copy of the bottom half.' };
     const requestMirror = (direction: MirrorDirection) => { setMirrorConfirm({ isOpen: true, direction }); };
@@ -766,6 +933,120 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                     options={getContextMenuOptions()}
                     onClose={() => setContextMenu(null)}
                 />
+            )}
+
+            {/* Export Modal */}
+            <Modal isOpen={isExportModalOpen} onClose={() => setIsExportModalOpen(false)} title="Export Project">
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-600">Choose an export format for your project.</p>
+                    <div className="flex flex-col gap-2">
+                        <Button variant="primary" onClick={() => { handleExportPatternPack(); setIsExportModalOpen(false); }} disabled={!projectData} className="justify-center">
+                            <Icon name="download" className="w-4 h-4 mr-2" /> Export Pattern Pack (PDF)
+                        </Button>
+                        <p className="text-xs text-gray-500 ml-2">Includes cover page, pattern overview, split charts, and full chart.</p>
+
+                        <Button variant="secondary" onClick={() => { handleExportChartOnly(); setIsExportModalOpen(false); }} disabled={!projectData} className="justify-center">
+                            <Icon name="download" className="w-4 h-4 mr-2" /> Export Chart Only (PDF)
+                        </Button>
+                        <p className="text-xs text-gray-500 ml-2">Single page chart with legend.</p>
+
+                        <Button variant="secondary" onClick={() => { handleExportImage(); setIsExportModalOpen(false); }} disabled={!projectData} className="justify-center">
+                            <Icon name="image" className="w-4 h-4 mr-2" /> Export Image (PNG)
+                        </Button>
+                        <p className="text-xs text-gray-500 ml-2">Download as PNG image.</p>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Generate Pattern Modal */}
+            <Modal isOpen={isGenerateModalOpen} onClose={() => setIsGenerateModalOpen(false)} title="Generate Pattern from Image">
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">1. Upload Image</label>
+                        <input type="file" ref={imageUploadRef} accept="image/*" onChange={handleImageUpload} className="hidden" />
+                        <div className="flex gap-2">
+                            <Button onClick={() => imageUploadRef.current?.click()} variant="secondary">
+                                <Icon name="upload" className="w-4 h-4 mr-2" /> Choose File
+                            </Button>
+                            <span className="text-sm text-gray-500 self-center">{importFile ? importFile.name : 'No file chosen'}</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">2. Max Colors: {maxImportColors}</label>
+                        <input type="range" min="2" max="32" value={maxImportColors} onChange={(e) => setMaxImportColors(Number(e.target.value))} className="w-full" />
+                        <p className="text-xs text-gray-500">More colors = more detail, but harder to crochet.</p>
+                    </div>
+
+                    <div className="border rounded p-4 bg-gray-50 h-[300px] flex items-center justify-center relative group">
+                        {isGeneratingPreview ? (
+                            <div className="text-gray-500 flex flex-col items-center">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mb-2"></div>
+                                Generating Preview...
+                            </div>
+                        ) : previewGrid ? (
+                            <div className="text-center relative w-full h-full flex items-center justify-center">
+                                {/* Canvas Preview */}
+                                <canvas
+                                    ref={previewCanvasRef}
+                                    style={{
+                                        width: '100%',
+                                        height: '100%',
+                                        objectFit: 'contain',
+                                        imageRendering: 'pixelated'
+                                    }}
+                                />
+                                <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                                    {previewGrid.width}x{previewGrid.height}
+                                </div>
+                                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
+                                    <Button variant="secondary" onClick={() => setIsPreviewFullScreen(true)}><Icon name="maximize" className="w-4 h-4 mr-2" /> Full Screen</Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="text-gray-400 text-sm">Upload an image to see preview</div>
+                        )}
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-4">
+                        <Button variant="secondary" onClick={() => setIsGenerateModalOpen(false)}>Cancel</Button>
+                        <Button variant="primary" onClick={handleImportConfirm} disabled={!previewGrid}>Import Pattern</Button>
+                    </div>
+                </div>
+            </Modal>
+
+            {/* Full Screen Preview Modal */}
+            {isPreviewFullScreen && previewGrid && (
+                <div className="fixed inset-0 z-50 bg-black/90 flex flex-col p-4">
+                    <div className="flex justify-between items-center mb-4 text-white">
+                        <div className="flex items-center gap-4">
+                            <h3 className="text-lg font-bold">Pattern Preview</h3>
+                            <div className="flex items-center gap-2 bg-gray-800 rounded px-3 py-1">
+                                <span className="text-xs text-gray-400">Zoom:</span>
+                                <input
+                                    type="range"
+                                    min="0.1"
+                                    max="5"
+                                    step="0.1"
+                                    value={previewZoom}
+                                    onChange={(e) => setPreviewZoom(Number(e.target.value))}
+                                    className="w-32"
+                                />
+                                <span className="text-xs w-8 text-right">{previewZoom.toFixed(1)}x</span>
+                            </div>
+                        </div>
+                        <Button variant="secondary" onClick={() => setIsPreviewFullScreen(false)}><Icon name="close" className="w-4 h-4 mr-2" /> Close</Button>
+                    </div>
+                    <div className="flex-1 overflow-auto flex items-center justify-center p-8">
+                        <canvas
+                            ref={fullScreenCanvasRef}
+                            style={{
+                                imageRendering: 'pixelated',
+                                boxShadow: '0 0 20px rgba(0,0,0,0.5)'
+                            }}
+                        />
+                    </div>
+                </div>
             )}
 
             <main className="flex-1 relative min-w-0">
@@ -846,38 +1127,10 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                     <div>
                         <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Shapes & Text</h4>
                         <div className="grid grid-cols-4 gap-2">
+                            <ToolButton tool="select" label="Select" icon="select" />
+                            <ToolButton tool="text" label="Text" icon="text" />
                             <ToolButton tool="fill-row" label="Row" icon="row" />
                             <ToolButton tool="fill-column" label="Col" icon="column" />
-                            <ToolButton tool="text" label="Text" icon="text" />
-                            <ToolButton tool="select" label="Select" icon="select" />
-                        </div>
-                    </div>
-
-                    <div>
-                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Symmetry</h4>
-                        <div className="flex gap-2">
-                            <Button variant={symmetry.vertical ? 'primary' : 'secondary'} onClick={() => toggleSymmetry('vertical')} className="flex-1 justify-center"><Icon name="symmetry-vertical" className="w-4 h-4 mr-2" /> Vert</Button>
-                            <Button variant={symmetry.horizontal ? 'primary' : 'secondary'} onClick={() => toggleSymmetry('horizontal')} className="flex-1 justify-center"><Icon name="symmetry-horizontal" className="w-4 h-4 mr-2" /> Horiz</Button>
-                        </div>
-                    </div>
-
-                    <div>
-                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Generate Pattern</h4>
-                        <input type="file" ref={imageUploadRef} accept="image/*" onChange={handleImageUpload} className="hidden" />
-                        <Button onClick={() => imageUploadRef.current?.click()} className="w-full justify-center"><Icon name="upload" className="w-4 h-4 mr-2" /> Upload Image</Button>
-                        <div className="mt-2">
-                            <label className="text-xs text-gray-500">Max Colors: {maxImportColors}</label>
-                            <input type="range" min="2" max="32" value={maxImportColors} onChange={(e) => setMaxImportColors(Number(e.target.value))} className="w-full" />
-                        </div>
-                    </div>
-
-                    <div>
-                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Mirror Canvas</h4>
-                        <div className="grid grid-cols-2 gap-2">
-                            <Button variant="secondary" onClick={() => requestMirror('left-to-right')}>Left → Right</Button>
-                            <Button variant="secondary" onClick={() => requestMirror('right-to-left')}>Right → Left</Button>
-                            <Button variant="secondary" onClick={() => requestMirror('top-to-bottom')}>Top → Bottom</Button>
-                            <Button variant="secondary" onClick={() => requestMirror('bottom-to-top')}>Bottom → Top</Button>
                         </div>
                     </div>
 
@@ -968,15 +1221,49 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             <span>R: {secondaryColorId ? yarnColorMap.get(secondaryColorId)?.name : 'Eraser'}</span>
                         </div>
                     </div>
+
+                    <div>
+                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Symmetry</h4>
+                        <div className="flex gap-2">
+                            <Button variant={symmetry.vertical ? 'primary' : 'secondary'} onClick={() => toggleSymmetry('vertical')} className="flex-1 justify-center"><Icon name="symmetry-vertical" className="w-4 h-4 mr-2" /> Vert</Button>
+                            <Button variant={symmetry.horizontal ? 'primary' : 'secondary'} onClick={() => toggleSymmetry('horizontal')} className="flex-1 justify-center"><Icon name="symmetry-horizontal" className="w-4 h-4 mr-2" /> Horiz</Button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Mirror Canvas</h4>
+                        <div className="grid grid-cols-2 gap-2">
+                            <Button variant="secondary" onClick={() => requestMirror('left-to-right')}>Left → Right</Button>
+                            <Button variant="secondary" onClick={() => requestMirror('right-to-left')}>Right → Left</Button>
+                            <Button variant="secondary" onClick={() => requestMirror('top-to-bottom')}>Top → Bottom</Button>
+                            <Button variant="secondary" onClick={() => requestMirror('bottom-to-top')}>Bottom → Top</Button>
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Generate Pattern</h4>
+                        <Button onClick={() => setIsGenerateModalOpen(true)} className="w-full justify-center"><Icon name="upload" className="w-4 h-4 mr-2" /> Generate Pattern</Button>
+                    </div>
+
+                    <div>
+                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Export</h4>
+                        <Button variant="secondary" onClick={() => setIsExportModalOpen(true)} className="w-full justify-center"><Icon name="download" className="w-4 h-4 mr-2" /> Export</Button>
+                    </div>
+
+
+                </div>
+                <div className="p-4 border-t bg-gray-50">
+                    <Button variant="secondary" onClick={openSettingsModal} className="w-full justify-center"><Icon name="settings" className="w-4 h-4 mr-2" /> Settings</Button>
                 </div>
             </aside>
 
-            {!isPanelOpen && (
-                <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
-                    <Button onClick={() => setIsPanelOpen(true)} className="shadow-lg"><Icon name="brush" className="w-5 h-5 mr-2" /> Tools</Button>
-                    <Button variant="secondary" onClick={openSettingsModal} className="shadow-lg"><Icon name="settings" className="w-5 h-5 mr-2" /> Settings</Button>
-                </div>
-            )}
+            {
+                !isPanelOpen && (
+                    <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
+                        <Button onClick={() => setIsPanelOpen(true)} className="shadow-lg"><Icon name="brush" className="w-5 h-5 mr-2" /> Tools</Button>
+                    </div>
+                )
+            }
 
             {/* Modals */}
             <Modal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} title="Project Settings">
@@ -1078,6 +1365,6 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                     </div>
                 </div>
             </Modal>
-        </div>
+        </div >
     );
 };
