@@ -20,6 +20,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **Selection Support**: Copy/Paste/Rotate/Flip operations now preserve stitch data.
 
 ### Fixed
+- **Stitch System**: Fixed Brush tool optimization bug where stitches weren't applied if color remained unchanged in Combo Mode.
+- **Stitch System**: Fixed Non-Combo Paint behavior to correctly remove/clear stitches when painting in "Color Only" mode.
+- **Stitch System**: Fixed Paste Preview to correctly render stitch symbols on floating selections.
 - **Replace Tool**: Fixed regression where "Replace All" button was non-functional.
 - **Replace Tool**: Fixed workflow to auto-advance from "From" to "To" selection.
 - **Replace Tool**: Enabled canvas picking to set "From" and "To" colors.
