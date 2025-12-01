@@ -155,7 +155,24 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             brushPoints.forEach(bp => {
                 const index = bp.y * width + bp.x;
                 if (index >= 0 && index < width * height) {
-                    if (grid[index].colorId !== activeColorId && !currentPainted.has(index)) {
+                    const cell = grid[index];
+                    const colorChanged = cell.colorId !== activeColorId;
+
+                    let shouldPaint = colorChanged;
+
+                    if (isComboPaintMode) {
+                        const activeStitchId = button === 'right' ? secondaryStitchId : primaryStitchId;
+                        const stitchChanged = cell.stitchId !== activeStitchId;
+                        shouldPaint = colorChanged || stitchChanged;
+                    } else {
+                        // In non-combo mode, we clear the stitch.
+                        // So if there is a stitch, we need to paint (to remove it).
+                        if (cell.stitchId !== null && cell.stitchId !== undefined) {
+                            shouldPaint = true;
+                        }
+                    }
+
+                    if (shouldPaint && !currentPainted.has(index)) {
                         currentPainted.add(index);
                     }
                 }
@@ -374,7 +391,8 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 if (isComboPaintMode) {
                     newGrid[index] = { ...cell, colorId: colorToApply, stitchId: stitchToApply };
                 } else {
-                    newGrid[index] = { ...cell, colorId: colorToApply };
+                    // Clear stitch in non-combo mode
+                    newGrid[index] = { ...cell, colorId: colorToApply, stitchId: null };
                 }
             });
             onGridChange(newGrid);
@@ -440,7 +458,8 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             if (isComboPaintMode) {
                 newGrid[index] = { ...cell, colorId: colorToApply, stitchId: stitchToApply };
             } else {
-                newGrid[index] = { ...cell, colorId: colorToApply };
+                // Clear stitch in non-combo mode
+                newGrid[index] = { ...cell, colorId: colorToApply, stitchId: null };
             }
         });
         return newGrid;

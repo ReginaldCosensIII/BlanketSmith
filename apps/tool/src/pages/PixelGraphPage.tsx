@@ -208,8 +208,8 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         const { colorId, stitchId, comboMode } = params;
 
         if (!comboMode) {
-            // Only paint color; preserve existing stitch
-            return { ...cell, colorId };
+            // In non-combo mode (Color Only), we clear the stitch
+            return { ...cell, colorId, stitchId: null };
         }
 
         // Paint both color and stitch
