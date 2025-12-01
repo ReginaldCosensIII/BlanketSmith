@@ -9,9 +9,12 @@ import { EditorOverlay } from './editor/EditorOverlay';
 
 type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column' | 'eyedropper' | 'text' | 'select';
 
+import { StitchDefinition } from '../data/stitches';
+
 interface PixelGridEditorProps {
     data: PixelGridData;
     yarnPalette: YarnColor[];
+    stitchMap: Map<string, StitchDefinition>;
     primaryColorId: string | null;
     secondaryColorId: string | null;
     onGridChange: (newGrid: CellData[]) => void;
@@ -39,6 +42,7 @@ const RULER_SIZE = 2;
 export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     data,
     yarnPalette,
+    stitchMap,
     primaryColorId,
     secondaryColorId,
     onGridChange,
@@ -590,6 +594,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                         height={height}
                         grid={temporaryGrid}
                         yarnColorMap={yarnColorMap}
+                        stitchMap={stitchMap}
                         showGridLines={showGridLines}
                         zoom={zoom}
                     />
@@ -623,7 +628,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                         hoverPreviews={getHoverPreviews()}
                     />
                 </g>
-            </svg>
-        </div>
+            </svg >
+        </div >
     );
 };

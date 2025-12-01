@@ -1,11 +1,13 @@
 import React from 'react';
 import { CellData } from '../../types';
+import { StitchDefinition } from '../../data/stitches';
 
 interface GridRendererProps {
     width: number;
     height: number;
     grid: CellData[];
-    yarnColorMap: Map<string, string>;
+    yarnColorMap: Map<string, any>; // Relaxed type to avoid issues if YarnColor is complex
+    stitchMap: Map<string, StitchDefinition>;
     showGridLines: boolean;
     zoom: number;
 }
@@ -15,6 +17,7 @@ export const GridRenderer: React.FC<GridRendererProps> = ({
     height,
     grid,
     yarnColorMap,
+    stitchMap,
     showGridLines,
     zoom,
 }) => {
@@ -31,19 +34,36 @@ export const GridRenderer: React.FC<GridRendererProps> = ({
             {grid.map((cell, i) => {
                 const x = i % width;
                 const y = Math.floor(i / width);
-                const color = cell.colorId ? yarnColorMap.get(cell.colorId) : 'transparent';
+                const colorObj = cell.colorId ? yarnColorMap.get(cell.colorId) : null;
+                const color = colorObj ? (typeof colorObj === 'string' ? colorObj : colorObj.hex) : 'transparent';
+                const stitch = cell.stitchId ? stitchMap.get(cell.stitchId) : null;
 
-                if (color === 'transparent' || !color) return null;
+                if ((color === 'transparent' || !color) && !stitch) return null;
 
                 return (
-                    <rect
-                        key={i}
-                        x={x}
-                        y={y}
-                        width="1"
-                        height="1"
-                        fill={color}
-                    />
+                    <g key={i}>
+                        {color && color !== 'transparent' && (
+                            <rect
+                                x={x}
+                                y={y}
+                                width="1"
+                                height="1"
+                                fill={color}
+                            />
+                        )}
+                        {stitch && (
+                            <text
+                                x={x + 0.5}
+                                y={y + 0.75}
+                                fontSize="0.7"
+                                textAnchor="middle"
+                                fill="rgba(0,0,0,0.7)"
+                                style={{ pointerEvents: 'none', userSelect: 'none' }}
+                            >
+                                {stitch.symbol}
+                            </text>
+                        )}
+                    </g>
                 );
             })}
 
