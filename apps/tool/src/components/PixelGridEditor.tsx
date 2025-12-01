@@ -17,6 +17,9 @@ interface PixelGridEditorProps {
     stitchMap: Map<string, StitchDefinition>;
     primaryColorId: string | null;
     secondaryColorId: string | null;
+    primaryStitchId: string | null;
+    secondaryStitchId: string | null;
+    isComboPaintMode: boolean;
     onGridChange: (newGrid: CellData[]) => void;
     showGridLines: boolean;
     activeTool: Tool;
@@ -45,6 +48,9 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     stitchMap,
     primaryColorId,
     secondaryColorId,
+    primaryStitchId,
+    secondaryStitchId,
+    isComboPaintMode,
     onGridChange,
     showGridLines,
     activeTool,
@@ -361,9 +367,15 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         if (isDrawing && paintedCells.size > 0 && activeTool === 'brush') {
             const newGrid = [...grid];
             const colorToApply = drawingButton === 'right' ? secondaryColorId : primaryColorId;
+            const stitchToApply = drawingButton === 'right' ? secondaryStitchId : primaryStitchId;
 
             paintedCells.forEach(index => {
-                newGrid[index] = { ...newGrid[index], colorId: colorToApply };
+                const cell = newGrid[index];
+                if (isComboPaintMode) {
+                    newGrid[index] = { ...cell, colorId: colorToApply, stitchId: stitchToApply };
+                } else {
+                    newGrid[index] = { ...cell, colorId: colorToApply };
+                }
             });
             onGridChange(newGrid);
         }
@@ -421,9 +433,15 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         if (paintedCells.size === 0 || activeTool !== 'brush') return grid;
         const newGrid = [...grid];
         const colorToApply = drawingButton === 'right' ? secondaryColorId : primaryColorId;
+        const stitchToApply = drawingButton === 'right' ? secondaryStitchId : primaryStitchId;
 
         paintedCells.forEach(index => {
-            newGrid[index] = { ...newGrid[index], colorId: colorToApply };
+            const cell = newGrid[index];
+            if (isComboPaintMode) {
+                newGrid[index] = { ...cell, colorId: colorToApply, stitchId: stitchToApply };
+            } else {
+                newGrid[index] = { ...cell, colorId: colorToApply };
+            }
         });
         return newGrid;
     }, [grid, paintedCells, drawingButton, primaryColorId, secondaryColorId, activeTool]);
@@ -606,15 +624,29 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                                 const row = Math.floor(i / floatingSelection.w);
                                 if (!cell.colorId) return null;
                                 const color = yarnColorMap.get(cell.colorId);
+                                const stitch = cell.stitchId ? stitchMap.get(cell.stitchId) : null;
                                 return (
-                                    <rect
-                                        key={i}
-                                        x={col}
-                                        y={row}
-                                        width={1}
-                                        height={1}
-                                        fill={color || 'transparent'}
-                                    />
+                                    <g key={i}>
+                                        <rect
+                                            x={col}
+                                            y={row}
+                                            width={1}
+                                            height={1}
+                                            fill={color || 'transparent'}
+                                        />
+                                        {stitch && (
+                                            <text
+                                                x={col + 0.5}
+                                                y={row + 0.75}
+                                                fontSize="0.7"
+                                                textAnchor="middle"
+                                                fill="rgba(0,0,0,0.7)"
+                                                style={{ pointerEvents: 'none', userSelect: 'none' }}
+                                            >
+                                                {stitch.symbol}
+                                            </text>
+                                        )}
+                                    </g>
                                 );
                             })}
                         </g>

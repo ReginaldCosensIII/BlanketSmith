@@ -1129,6 +1129,9 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                     stitchMap={stitchMap}
                     primaryColorId={primaryColorId}
                     secondaryColorId={secondaryColorId}
+                    primaryStitchId={primaryStitchId}
+                    secondaryStitchId={secondaryStitchId}
+                    isComboPaintMode={isComboPaintMode}
                     onGridChange={handleGridChange}
                     showGridLines={showGridLines}
                     activeTool={activeTool}
@@ -1264,36 +1267,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                         </div>
                     )}
 
-                    <div className="border-t pt-4">
-                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Stitches</h4>
-                        <div className="flex items-center justify-between mb-2">
-                            <label className="flex items-center text-sm text-gray-700 cursor-pointer select-none">
-                                <input
-                                    type="checkbox"
-                                    checked={isComboPaintMode}
-                                    onChange={(e) => setIsComboPaintMode(e.target.checked)}
-                                    className="mr-2 rounded text-indigo-600 focus:ring-indigo-500"
-                                />
-                                Combo Paint Mode
-                            </label>
-                        </div>
-                        <p className="text-xs text-gray-500 mb-2">
-                            {isComboPaintMode ? "Painting applies Color + Stitch" : "Painting applies Color only"}
-                        </p>
-                        <div className="flex gap-2 mb-2">
-                            <div className="flex-1 border rounded p-1 flex flex-col items-center bg-gray-50">
-                                <span className="text-xs text-gray-500 mb-1">Primary</span>
-                                <span className="text-lg font-bold">{primaryStitch?.symbol}</span>
-                                <span className="text-xs font-mono">{primaryStitch?.shortCode}</span>
-                            </div>
-                            <div className="flex-1 border rounded p-1 flex flex-col items-center bg-gray-50">
-                                <span className="text-xs text-gray-500 mb-1">Secondary</span>
-                                <span className="text-lg font-bold">{secondaryStitch?.symbol}</span>
-                                <span className="text-xs font-mono">{secondaryStitch?.shortCode}</span>
-                            </div>
-                        </div>
-                        <Button variant="secondary" onClick={() => setIsStitchPaletteOpen(true)} className="w-full justify-center">Manage Stitches</Button>
-                    </div>
+
 
                     <div className="border-t pt-4">
                         <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Palette</h4>
@@ -1321,27 +1295,70 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                 <Icon name="plus" className="w-4 h-4" />
                             </button>
                         </div>
-                        <div className="flex justify-between text-xs text-gray-500 mt-1">
-                            <div className="flex items-center gap-1">
-                                <span>L:</span>
-                                {primaryColorId ? (
-                                    <div className="flex items-center gap-1">
-                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: yarnColorMap.get(primaryColorId)?.hex }}></div>
-                                        <span className="truncate max-w-[80px]">{yarnColorMap.get(primaryColorId)?.name}</span>
-                                        {primaryStitch && <span className="font-bold ml-1">({primaryStitch.symbol})</span>}
+                        <div className="flex flex-col gap-2 mt-3">
+                            {/* Primary (Left) */}
+                            <div className="flex items-center justify-between bg-gray-50 p-2 rounded border border-gray-200">
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                    <span className="font-bold text-gray-500 text-xs">L:</span>
+                                    {primaryColorId ? (
+                                        <>
+                                            <div className="w-4 h-4 rounded-full border border-gray-300 flex-shrink-0" style={{ backgroundColor: yarnColorMap.get(primaryColorId)?.hex }}></div>
+                                            <span className="text-sm truncate font-medium">{yarnColorMap.get(primaryColorId)?.name}</span>
+                                        </>
+                                    ) : <span className="text-sm text-gray-500 italic">Eraser</span>}
+                                </div>
+                                {isComboPaintMode ? (
+                                    primaryStitch && (
+                                        <div className="flex items-center justify-center w-8 h-8 bg-white rounded border border-gray-300 font-bold text-lg shadow-sm" title={`Stitch: ${primaryStitch.name}`}>
+                                            {primaryStitch.symbol}
+                                        </div>
+                                    )
+                                ) : (
+                                    <div className="flex items-center justify-center w-8 h-8 bg-gray-100 rounded border border-gray-200 text-gray-300" title="Stitch disabled (Enable Combo Paint Mode)">
+                                        <Icon name="ban" className="w-4 h-4" />
                                     </div>
-                                ) : <span>Eraser</span>}
+                                )}
                             </div>
-                            <div className="flex items-center gap-1">
-                                <span>R:</span>
-                                {secondaryColorId ? (
-                                    <div className="flex items-center gap-1">
-                                        <div className="w-3 h-3 rounded-full" style={{ backgroundColor: yarnColorMap.get(secondaryColorId)?.hex }}></div>
-                                        <span className="truncate max-w-[80px]">{yarnColorMap.get(secondaryColorId)?.name}</span>
-                                        {secondaryStitch && <span className="font-bold ml-1">({secondaryStitch.symbol})</span>}
+
+                            {/* Secondary (Right) */}
+                            <div className="flex items-center justify-between bg-gray-50 p-2 rounded border border-gray-200">
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                    <span className="font-bold text-gray-500 text-xs">R:</span>
+                                    {secondaryColorId ? (
+                                        <>
+                                            <div className="w-4 h-4 rounded-full border border-gray-300 flex-shrink-0" style={{ backgroundColor: yarnColorMap.get(secondaryColorId)?.hex }}></div>
+                                            <span className="text-sm truncate font-medium">{yarnColorMap.get(secondaryColorId)?.name}</span>
+                                        </>
+                                    ) : <span className="text-sm text-gray-500 italic">Eraser</span>}
+                                </div>
+                                {isComboPaintMode ? (
+                                    secondaryStitch && (
+                                        <div className="flex items-center justify-center w-8 h-8 bg-white rounded border border-gray-300 font-bold text-lg shadow-sm" title={`Stitch: ${secondaryStitch.name}`}>
+                                            {secondaryStitch.symbol}
+                                        </div>
+                                    )
+                                ) : (
+                                    <div className="flex items-center justify-center w-8 h-8 bg-gray-100 rounded border border-gray-200 text-gray-300" title="Stitch disabled (Enable Combo Paint Mode)">
+                                        <Icon name="ban" className="w-4 h-4" />
                                     </div>
-                                ) : <span>Eraser</span>}
+                                )}
                             </div>
+                        </div>
+
+                        {/* Controls */}
+                        <div className="mt-3 space-y-2 border-t pt-2 border-gray-100">
+                            <label className="flex items-center justify-between text-sm text-gray-700 cursor-pointer select-none p-1 hover:bg-gray-50 rounded">
+                                <span className="font-medium">Combo Paint Mode</span>
+                                <input
+                                    type="checkbox"
+                                    checked={isComboPaintMode}
+                                    onChange={(e) => setIsComboPaintMode(e.target.checked)}
+                                    className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                                />
+                            </label>
+                            <Button variant="secondary" onClick={() => setIsStitchPaletteOpen(true)} className="w-full justify-center text-xs h-8">
+                                <Icon name="grid" className="w-3 h-3 mr-1" /> Manage Stitches
+                            </Button>
                         </div>
                     </div>
 
