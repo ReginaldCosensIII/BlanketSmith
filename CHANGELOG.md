@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - **Bucket Fill Tool**: Implemented flood-fill algorithm for filling contiguous areas.
 - **Cursor Update**: Changed Fill tool cursor to `crosshair` for better precision.
+- **Gauge & Yarn Settings**: Restored gauge configuration UI in Project Settings modal with unit selector, stitches/rows per unit, yarn per stitch, and hook size inputs.
+- **Estimated Size Display**: Added real-time physical size calculation based on gauge settings.
 
 ### Fixed
 - **Replace Tool**: Fixed regression where "Replace All" button was non-functional.
