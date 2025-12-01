@@ -13,7 +13,7 @@ export interface YarnColor {
 
 export interface CellData {
   colorId: string | null;
-  iconId?: string; // For future stitch icons
+  stitchId?: string | null; // Stitch type identifier
 }
 
 export interface Symmetry {
@@ -59,6 +59,7 @@ export interface Project<T> {
   updatedAt: string;
   settings: {
     // e.g., blanket dimensions, hook size, gauge
+    stitchesEnabled?: string[]; // Optional list of stitch IDs used in this project
     [key: string]: any;
   };
   data: T;

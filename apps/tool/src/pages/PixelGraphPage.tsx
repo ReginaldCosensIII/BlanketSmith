@@ -8,6 +8,7 @@ import { Button, Icon, ContextMenu, Modal } from '../components/ui/SharedCompone
 import { PIXEL_FONT } from '../constants';
 import { useCanvasLogic } from '../hooks/useCanvasLogic';
 import { useFloatingSelection } from '../context/FloatingSelectionContext';
+import { DEFAULT_STITCH_LIBRARY, StitchDefinition } from '../data/stitches';
 
 // Helper functions
 const hexToRgb = (hex: string): [number, number, number] => {
@@ -144,6 +145,21 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [isPreviewFullScreen, setIsPreviewFullScreen] = useState(false);
     const [previewZoom, setPreviewZoom] = useState(1);
 
+    // --- STITCH SYSTEM STATE ---
+    const [primaryStitchId, setPrimaryStitchId] = useState<string | null>("sc");
+    const [secondaryStitchId, setSecondaryStitchId] = useState<string | null>("ch");
+    const [isComboPaintMode, setIsComboPaintMode] = useState<boolean>(false);
+    const [isStitchPaletteOpen, setIsStitchPaletteOpen] = useState(false);
+
+    // Build stitch map for lookups
+    const stitchMap = useMemo(
+        () => new Map(DEFAULT_STITCH_LIBRARY.map(s => [s.id, s] as const)),
+        []
+    );
+
+    const primaryStitch = primaryStitchId ? stitchMap.get(primaryStitchId) : undefined;
+    const secondaryStitch = secondaryStitchId ? stitchMap.get(secondaryStitchId) : undefined;
+
     const project = state.project?.type === 'pixel' ? state.project : null;
     const projectData = project?.data as PixelGridData | undefined;
 
@@ -180,6 +196,25 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         newGrid.forEach(cell => { if (cell.colorId) usedYarnSet.add(cell.colorId); });
         dispatch({ type: 'UPDATE_PROJECT_DATA', payload: { grid: newGrid, palette: Array.from(usedYarnSet) } });
     }, [dispatch]);
+
+    // --- PAINTING LOGIC (Color + Stitch) ---
+    interface PaintParams {
+        colorId: string | null;
+        stitchId: string | null;
+        comboMode: boolean;
+    }
+
+    const applyPaintToCell = (cell: CellData, params: PaintParams): CellData => {
+        const { colorId, stitchId, comboMode } = params;
+
+        if (!comboMode) {
+            // Only paint color; preserve existing stitch
+            return { ...cell, colorId };
+        }
+
+        // Paint both color and stitch
+        return { ...cell, colorId, stitchId };
+    };
 
     // --- SELECTION ACTIONS ---
     const handleCommit = useCallback(() => {
@@ -590,9 +625,15 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         const newGrid = [...projectData.grid];
         let changed = false;
 
+        const paintParams: PaintParams = {
+            colorId: replaceToColor,
+            stitchId: primaryStitchId, // Use primary stitch for replace all in combo mode
+            comboMode: isComboPaintMode
+        };
+
         for (let i = 0; i < newGrid.length; i++) {
             if (newGrid[i].colorId === replaceFromColor) {
-                newGrid[i] = { ...newGrid[i], colorId: replaceToColor };
+                newGrid[i] = applyPaintToCell(newGrid[i], paintParams);
                 changed = true;
             }
         }
@@ -696,12 +737,30 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         }
 
         const colorToApply = isRightClick ? secondaryColorId : primaryColorId;
+        const stitchToApply = isRightClick ? secondaryStitchId : primaryStitchId;
+
+        const paintParams: PaintParams = {
+            colorId: colorToApply,
+            stitchId: stitchToApply,
+            comboMode: isComboPaintMode
+        };
+
         let newGrid = [...grid];
         let changed = false;
 
         // --- FLOOD FILL ALGORITHM ---
-        const floodFill = (startX: number, startY: number, targetColor: string | null, replacementColor: string | null) => {
-            if (targetColor === replacementColor) return;
+        const floodFill = (startX: number, startY: number, targetColor: string | null) => {
+            const replacementColor = paintParams.colorId;
+            if (targetColor === replacementColor && !paintParams.comboMode) return;
+            // In combo mode, we might be applying a stitch even if color is same, so we continue.
+            // But standard flood fill usually stops if target == replacement. 
+            // For now, let's assume if color matches AND stitch matches (or we don't care about stitch), we stop.
+            // But to be safe and simple: if targetColor === replacementColor AND !comboMode, return.
+
+            // Actually, if we are in combo mode, we want to fill even if color is same, IF stitch is different.
+            // But flood fill logic relies on color boundary. 
+            // Let's stick to color-based flood fill for now, but apply stitch too.
+            if (targetColor === replacementColor && !paintParams.comboMode) return;
 
             const queue: [number, number][] = [[startX, startY]];
             const visited = new Set<number>();
@@ -714,7 +773,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 visited.add(idx);
 
                 if (newGrid[idx].colorId === targetColor) {
-                    newGrid[idx] = { ...newGrid[idx], colorId: replacementColor };
+                    newGrid[idx] = applyPaintToCell(newGrid[idx], paintParams);
                     changed = true;
 
                     if (x + 1 < width) queue.push([x + 1, y]);
@@ -729,18 +788,18 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             points.forEach(point => {
                 if (tool === 'fill-row') {
                     const offset = Math.floor((rowFillSize - 1) / 2); const startY = point.y - offset;
-                    for (let i = 0; i < rowFillSize; i++) { const currentY = startY + i; if (currentY >= 0 && currentY < height) { for (let x = 0; x < width; x++) { const idx = currentY * width + x; if (newGrid[idx].colorId !== colorToApply) { newGrid[idx] = { ...newGrid[idx], colorId: colorToApply }; changed = true; } } } }
+                    for (let i = 0; i < rowFillSize; i++) { const currentY = startY + i; if (currentY >= 0 && currentY < height) { for (let x = 0; x < width; x++) { const idx = currentY * width + x; if (newGrid[idx].colorId !== paintParams.colorId || (paintParams.comboMode && newGrid[idx].stitchId !== paintParams.stitchId)) { newGrid[idx] = applyPaintToCell(newGrid[idx], paintParams); changed = true; } } } }
                 } else {
                     const offset = Math.floor((colFillSize - 1) / 2); const startX = point.x - offset;
-                    for (let i = 0; i < colFillSize; i++) { const currentX = startX + i; if (currentX >= 0 && currentX < width) { for (let y = 0; y < height; y++) { const idx = y * width + currentX; if (newGrid[idx].colorId !== colorToApply) { newGrid[idx] = { ...newGrid[idx], colorId: colorToApply }; changed = true; } } } }
+                    for (let i = 0; i < colFillSize; i++) { const currentX = startX + i; if (currentX >= 0 && currentX < width) { for (let y = 0; y < height; y++) { const idx = y * width + currentX; if (newGrid[idx].colorId !== paintParams.colorId || (paintParams.comboMode && newGrid[idx].stitchId !== paintParams.stitchId)) { newGrid[idx] = applyPaintToCell(newGrid[idx], paintParams); changed = true; } } } }
                 }
             });
         };
 
         if (activeTool === 'fill') {
-            floodFill(gridX, gridY, clickedColorId, colorToApply);
+            floodFill(gridX, gridY, clickedColorId);
         } else if (activeTool === 'text') {
-            let currentX = gridX; textToolInput.toUpperCase().split('').forEach(char => { const charData = PIXEL_FONT[char]; if (charData) { charData.forEach((row, yOffset) => { row.forEach((pixel, xOffset) => { if (pixel === 1) { for (let scaleY = 0; scaleY < textSize; scaleY++) { for (let scaleX = 0; scaleX < textSize; scaleX++) { const finalX = currentX + (xOffset * textSize) + scaleX; const finalY = gridY + (yOffset * textSize) + scaleY; if (finalX >= 0 && finalX < width && finalY >= 0 && finalY < height) { const idx = finalY * width + finalX; if (newGrid[idx].colorId !== colorToApply) { newGrid[idx] = { ...newGrid[idx], colorId: colorToApply }; changed = true; } } } } } }); }); currentX += (charData[0].length * textSize) + (1 * textSize); } });
+            let currentX = gridX; textToolInput.toUpperCase().split('').forEach(char => { const charData = PIXEL_FONT[char]; if (charData) { charData.forEach((row, yOffset) => { row.forEach((pixel, xOffset) => { if (pixel === 1) { for (let scaleY = 0; scaleY < textSize; scaleY++) { for (let scaleX = 0; scaleX < textSize; scaleX++) { const finalX = currentX + (xOffset * textSize) + scaleX; const finalY = gridY + (yOffset * textSize) + scaleY; if (finalX >= 0 && finalX < width && finalY >= 0 && finalY < height) { const idx = finalY * width + finalX; if (newGrid[idx].colorId !== paintParams.colorId || (paintParams.comboMode && newGrid[idx].stitchId !== paintParams.stitchId)) { newGrid[idx] = applyPaintToCell(newGrid[idx], paintParams); changed = true; } } } } } }); }); currentX += (charData[0].length * textSize) + (1 * textSize); } });
         } else if (activeTool === 'fill-row' || activeTool === 'fill-column') {
             const pointsToFill = [{ x: gridX, y: gridY }];
             if (activeTool === 'fill-row') {
@@ -1067,8 +1126,12 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 <PixelGridEditor
                     data={projectData}
                     yarnPalette={project.yarnPalette}
+                    stitchMap={stitchMap}
                     primaryColorId={primaryColorId}
                     secondaryColorId={secondaryColorId}
+                    primaryStitchId={primaryStitchId}
+                    secondaryStitchId={secondaryStitchId}
+                    isComboPaintMode={isComboPaintMode}
                     onGridChange={handleGridChange}
                     showGridLines={showGridLines}
                     activeTool={activeTool}
@@ -1204,6 +1267,8 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                         </div>
                     )}
 
+
+
                     <div className="border-t pt-4">
                         <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Palette</h4>
                         <div className="grid grid-cols-5 gap-1 mb-2">
@@ -1230,9 +1295,70 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                 <Icon name="plus" className="w-4 h-4" />
                             </button>
                         </div>
-                        <div className="flex justify-between text-xs text-gray-500">
-                            <span>L: {primaryColorId ? yarnColorMap.get(primaryColorId)?.name : 'Eraser'}</span>
-                            <span>R: {secondaryColorId ? yarnColorMap.get(secondaryColorId)?.name : 'Eraser'}</span>
+                        <div className="flex flex-col gap-2 mt-3">
+                            {/* Primary (Left) */}
+                            <div className="flex items-center justify-between bg-gray-50 p-2 rounded border border-gray-200">
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                    <span className="font-bold text-gray-500 text-xs">L:</span>
+                                    {primaryColorId ? (
+                                        <>
+                                            <div className="w-4 h-4 rounded-full border border-gray-300 flex-shrink-0" style={{ backgroundColor: yarnColorMap.get(primaryColorId)?.hex }}></div>
+                                            <span className="text-sm truncate font-medium">{yarnColorMap.get(primaryColorId)?.name}</span>
+                                        </>
+                                    ) : <span className="text-sm text-gray-500 italic">Eraser</span>}
+                                </div>
+                                {isComboPaintMode ? (
+                                    primaryStitch && (
+                                        <div className="flex items-center justify-center w-8 h-8 bg-white rounded border border-gray-300 font-bold text-lg shadow-sm" title={`Stitch: ${primaryStitch.name}`}>
+                                            {primaryStitch.symbol}
+                                        </div>
+                                    )
+                                ) : (
+                                    <div className="flex items-center justify-center w-8 h-8 bg-gray-100 rounded border border-gray-200 text-gray-300" title="Stitch disabled (Enable Combo Paint Mode)">
+                                        <Icon name="ban" className="w-4 h-4" />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Secondary (Right) */}
+                            <div className="flex items-center justify-between bg-gray-50 p-2 rounded border border-gray-200">
+                                <div className="flex items-center gap-2 overflow-hidden">
+                                    <span className="font-bold text-gray-500 text-xs">R:</span>
+                                    {secondaryColorId ? (
+                                        <>
+                                            <div className="w-4 h-4 rounded-full border border-gray-300 flex-shrink-0" style={{ backgroundColor: yarnColorMap.get(secondaryColorId)?.hex }}></div>
+                                            <span className="text-sm truncate font-medium">{yarnColorMap.get(secondaryColorId)?.name}</span>
+                                        </>
+                                    ) : <span className="text-sm text-gray-500 italic">Eraser</span>}
+                                </div>
+                                {isComboPaintMode ? (
+                                    secondaryStitch && (
+                                        <div className="flex items-center justify-center w-8 h-8 bg-white rounded border border-gray-300 font-bold text-lg shadow-sm" title={`Stitch: ${secondaryStitch.name}`}>
+                                            {secondaryStitch.symbol}
+                                        </div>
+                                    )
+                                ) : (
+                                    <div className="flex items-center justify-center w-8 h-8 bg-gray-100 rounded border border-gray-200 text-gray-300" title="Stitch disabled (Enable Combo Paint Mode)">
+                                        <Icon name="ban" className="w-4 h-4" />
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Controls */}
+                        <div className="mt-3 space-y-2 border-t pt-2 border-gray-100">
+                            <label className="flex items-center justify-between text-sm text-gray-700 cursor-pointer select-none p-1 hover:bg-gray-50 rounded">
+                                <span className="font-medium">Combo Paint Mode</span>
+                                <input
+                                    type="checkbox"
+                                    checked={isComboPaintMode}
+                                    onChange={(e) => setIsComboPaintMode(e.target.checked)}
+                                    className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
+                                />
+                            </label>
+                            <Button variant="secondary" onClick={() => setIsStitchPaletteOpen(true)} className="w-full justify-center text-xs h-8">
+                                <Icon name="grid" className="w-3 h-3 mr-1" /> Manage Stitches
+                            </Button>
                         </div>
                     </div>
 
@@ -1280,6 +1406,42 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             }
 
             {/* Modals */}
+            <Modal isOpen={isStitchPaletteOpen} onClose={() => setIsStitchPaletteOpen(false)} title="Stitch Library">
+                <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+                    <div className="grid grid-cols-1 gap-2">
+                        {DEFAULT_STITCH_LIBRARY.map(stitch => (
+                            <div key={stitch.id} className="border rounded p-2 flex items-center justify-between hover:bg-gray-50">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 flex items-center justify-center bg-gray-100 rounded text-xl font-bold">
+                                        {stitch.symbol}
+                                    </div>
+                                    <div>
+                                        <div className="font-bold text-sm">{stitch.name}</div>
+                                        <div className="text-xs text-gray-500 font-mono">{stitch.shortCode}</div>
+                                    </div>
+                                </div>
+                                <div className="flex gap-1">
+                                    <Button
+                                        variant={primaryStitchId === stitch.id ? 'primary' : 'secondary'}
+                                        onClick={() => setPrimaryStitchId(stitch.id)}
+                                        className="text-xs px-2 py-1"
+                                    >
+                                        Set L
+                                    </Button>
+                                    <Button
+                                        variant={secondaryStitchId === stitch.id ? 'primary' : 'secondary'}
+                                        onClick={() => setSecondaryStitchId(stitch.id)}
+                                        className="text-xs px-2 py-1"
+                                    >
+                                        Set R
+                                    </Button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </Modal>
+
             <Modal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} title="Project Settings">
                 <div className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
                     <div>

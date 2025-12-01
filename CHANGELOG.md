@@ -11,6 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cursor Update**: Changed Fill tool cursor to `crosshair` for better precision.
 - **Gauge & Yarn Settings**: Restored gauge configuration UI in Project Settings modal with unit selector, stitches/rows per unit, yarn per stitch, and hook size inputs.
 - **Estimated Size Display**: Added real-time physical size calculation based on gauge settings.
+- **Stitch System (Phase 1)**: Implemented core stitch system including:
+    - **Data Model**: Added `stitchId` to cell data and created `StitchDefinition` library.
+    - **Stitch Palette**: New UI for managing primary/secondary stitches.
+    - **Combo Paint Mode**: New mode to apply both color and stitch simultaneously.
+    - **Rendering**: SVG-based rendering of stitch symbols on grid cells.
+    - **Tool Integration**: Updated Brush, Fill, Replace, and Shape tools to support stitches.
+    - **Selection Support**: Copy/Paste/Rotate/Flip operations now preserve stitch data.
 
 ### Fixed
 - **Replace Tool**: Fixed regression where "Replace All" button was non-functional.
