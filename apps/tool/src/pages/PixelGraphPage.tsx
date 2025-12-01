@@ -585,7 +585,21 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     };
 
     const handleReplace = () => {
-        handleToolChange('replace');
+        if (!projectData || replaceFromColor === undefined || replaceToColor === undefined) return;
+
+        const newGrid = [...projectData.grid];
+        let changed = false;
+
+        for (let i = 0; i < newGrid.length; i++) {
+            if (newGrid[i].colorId === replaceFromColor) {
+                newGrid[i] = { ...newGrid[i], colorId: replaceToColor };
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            updateGrid(newGrid);
+        }
     };
 
     // --- CONTEXT MENU HANDLER ---
