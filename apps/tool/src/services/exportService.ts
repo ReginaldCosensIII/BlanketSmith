@@ -1,6 +1,6 @@
 
 // @ts-nocheck
-import { PixelGridData, YarnColor, CellData, ExportType, BrandingOptions, ChartVisualOptions } from '../types';
+import { PixelGridData, YarnColor, CellData, ExportType, BrandingOptions, ChartVisualOptions, ExportOptions } from '../types';
 
 // Configuration for PDF layout
 const PDF_CONFIG = {
@@ -78,29 +78,7 @@ const generateNumberingData = (grid: CellData[], width: number, height: number, 
     return numbers;
 };
 
-export interface ExportOptions {
-    // NEW (required for future calls)
-    exportType?: ExportType;  // 'pattern-pack' | 'chart-only'; default internally to 'pattern-pack'
 
-    // Existing fields (keep these so current calls still work)
-    forceSinglePage?: boolean;
-    chartMode?: 'color' | 'stitch';
-    includeColorChart?: boolean;
-    includeStitchChart?: boolean;
-
-    // NEW feature flags
-    includeYarnRequirements?: boolean;
-    includeStitchLegend?: boolean;
-    includeRowInstructions?: boolean;
-    includeNotesPage?: boolean;
-
-    // NEW: branding and visuals
-    branding?: BrandingOptions;
-    chartVisual?: ChartVisualOptions;
-
-    // NEW: preview mode
-    preview?: boolean; // if true, open PDF in new tab/window instead of downloading
-}
 
 const buildColorSymbolMap = (yarnPalette: YarnColor[]): Map<string, string> => {
     const map = new Map<string, string>();

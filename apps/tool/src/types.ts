@@ -118,3 +118,18 @@ export interface ContextMenuItem {
   separator?: boolean;
   disabled?: boolean;
 }
+
+export interface ExportOptions {
+  exportType?: ExportType;
+  forceSinglePage?: boolean;
+  chartMode?: 'color' | 'stitch';
+  includeColorChart?: boolean;
+  includeStitchChart?: boolean;
+  includeYarnRequirements?: boolean;
+  includeStitchLegend?: boolean;
+  includeRowInstructions?: boolean;
+  includeNotesPage?: boolean;
+  branding?: BrandingOptions;
+  chartVisual?: ChartVisualOptions;
+  preview?: boolean;
+}
