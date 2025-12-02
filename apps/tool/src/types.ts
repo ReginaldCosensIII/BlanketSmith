@@ -60,6 +60,7 @@ export interface Project<T> {
   settings: {
     // e.g., blanket dimensions, hook size, gauge
     stitchesEnabled?: string[]; // Optional list of stitch IDs used in this project
+    export?: ExportSettings;
     [key: string]: any;
   };
   data: T;
@@ -83,6 +84,32 @@ export type ProjectAction =
   | { type: 'SET_PALETTE'; payload: YarnColor[] }
   | { type: 'UNDO' }
   | { type: 'REDO' };
+
+export type ExportType = 'pattern-pack' | 'chart-only';
+
+export interface BrandingOptions {
+  designerName?: string;
+  website?: string;
+  copyrightLine?: string;
+}
+
+export type SymbolMode = 'color-index' | 'stitch-symbol';
+
+export interface ChartVisualOptions {
+  showCellSymbols?: boolean;      // default: true for charts
+  symbolMode?: SymbolMode;        // default: 'color-index'
+  grayscaleFriendly?: boolean;    // future; can be ignored in implementation for now
+}
+
+export interface ExportSettings {
+  defaultExportType?: ExportType;
+  branding?: BrandingOptions;
+  includeColorChart?: boolean;
+  includeStitchChart?: boolean;
+  showCellSymbols?: boolean;
+  // future: includeRowInstructions?: boolean;
+  // future: includeNotesPage?: boolean;
+}
 
 export interface ContextMenuItem {
   label: string;
