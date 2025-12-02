@@ -1,6 +1,16 @@
 
 // @ts-nocheck
 import { PixelGridData, YarnColor, CellData } from '../types';
+import { StitchDefinition, DEFAULT_STITCH_LIBRARY } from '../data/stitches';
+
+export type ChartMode = 'color' | 'stitch';
+
+export interface ExportOptions {
+    forceSinglePage?: boolean;
+    chartMode?: ChartMode;
+    includeColorChart?: boolean;
+    includeStitchChart?: boolean;
+}
 
 // Configuration for PDF layout
 const PDF_CONFIG = {
@@ -78,12 +88,23 @@ const generateNumberingData = (grid: CellData[], width: number, height: number, 
     return numbers;
 };
 
+const collectUsedStitches = (grid: CellData[]): StitchDefinition[] => {
+    const usedStitchIds = new Set<string>();
+    grid.forEach(cell => {
+        if (cell.stitchId) {
+            usedStitchIds.add(cell.stitchId);
+        }
+    });
+
+    return DEFAULT_STITCH_LIBRARY.filter(stitch => usedStitchIds.has(stitch.id));
+};
+
 export const exportPixelGridToPDF = (
     projectName: string,
     gridData: PixelGridData,
     yarnPalette: YarnColor[],
     yarnUsage: Map<string, number>,
-    options: { forceSinglePage?: boolean } = {},
+    options: ExportOptions = {},
     projectSettings: any = {},
     isLeftHanded: boolean = false
 ) => {
@@ -237,200 +258,198 @@ export const exportPixelGridToPDF = (
     }
 
     // --- STEP 3: GENERATE PATTERN PAGES ---
-    if (options.forceSinglePage) {
-        doc.addPage();
+    // --- STEP 3: GENERATE STITCH LEGEND (If needed) ---
+    const usedStitches = collectUsedStitches(gridData.grid);
+    if (usedStitches.length > 0 && (options.includeStitchChart || options.chartMode === 'stitch')) {
+        drawStitchLegendIfNeeded(doc, usedStitches, margin, pageH);
     }
 
-    const cellsPerW = options.forceSinglePage ? gridData.width : Math.floor((availableW - 40) / cellSize);
-    const cellsPerH = options.forceSinglePage ? gridData.height : Math.floor((availableH - 40) / cellSize);
+    // --- STEP 4: GENERATE PATTERN PAGES ---
 
-    for (let py = 0; py < pagesY; py++) {
-        for (let px = 0; px < pagesX; px++) {
-            if (!options.forceSinglePage) doc.addPage();
+    // Helper to draw chart pages
+    const drawChartPages = (mode: ChartMode) => {
+        const cellsPerW = options.forceSinglePage ? gridData.width : Math.floor((availableW - 40) / cellSize);
+        const cellsPerH = options.forceSinglePage ? gridData.height : Math.floor((availableH - 40) / cellSize);
 
-            const startX = px * cellsPerW;
-            const startY = py * cellsPerH;
-            const endX = Math.min(startX + cellsPerW, gridData.width);
-            const endY = Math.min(startY + cellsPerH, gridData.height);
+        for (let py = 0; py < pagesY; py++) {
+            for (let px = 0; px < pagesX; px++) {
+                if (!options.forceSinglePage || (mode === 'stitch' && options.includeColorChart)) doc.addPage();
+                // Note: If forceSinglePage is true, we might have already added a page or be on the first page.
+                // Logic needs to be robust. For Pattern Pack, we always add pages for charts.
+                // For Chart Only (forceSinglePage), we just use the current page (or add one if needed).
 
-            const sliceW = endX - startX;
-            const sliceH = endY - startY;
+                // Correction for Pattern Pack flow:
+                // If we are printing multiple charts (Color then Stitch), we need new pages for Stitch.
 
-            const drawX = margin + 40;
-            const drawY = margin + 30;
+                const startX = px * cellsPerW;
+                const startY = py * cellsPerH;
+                const endX = Math.min(startX + cellsPerW, gridData.width);
+                const endY = Math.min(startY + cellsPerH, gridData.height);
 
-            doc.setFontSize(10);
-            if (options.forceSinglePage) {
-                doc.text(`Full Pattern Chart`, margin, margin);
-            } else {
-                doc.text(`Page ${((py * pagesX) + px + 1)} of ${pagesX * pagesY}`, margin, margin);
-                doc.text(`Cols ${startX + 1}-${endX} | Rows ${startY + 1}-${endY}`, pageW - margin, margin, { align: 'right' });
-            }
+                const sliceW = endX - startX;
+                const sliceH = endY - startY;
 
-            doc.setFontSize(PDF_CONFIG.fontSize.ruler);
-            const showRulers = cellSize > 5;
+                const drawX = margin + 40;
+                const drawY = margin + 30;
 
-            if (showRulers) {
-                // Column Numbers (Top)
-                for (let i = 0; i < sliceW; i++) {
-                    const gridX = startX + i;
-                    if (i % 5 === 0 || options.forceSinglePage) // Show more frequently
-                        doc.text(String(gridX + 1), drawX + (i + 0.5) * cellSize, drawY - 5, { align: 'center' });
-                }
-
-                // Row Numbers (Sides)
-                for (let i = 0; i < sliceH; i++) {
-                    const gridY = startY + i;
-                    const rowNum = gridY + 1;
-                    const isOdd = rowNum % 2 !== 0;
-
-                    // Logic for Side Placement
-                    // Default: Odd on Left, Even on Right
-                    // Left-Handed: Odd on Right, Even on Left
-
-                    const showOnLeft = isLeftHanded ? !isOdd : isOdd;
-
-                    if (showOnLeft) {
-                        doc.text(String(rowNum), drawX - 5, drawY + (i + 0.5) * cellSize, { align: 'right', baseline: 'middle' });
-                    } else {
-                        // Show on Right
-                        // The right edge of the grid slice is at: drawX + (sliceW * cellSize)
-                        doc.text(String(rowNum), drawX + (sliceW * cellSize) + 5, drawY + (i + 0.5) * cellSize, { align: 'left', baseline: 'middle' });
-                    }
-                }
-            }
-
-            doc.setLineWidth(0.5);
-            doc.setDrawColor('#CCCCCC');
-
-            const forceNumbers = options.forceSinglePage;
-            const renderNumbers = cellSize >= 10 || forceNumbers;
-
-            for (let y = 0; y < sliceH; y++) {
-                for (let x = 0; x < sliceW; x++) {
-                    const gridX = startX + x;
-                    const gridY = startY + y;
-                    const index = gridY * gridData.width + gridX;
-                    const cell = gridData.grid[index];
-
-                    const cx = drawX + x * cellSize;
-                    const cy = drawY + y * cellSize;
-
-                    doc.setFillColor(255, 255, 255);
-                    if (cell.colorId) {
-                        const c = yarnColorMap.get(cell.colorId);
-                        if (c) doc.setFillColor(c.hex);
-                    }
-                    doc.rect(cx, cy, cellSize, cellSize, 'FD');
-
-                    if (renderNumbers && cell.colorId) {
-                        const c = yarnColorMap.get(cell.colorId);
-                        const textColor = c ? getTextColor(c.hex) : '#000000';
-                        doc.setTextColor(textColor);
-
-                        const dynamicFontSize = forceNumbers ? Math.max(2, cellSize * 0.7) : cellSize * 0.6;
-                        doc.setFontSize(dynamicFontSize);
-
-                        doc.text(
-                            numbering[index],
-                            cx + cellSize / 2,
-                            cy + cellSize / 2,
-                            { align: 'center', baseline: 'middle' }
-                        );
-                    }
-                }
-            }
-            doc.setTextColor(0);
-        }
-    }
-
-    // --- STEP 4: APPEND FULL CHART (Pattern Pack Only) ---
-    if (!options.forceSinglePage) {
-        doc.addPage();
-
-        // Use singlePage logic for the full chart page
-        const fullChartCellW = (availableW - 40) / gridData.width;
-        const fullChartCellH = (availableH - 40) / gridData.height;
-        const fullChartCellSize = Math.min(fullChartCellW, fullChartCellH);
-
-        const drawX = margin + 40;
-        const drawY = margin + 30;
-
-        doc.setFontSize(10);
-        doc.text(`Full Pattern Chart`, margin, margin);
-
-        doc.setFontSize(PDF_CONFIG.fontSize.ruler);
-        const showRulers = fullChartCellSize > 5;
-
-        if (showRulers) {
-            // Column Numbers (Top)
-            for (let i = 0; i < gridData.width; i++) {
-                if (i % 5 === 0)
-                    doc.text(String(i + 1), drawX + (i + 0.5) * fullChartCellSize, drawY - 5, { align: 'center' });
-            }
-
-            // Row Numbers (Sides)
-            for (let i = 0; i < gridData.height; i++) {
-                const rowNum = i + 1;
-                const isOdd = rowNum % 2 !== 0;
-                const showOnLeft = isLeftHanded ? !isOdd : isOdd;
-
-                if (showOnLeft) {
-                    doc.text(String(rowNum), drawX - 5, drawY + (i + 0.5) * fullChartCellSize, { align: 'right', baseline: 'middle' });
+                doc.setFontSize(10);
+                const chartTypeLabel = mode === 'color' ? 'Color Chart' : 'Stitch Chart';
+                if (options.forceSinglePage) {
+                    doc.text(`Full Pattern Chart (${chartTypeLabel})`, margin, margin);
                 } else {
-                    doc.text(String(rowNum), drawX + (gridData.width * fullChartCellSize) + 5, drawY + (i + 0.5) * fullChartCellSize, { align: 'left', baseline: 'middle' });
+                    doc.text(`${chartTypeLabel} - Page ${((py * pagesX) + px + 1)} of ${pagesX * pagesY}`, margin, margin);
+                    doc.text(`Cols ${startX + 1}-${endX} | Rows ${startY + 1}-${endY}`, pageW - margin, margin, { align: 'right' });
                 }
-            }
-        }
 
-        doc.setLineWidth(0.5);
-        doc.setDrawColor('#CCCCCC');
+                doc.setFontSize(PDF_CONFIG.fontSize.ruler);
+                const showRulers = cellSize > 5;
 
-        // Always try to render numbers if possible, but scale down
-        const renderNumbers = true;
+                if (showRulers) {
+                    // Column Numbers (Top)
+                    for (let i = 0; i < sliceW; i++) {
+                        const gridX = startX + i;
+                        if (i % 5 === 0 || options.forceSinglePage) // Show more frequently
+                            doc.text(String(gridX + 1), drawX + (i + 0.5) * cellSize, drawY - 5, { align: 'center' });
+                    }
 
-        for (let y = 0; y < gridData.height; y++) {
-            for (let x = 0; x < gridData.width; x++) {
-                const index = y * gridData.width + x;
-                const cell = gridData.grid[index];
+                    // Row Numbers (Sides)
+                    for (let i = 0; i < sliceH; i++) {
+                        const gridY = startY + i;
+                        const rowNum = gridY + 1;
+                        const isOdd = rowNum % 2 !== 0;
+                        const showOnLeft = isLeftHanded ? !isOdd : isOdd;
 
-                const cx = drawX + x * fullChartCellSize;
-                const cy = drawY + y * fullChartCellSize;
-
-                doc.setFillColor(255, 255, 255);
-                if (cell.colorId) {
-                    const c = yarnColorMap.get(cell.colorId);
-                    if (c) doc.setFillColor(c.hex);
-                }
-                doc.rect(cx, cy, fullChartCellSize, fullChartCellSize, 'FD');
-
-                if (renderNumbers && cell.colorId) {
-                    const c = yarnColorMap.get(cell.colorId);
-                    const textColor = c ? getTextColor(c.hex) : '#000000';
-                    doc.setTextColor(textColor);
-
-                    const dynamicFontSize = Math.max(2, fullChartCellSize * 0.7);
-                    doc.setFontSize(dynamicFontSize);
-
-                    // Only draw text if font size is reasonable
-                    if (dynamicFontSize > 3) {
-                        doc.text(
-                            numbering[index],
-                            cx + fullChartCellSize / 2,
-                            cy + fullChartCellSize / 2,
-                            { align: 'center', baseline: 'middle' }
-                        );
+                        if (showOnLeft) {
+                            doc.text(String(rowNum), drawX - 5, drawY + (i + 0.5) * cellSize, { align: 'right', baseline: 'middle' });
+                        } else {
+                            doc.text(String(rowNum), drawX + (sliceW * cellSize) + 5, drawY + (i + 0.5) * cellSize, { align: 'left', baseline: 'middle' });
+                        }
                     }
                 }
+
+                doc.setLineWidth(0.5);
+                doc.setDrawColor('#CCCCCC');
+
+                const forceNumbers = options.forceSinglePage;
+                const renderNumbers = cellSize >= 10 || forceNumbers;
+
+                for (let y = 0; y < sliceH; y++) {
+                    for (let x = 0; x < sliceW; x++) {
+                        const gridX = startX + x;
+                        const gridY = startY + y;
+                        const index = gridY * gridData.width + gridX;
+                        const cell = gridData.grid[index];
+
+                        const cx = drawX + x * cellSize;
+                        const cy = drawY + y * cellSize;
+
+                        doc.setFillColor(255, 255, 255);
+                        if (cell.colorId) {
+                            const c = yarnColorMap.get(cell.colorId);
+                            if (c) doc.setFillColor(c.hex);
+                        }
+                        doc.rect(cx, cy, cellSize, cellSize, 'FD');
+
+                        // Render Content (Number or Stitch Symbol)
+                        if (cell.colorId) {
+                            const c = yarnColorMap.get(cell.colorId);
+                            const textColor = c ? getTextColor(c.hex) : '#000000';
+                            doc.setTextColor(textColor);
+
+                            const dynamicFontSize = forceNumbers ? Math.max(2, cellSize * 0.7) : cellSize * 0.6;
+                            doc.setFontSize(dynamicFontSize);
+
+                            if (mode === 'color' && renderNumbers) {
+                                doc.text(
+                                    numbering[index],
+                                    cx + cellSize / 2,
+                                    cy + cellSize / 2,
+                                    { align: 'center', baseline: 'middle' }
+                                );
+                            } else if (mode === 'stitch' && cell.stitchId) {
+                                const stitch = DEFAULT_STITCH_LIBRARY.find(s => s.id === cell.stitchId);
+                                if (stitch) {
+                                    // Use a slightly larger font for symbols if possible
+                                    doc.setFontSize(dynamicFontSize * 1.2);
+                                    doc.text(
+                                        stitch.symbol,
+                                        cx + cellSize / 2,
+                                        cy + cellSize / 2,
+                                        { align: 'center', baseline: 'middle' }
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+                doc.setTextColor(0);
             }
         }
-        doc.setTextColor(0);
+    };
+
+    // Orchestrate Export
+    if (options.forceSinglePage) {
+        // Chart Only Mode
+        doc.addPage();
+        const mode = options.chartMode || 'color';
+        drawChartPages(mode);
+    } else {
+        // Pattern Pack Mode
+        // Defaults: includeColorChart = true, includeStitchChart = false (if undefined)
+        // But we want to respect the passed options.
+
+        const includeColor = options.includeColorChart !== false; // Default true
+        const includeStitch = options.includeStitchChart === true; // Default false
+
+        if (includeColor) {
+            drawChartPages('color');
+        }
+
+        if (includeStitch) {
+            drawChartPages('stitch');
+        }
     }
 
     const fileName = options.forceSinglePage
-        ? `${projectName}_overview.pdf`
+        ? `${projectName}_chart_${options.chartMode || 'color'}.pdf`
         : `${projectName}_pattern_pack.pdf`;
     doc.save(fileName);
+};
+
+const drawStitchLegendIfNeeded = (doc: any, stitches: StitchDefinition[], margin: number, pageH: number) => {
+    doc.addPage();
+    let y = margin;
+
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text("Stitch Legend", margin, y);
+    y += 30;
+
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "normal");
+
+    stitches.forEach(stitch => {
+        // Symbol Box
+        doc.setDrawColor(0);
+        doc.setFillColor(255, 255, 255);
+        doc.rect(margin, y, 20, 20, 'FD');
+
+        doc.setFontSize(14);
+        doc.text(stitch.symbol, margin + 10, y + 14, { align: 'center' });
+
+        // Text Details
+        doc.setFontSize(12);
+        doc.text(`${stitch.name} (${stitch.shortCode})`, margin + 30, y + 14);
+
+        if (stitch.description) {
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(stitch.description, margin + 200, y + 14);
+            doc.setTextColor(0);
+        }
+
+        y += 30;
+    });
 };
 
 export const exportPixelGridToImage = (

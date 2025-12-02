@@ -151,6 +151,11 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [isComboPaintMode, setIsComboPaintMode] = useState<boolean>(false);
     const [isStitchPaletteOpen, setIsStitchPaletteOpen] = useState(false);
 
+    // Export Options State
+    const [chartOnlyMode, setChartOnlyMode] = useState<'color' | 'stitch'>('color');
+    const [includeColorChart, setIncludeColorChart] = useState(true);
+    const [includeStitchChart, setIncludeStitchChart] = useState(true);
+
     // Build stitch map for lookups
     const stitchMap = useMemo(
         () => new Map(DEFAULT_STITCH_LIBRARY.map(s => [s.id, s] as const)),
@@ -702,12 +707,35 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
     const handleExportChartOnly = () => {
         if (!projectData) return;
-        exportPixelGridToPDF(project?.name || 'Project', projectData, project?.yarnPalette || [], yarnUsage, { forceSinglePage: true }, project?.settings, isLeftHanded);
+        exportPixelGridToPDF(
+            project?.name || 'Project',
+            projectData,
+            project?.yarnPalette || [],
+            yarnUsage,
+            {
+                forceSinglePage: true,
+                chartMode: chartOnlyMode
+            },
+            project?.settings,
+            isLeftHanded
+        );
     };
 
     const handleExportPatternPack = () => {
         if (!projectData) return;
-        exportPixelGridToPDF(project?.name || 'Project', projectData, project?.yarnPalette || [], yarnUsage, { forceSinglePage: false }, project?.settings, isLeftHanded);
+        exportPixelGridToPDF(
+            project?.name || 'Project',
+            projectData,
+            project?.yarnPalette || [],
+            yarnUsage,
+            {
+                forceSinglePage: false,
+                includeColorChart,
+                includeStitchChart
+            },
+            project?.settings,
+            isLeftHanded
+        );
     };
 
     const handleExportImage = () => {
@@ -1382,12 +1410,54 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
                     <div>
                         <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Generate Pattern</h4>
-                        <Button onClick={() => setIsGenerateModalOpen(true)} className="w-full justify-center"><Icon name="upload" className="w-4 h-4 mr-2" /> Generate Pattern</Button>
+                        <Button onClick={() => setIsGenerateModalOpen(true)} className="w-full justify-center mb-2"><Icon name="upload" className="w-4 h-4 mr-2" /> Generate Pattern</Button>
+
+                        <div className="text-xs text-gray-600 mb-1">Chart Only Mode:</div>
+                        <div className="flex gap-2 mb-2">
+                            <label className="flex items-center cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="chartOnlyMode"
+                                    checked={chartOnlyMode === 'color'}
+                                    onChange={() => setChartOnlyMode('color')}
+                                    className="mr-1"
+                                /> Color
+                            </label>
+                            <label className="flex items-center cursor-pointer">
+                                <input
+                                    type="radio"
+                                    name="chartOnlyMode"
+                                    checked={chartOnlyMode === 'stitch'}
+                                    onChange={() => setChartOnlyMode('stitch')}
+                                    className="mr-1"
+                                /> Stitch
+                            </label>
+                        </div>
                     </div>
 
                     <div>
                         <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Export</h4>
-                        <Button variant="secondary" onClick={() => setIsExportModalOpen(true)} className="w-full justify-center"><Icon name="download" className="w-4 h-4 mr-2" /> Export</Button>
+                        <Button variant="secondary" onClick={() => setIsExportModalOpen(true)} className="w-full justify-center mb-2"><Icon name="download" className="w-4 h-4 mr-2" /> Export</Button>
+
+                        <div className="text-xs text-gray-600 mb-1">Pattern Pack Includes:</div>
+                        <div className="flex flex-col gap-1 mb-2">
+                            <label className="flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={includeColorChart}
+                                    onChange={(e) => setIncludeColorChart(e.target.checked)}
+                                    className="mr-1 rounded text-indigo-600"
+                                /> Color Chart
+                            </label>
+                            <label className="flex items-center cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={includeStitchChart}
+                                    onChange={(e) => setIncludeStitchChart(e.target.checked)}
+                                    className="mr-1 rounded text-indigo-600"
+                                /> Stitch Chart
+                            </label>
+                        </div>
                     </div>
 
 
