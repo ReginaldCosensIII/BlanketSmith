@@ -15,8 +15,8 @@ export const ProjectsPage: React.FC = () => {
     const [selectedProjectType, setSelectedProjectType] = useState<PatternType | null>(null);
     const throwSize = BLANKET_SIZES.find(s => s.name === 'Throw') || { width: 50, height: 60 };
     const [selectedSizeKey, setSelectedSizeKey] = useState('Throw');
-    const [customWidth, setCustomWidth] = useState(throwSize.width);
-    const [customHeight, setCustomHeight] = useState(throwSize.height);
+    const [customWidth, setCustomWidth] = useState<number | string>(throwSize.width);
+    const [customHeight, setCustomHeight] = useState<number | string>(throwSize.height);
     const { dispatch } = useProject();
     const navigate = useNavigate();
 
@@ -37,7 +37,11 @@ export const ProjectsPage: React.FC = () => {
     const handleSizeChange = (e: ChangeEvent<HTMLSelectElement>) => {
         const key = e.target.value;
         setSelectedSizeKey(key);
-        if (key !== 'Custom') {
+        if (key === 'Custom') {
+            // Clear values when switching to custom so user can type fresh
+            setCustomWidth('');
+            setCustomHeight('');
+        } else {
             const size = BLANKET_SIZES.find(s => s.name === key);
             if (size) {
                 setCustomWidth(size.width);
@@ -47,8 +51,11 @@ export const ProjectsPage: React.FC = () => {
     }
 
     const handleCreateProject = () => {
-        if (newProjectName.trim() && customWidth > 0 && customHeight > 0 && selectedProjectType) {
-            const newProject = createNewProject(selectedProjectType, newProjectName, customWidth, customHeight);
+        const width = Number(customWidth);
+        const height = Number(customHeight);
+
+        if (newProjectName.trim() && width > 0 && height > 0 && selectedProjectType) {
+            const newProject = createNewProject(selectedProjectType, newProjectName, width, height);
             saveProject(newProject);
             setProjects(getProjects());
             setIsModalOpen(false);
@@ -188,12 +195,12 @@ export const ProjectsPage: React.FC = () => {
                             <div className="flex items-center gap-2">
                                 <div>
                                     <label htmlFor="customWidth" className="block text-xs font-medium text-gray-500">Width</label>
-                                    <input type="number" id="customWidth" value={customWidth} onChange={(e) => setCustomWidth(parseInt(e.target.value, 10) || 0)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
+                                    <input type="number" id="customWidth" value={customWidth} onChange={(e) => setCustomWidth(e.target.value === '' ? '' : parseInt(e.target.value, 10))} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
                                 </div>
                                 <div className="pt-5 text-gray-500">x</div>
                                 <div>
                                     <label htmlFor="customHeight" className="block text-xs font-medium text-gray-500">Height</label>
-                                    <input type="number" id="customHeight" value={customHeight} onChange={(e) => setCustomHeight(parseInt(e.target.value, 10) || 0)} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
+                                    <input type="number" id="customHeight" value={customHeight} onChange={(e) => setCustomHeight(e.target.value === '' ? '' : parseInt(e.target.value, 10))} className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
                                 </div>
                             </div>
                         )}

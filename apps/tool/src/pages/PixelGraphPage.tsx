@@ -155,6 +155,11 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [includeColorChart, setIncludeColorChart] = useState<boolean>(true);
     const [includeStitchChart, setIncludeStitchChart] = useState<boolean>(true);
     const [chartOnlyMode, setChartOnlyMode] = useState<'color' | 'stitch'>('color');
+    const [includePages, setIncludePages] = useState<boolean>(true);
+    const [includeYarnRequirements, setIncludeYarnRequirements] = useState<boolean>(true);
+    const [includeOverviewPage, setIncludeOverviewPage] = useState<boolean>(false);
+    const [includeStitchLegend, setIncludeStitchLegend] = useState<boolean>(true);
+    const [showCellBackgrounds, setShowCellBackgrounds] = useState<boolean>(true);
     const [isAdvancedOpen, setIsAdvancedOpen] = useState<boolean>(false);
 
     // Hydrate export settings from project
@@ -742,8 +747,9 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             forceSinglePage: exportType === 'chart-only',
             includeColorChart: exportType === 'pattern-pack' ? includeColorChart : (chartOnlyMode === 'color'),
             includeStitchChart: exportType === 'pattern-pack' ? includeStitchChart : (chartOnlyMode === 'stitch'),
-            includeYarnRequirements: true,
-            includeStitchLegend: true,
+            includeYarnRequirements: includeYarnRequirements,
+            includeStitchLegend: includeStitchLegend,
+            includeOverviewPage: includeOverviewPage,
             branding: {
                 designerName: exportDesignerName || undefined,
                 website: exportWebsite || undefined,
@@ -751,6 +757,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             },
             chartVisual: {
                 showCellSymbols: exportShowCellSymbols,
+                showCellBackgrounds: showCellBackgrounds,
                 symbolMode: 'color-index',
             },
         };
@@ -1138,6 +1145,36 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                     Stitch chart
                                 </label>
                             </div>
+                            <div className="space-y-2 mt-3 pt-2 border-t border-gray-100">
+                                <h4 className="text-xs font-semibold text-gray-500 uppercase">Content Options</h4>
+                                <label className="flex items-center cursor-pointer text-sm">
+                                    <input
+                                        type="checkbox"
+                                        className="mr-2"
+                                        checked={includePages}
+                                        onChange={(e) => setIncludePages(e.target.checked)}
+                                    />
+                                    Include pages (multi-page)
+                                </label>
+                                <label className="flex items-center cursor-pointer text-sm">
+                                    <input
+                                        type="checkbox"
+                                        className="mr-2"
+                                        checked={includeOverviewPage}
+                                        onChange={(e) => setIncludeOverviewPage(e.target.checked)}
+                                    />
+                                    Include pattern overview
+                                </label>
+                                <label className="flex items-center cursor-pointer text-sm">
+                                    <input
+                                        type="checkbox"
+                                        className="mr-2"
+                                        checked={includeStitchLegend}
+                                        onChange={(e) => setIncludeStitchLegend(e.target.checked)}
+                                    />
+                                    Include stitch legend
+                                </label>
+                            </div>
                         </div>
                     )}
 
@@ -1164,6 +1201,18 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                         onChange={() => setChartOnlyMode('stitch')}
                                     />
                                     Stitch chart
+                                </label>
+                            </div>
+                            <div className="space-y-2 mt-3 pt-2 border-t border-gray-100">
+                                <h4 className="text-xs font-semibold text-gray-500 uppercase">Content Options</h4>
+                                <label className="flex items-center cursor-pointer text-sm">
+                                    <input
+                                        type="checkbox"
+                                        className="mr-2"
+                                        checked={includeYarnRequirements}
+                                        onChange={(e) => setIncludeYarnRequirements(e.target.checked)}
+                                    />
+                                    Include yarn requirements
                                 </label>
                             </div>
                         </div>
@@ -1214,10 +1263,17 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                         <input
                                             type="checkbox"
                                             className="mr-2"
-                                            checked={exportShowCellSymbols}
-                                            onChange={(e) => setExportShowCellSymbols(e.target.checked)}
                                         />
                                         Show symbols in cells
+                                    </label>
+                                    <label className="flex items-center cursor-pointer text-sm mt-1">
+                                        <input
+                                            type="checkbox"
+                                            className="mr-2"
+                                            checked={showCellBackgrounds}
+                                            onChange={(e) => setShowCellBackgrounds(e.target.checked)}
+                                        />
+                                        Show cell background colors
                                     </label>
                                 </div>
                             </div>

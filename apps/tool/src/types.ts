@@ -97,6 +97,7 @@ export type SymbolMode = 'color-index' | 'stitch-symbol';
 
 export interface ChartVisualOptions {
   showCellSymbols?: boolean;      // default: true for charts
+  showCellBackgrounds?: boolean;  // default: true
   symbolMode?: SymbolMode;        // default: 'color-index'
   grayscaleFriendly?: boolean;    // future; can be ignored in implementation for now
 }
@@ -127,6 +128,7 @@ export interface ExportOptions {
   includeStitchChart?: boolean;
   includeYarnRequirements?: boolean;
   includeStitchLegend?: boolean;
+  includeOverviewPage?: boolean;
   includeRowInstructions?: boolean;
   includeNotesPage?: boolean;
   branding?: BrandingOptions;
