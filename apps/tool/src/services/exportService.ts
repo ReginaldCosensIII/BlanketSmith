@@ -123,6 +123,7 @@ export const exportPixelGridToPDF = (
 
     const chartVisual: ChartVisualOptions = {
         showCellSymbols: options.chartVisual?.showCellSymbols ?? true,
+        showCellBackgrounds: options.chartVisual?.showCellBackgrounds ?? true,
         symbolMode: options.chartVisual?.symbolMode ?? 'color-index',
         grayscaleFriendly: options.chartVisual?.grayscaleFriendly ?? false,
     };
@@ -413,7 +414,7 @@ export const exportPixelGridToPDF = (
         const drawY = yOffset;
 
         doc.setFontSize(10);
-        doc.text(pageTitle, margin, margin);
+        doc.text(pageTitle, margin, yOffset - 25);
         if (pageInfo) {
             doc.text(pageInfo, pageW - margin, margin, { align: 'right' });
         }
@@ -463,9 +464,15 @@ export const exportPixelGridToPDF = (
                 doc.setFillColor(255, 255, 255);
                 if (cell.colorId) {
                     const c = yarnColorMap.get(cell.colorId);
-                    if (c) doc.setFillColor(c.hex);
+                    if (c && chartVisual.showCellBackgrounds !== false) {
+                        doc.setFillColor(c.hex);
+                        doc.rect(cx, cy, cellSize, cellSize, 'FD');
+                    } else {
+                        doc.rect(cx, cy, cellSize, cellSize, 'S');
+                    }
+                } else {
+                    doc.rect(cx, cy, cellSize, cellSize, 'S'); // Empty cell
                 }
-                doc.rect(cx, cy, cellSize, cellSize, 'FD');
 
                 if (renderNumbers && cell.colorId) {
                     // D.3: Respect showCellSymbols toggle
@@ -475,7 +482,9 @@ export const exportPixelGridToPDF = (
                     }
 
                     const c = yarnColorMap.get(cell.colorId);
-                    const textColor = c ? getTextColor(c.hex) : '#000000';
+                    // Fix: If backgrounds are OFF, always use black text. Otherwise use contrast color.
+                    const showBackgrounds = chartVisual.showCellBackgrounds !== false;
+                    const textColor = (c && showBackgrounds) ? getTextColor(c.hex) : '#000000';
                     doc.setTextColor(textColor);
 
                     const dynamicFontSize = forceNumbers ? Math.max(2, cellSize * 0.7) : cellSize * 0.6;
@@ -519,7 +528,7 @@ export const exportPixelGridToPDF = (
         const drawY = yOffset;
 
         doc.setFontSize(10);
-        doc.text(pageTitle, margin, margin);
+        doc.text(pageTitle, margin, yOffset - 25);
         if (pageInfo) {
             doc.text(pageInfo, pageW - margin, margin, { align: 'right' });
         }
@@ -651,36 +660,39 @@ export const exportPixelGridToPDF = (
         // D.1: Removed doc.addPage() to avoid blank first page
 
         // D.4: Optional Yarn Requirements in Chart Only mode
-        let startY = margin;
+        let startY = margin + 45; // Default Grid Y (allows space for title)
         if (includeYarnRequirements) {
-            startY = drawYarnLegend(startY);
-            startY += 20; // Spacing after legend
+            const legendBottom = drawYarnLegend(margin);
+            startY = legendBottom + 50; // Spacing after legend for title + gap
         }
 
         // Calculate available space for the chart
-        // If yarn legend took up space, we need to check if chart fits
         const chartAvailableH = pageH - startY - margin;
 
-        // We need to re-calculate cell size based on remaining space if we are on the same page
-        // But the chart drawing functions take start/end coords and cellSize.
-        // We'll use the logic: if it fits reasonably, draw it. If not, add page.
-
+        // Calculate required height for the chart on this page
         const singlePageCellW = (availableW - 40) / gridData.width;
-        const singlePageCellH = (chartAvailableH - 40) / gridData.height;
-        let singlePageCellSize = Math.min(singlePageCellW, singlePageCellH);
+        // We initially assume it fits in remaining height to check cell size
+        let singlePageCellSize = Math.min(singlePageCellW, (chartAvailableH - 40) / gridData.height);
 
-        // If the cell size becomes too small due to yarn legend, move chart to next page
-        if (singlePageCellSize < 5 && includeYarnRequirements) {
+        // Check if chart fits or if cell size is too small
+        // If cell size < 5 OR if the total chart height exceeds available space (double check)
+        const totalChartHeight = gridData.height * singlePageCellSize + 40; // +40 for title/padding
+        const fitsOnPage = totalChartHeight <= chartAvailableH && singlePageCellSize >= 5;
+
+        if (!fitsOnPage && includeYarnRequirements) {
+            // Move to next page
             doc.addPage();
-            // Reset to full page dimensions
+            startY = margin + 45; // Reset startY for new page (Grid Y)
+
+            // Recalculate cell size for full page
             const fullPageCellH = (availableH - 40) / gridData.height;
             singlePageCellSize = Math.min(singlePageCellW, fullPageCellH);
         }
 
         if (chartMode === 'stitch') {
-            drawStitchChart(0, 0, gridData.width, gridData.height, singlePageCellSize, 'Stitch Chart', '', startY + 10);
+            drawStitchChart(0, 0, gridData.width, gridData.height, singlePageCellSize, 'Stitch Chart', '', startY);
         } else {
-            drawColorChart(0, 0, gridData.width, gridData.height, singlePageCellSize, 'Color Chart', '', startY + 10);
+            drawColorChart(0, 0, gridData.width, gridData.height, singlePageCellSize, 'Color Chart', '', startY);
         }
     } else {
         // PATTERN PACK MODE: Conditional multi-page charts

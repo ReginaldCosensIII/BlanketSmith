@@ -1263,6 +1263,8 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                         <input
                                             type="checkbox"
                                             className="mr-2"
+                                            checked={exportShowCellSymbols}
+                                            onChange={(e) => setExportShowCellSymbols(e.target.checked)}
                                         />
                                         Show symbols in cells
                                     </label>
