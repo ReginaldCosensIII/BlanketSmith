@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Added
+- **PDF Export System**: Complete overhaul of the PDF export functionality.
+- **Export Center**: New modal for managing exports with "Pattern Pack" and "Chart Only" presets.
+- **Pattern Pack**: Multi-page PDF generation including cover page, yarn requirements, color charts, stitch charts, and stitch legend.
+- **Chart Only**: Single-page optimized export for quick printing.
+- **Advanced Settings**: Options for branding (designer name, website, copyright), chart appearance (show symbols in cells, background colors), and content toggles.
+- **Stitch Charts**: Dedicated rendering mode for stitch symbols with high-contrast visibility.
+- **Yarn Requirements**: Detailed yarn usage table with estimated yardage and skein counts.
+- **Preview Mode**: Ability to preview generated PDFs in the browser before downloading.
 - **Bucket Fill Tool**: Implemented flood-fill algorithm for filling contiguous areas.
 - **Cursor Update**: Changed Fill tool cursor to `crosshair` for better precision.
 - **Gauge & Yarn Settings**: Restored gauge configuration UI in Project Settings modal with unit selector, stitches/rows per unit, yarn per stitch, and hook size inputs.
@@ -20,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **Selection Support**: Copy/Paste/Rotate/Flip operations now preserve stitch data.
 
 ### Fixed
+- **Export Layout**: Fixed layout overlaps in Chart Only mode when yarn requirements are included.
+- **Blank Pages**: Resolved issues with blank first pages in Chart Only mode and empty Stitch Legend pages.
+- **Symbol Visibility**: Enforced consistent behavior for "Show Symbols in Cells" across both color and stitch charts.
 - **Stitch System**: Fixed Brush tool optimization bug where stitches weren't applied if color remained unchanged in Combo Mode.
 - **Stitch System**: Fixed Non-Combo Paint behavior to correctly remove/clear stitches when painting in "Color Only" mode.
 - **Stitch System**: Fixed Paste Preview to correctly render stitch symbols on floating selections.

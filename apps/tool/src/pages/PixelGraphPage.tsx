@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, ChangeEvent } from 'react';
-import { PixelGridData, YarnColor, CellData, Symmetry, ContextMenuItem } from '../types';
+import { PixelGridData, YarnColor, CellData, Symmetry, ContextMenuItem, ExportType, ExportOptions } from '../types';
 import { useProject } from '../context/ProjectContext';
 import { PixelGridEditor } from '../components/PixelGridEditor';
 import { exportPixelGridToPDF, exportPixelGridToImage } from '../services/exportService';
@@ -69,6 +69,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     type ColorMode = 'HEX' | 'RGB' | 'HSL';
 
     const { state, dispatch } = useProject();
+    const project = state.project?.type === 'pixel' ? state.project : null;
 
     // --- PERSISTENT STATE INITIALIZATION ---
     const [primaryColorId, setPrimaryColorId] = useState<string | null>(() => localStorage.getItem('editor_primaryColorId') || null);
@@ -145,6 +146,38 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [isPreviewFullScreen, setIsPreviewFullScreen] = useState(false);
     const [previewZoom, setPreviewZoom] = useState(1);
 
+    // --- EXPORT STATE ---
+    const [selectedExportType, setSelectedExportType] = useState<ExportType>('pattern-pack');
+    const [exportDesignerName, setExportDesignerName] = useState<string>('');
+    const [exportWebsite, setExportWebsite] = useState<string>('');
+    const [exportCopyright, setExportCopyright] = useState<string>('');
+    const [exportShowCellSymbols, setExportShowCellSymbols] = useState<boolean>(true);
+    const [includeColorChart, setIncludeColorChart] = useState<boolean>(true);
+    const [includeStitchChart, setIncludeStitchChart] = useState<boolean>(true);
+    const [chartOnlyMode, setChartOnlyMode] = useState<'color' | 'stitch'>('color');
+    const [includePages, setIncludePages] = useState<boolean>(true);
+    const [includeYarnRequirements, setIncludeYarnRequirements] = useState<boolean>(true);
+    const [includeOverviewPage, setIncludeOverviewPage] = useState<boolean>(false);
+    const [includeStitchLegend, setIncludeStitchLegend] = useState<boolean>(true);
+    const [showCellBackgrounds, setShowCellBackgrounds] = useState<boolean>(true);
+    const [isAdvancedOpen, setIsAdvancedOpen] = useState<boolean>(false);
+
+    // Hydrate export settings from project
+    useEffect(() => {
+        if (project?.settings?.export) {
+            const settings = project.settings.export;
+            if (settings.defaultExportType) setSelectedExportType(settings.defaultExportType);
+            if (settings.branding) {
+                setExportDesignerName(settings.branding.designerName || '');
+                setExportWebsite(settings.branding.website || '');
+                setExportCopyright(settings.branding.copyrightLine || '');
+            }
+            if (settings.showCellSymbols !== undefined) setExportShowCellSymbols(settings.showCellSymbols);
+            if (settings.includeColorChart !== undefined) setIncludeColorChart(settings.includeColorChart);
+            if (settings.includeStitchChart !== undefined) setIncludeStitchChart(settings.includeStitchChart);
+        }
+    }, [project?.settings?.export]);
+
     // --- STITCH SYSTEM STATE ---
     const [primaryStitchId, setPrimaryStitchId] = useState<string | null>("sc");
     const [secondaryStitchId, setSecondaryStitchId] = useState<string | null>("ch");
@@ -160,7 +193,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const primaryStitch = primaryStitchId ? stitchMap.get(primaryStitchId) : undefined;
     const secondaryStitch = secondaryStitchId ? stitchMap.get(secondaryStitchId) : undefined;
 
-    const project = state.project?.type === 'pixel' ? state.project : null;
+
     const projectData = project?.data as PixelGridData | undefined;
 
     const yarnColorMap = useMemo(() => {
@@ -700,14 +733,62 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         return options;
     };
 
-    const handleExportChartOnly = () => {
-        if (!projectData) return;
-        exportPixelGridToPDF(project?.name || 'Project', projectData, project?.yarnPalette || [], yarnUsage, { forceSinglePage: true }, project?.settings, isLeftHanded);
+    const buildExportOptions = (preview: boolean): ExportOptions => {
+        if (!projectData) {
+            return { preview };
+        }
+
+        const exportType: ExportType = selectedExportType;
+
+        return {
+            exportType,
+            preview,
+            chartMode: exportType === 'chart-only' ? chartOnlyMode : 'color',
+            forceSinglePage: exportType === 'chart-only',
+            includeColorChart: exportType === 'pattern-pack' ? includeColorChart : (chartOnlyMode === 'color'),
+            includeStitchChart: exportType === 'pattern-pack' ? includeStitchChart : (chartOnlyMode === 'stitch'),
+            includeYarnRequirements: includeYarnRequirements,
+            includeStitchLegend: includeStitchLegend,
+            includeOverviewPage: includeOverviewPage,
+            branding: {
+                designerName: exportDesignerName || undefined,
+                website: exportWebsite || undefined,
+                copyrightLine: exportCopyright || undefined,
+            },
+            chartVisual: {
+                showCellSymbols: exportShowCellSymbols,
+                showCellBackgrounds: showCellBackgrounds,
+                symbolMode: 'color-index',
+            },
+        };
     };
 
-    const handleExportPatternPack = () => {
+    const handleConfirmExport = () => {
         if (!projectData) return;
-        exportPixelGridToPDF(project?.name || 'Project', projectData, project?.yarnPalette || [], yarnUsage, { forceSinglePage: false }, project?.settings, isLeftHanded);
+        const options = buildExportOptions(false);
+        exportPixelGridToPDF(
+            project?.name || 'pattern',
+            projectData,
+            project?.yarnPalette || [],
+            yarnUsage,
+            options,
+            project?.settings,
+            isLeftHanded
+        );
+    };
+
+    const handlePreviewExport = () => {
+        if (!projectData) return;
+        const options = buildExportOptions(true);
+        exportPixelGridToPDF(
+            project?.name || 'pattern',
+            projectData,
+            project?.yarnPalette || [],
+            yarnUsage,
+            options,
+            project?.settings,
+            isLeftHanded
+        );
     };
 
     const handleExportImage = () => {
@@ -1009,24 +1090,212 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             )}
 
             {/* Export Modal */}
-            <Modal isOpen={isExportModalOpen} onClose={() => setIsExportModalOpen(false)} title="Export Project">
+            <Modal isOpen={isExportModalOpen} onClose={() => setIsExportModalOpen(false)} title="Export Center">
                 <div className="space-y-4">
-                    <p className="text-sm text-gray-600">Choose an export format for your project.</p>
-                    <div className="flex flex-col gap-2">
-                        <Button variant="primary" onClick={() => { handleExportPatternPack(); setIsExportModalOpen(false); }} disabled={!projectData} className="justify-center">
-                            <Icon name="download" className="w-4 h-4 mr-2" /> Export Pattern Pack (PDF)
-                        </Button>
-                        <p className="text-xs text-gray-500 ml-2">Includes cover page, pattern overview, split charts, and full chart.</p>
+                    <p className="text-sm text-gray-600 mb-3">
+                        Choose an export format and options. You can preview your PDF before downloading.
+                    </p>
 
-                        <Button variant="secondary" onClick={() => { handleExportChartOnly(); setIsExportModalOpen(false); }} disabled={!projectData} className="justify-center">
-                            <Icon name="download" className="w-4 h-4 mr-2" /> Export Chart Only (PDF)
-                        </Button>
-                        <p className="text-xs text-gray-500 ml-2">Single page chart with legend.</p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                        <button
+                            type="button"
+                            onClick={() => setSelectedExportType('pattern-pack')}
+                            className={`border rounded-lg p-3 text-left flex flex-col gap-1 ${selectedExportType === 'pattern-pack' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 bg-white'
+                                }`}
+                        >
+                            <span className="text-sm font-semibold">Pattern Pack (PDF)</span>
+                            <span className="text-xs text-gray-600">
+                                Cover, yarn requirements, charts & legends. Ideal for sharing or selling.
+                            </span>
+                        </button>
 
-                        <Button variant="secondary" onClick={() => { handleExportImage(); setIsExportModalOpen(false); }} disabled={!projectData} className="justify-center">
-                            <Icon name="image" className="w-4 h-4 mr-2" /> Export Image (PNG)
-                        </Button>
-                        <p className="text-xs text-gray-500 ml-2">Download as PNG image.</p>
+                        <button
+                            type="button"
+                            onClick={() => setSelectedExportType('chart-only')}
+                            className={`border rounded-lg p-3 text-left flex flex-col gap-1 ${selectedExportType === 'chart-only' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 bg-white'
+                                }`}
+                        >
+                            <span className="text-sm font-semibold">Chart Only (PDF)</span>
+                            <span className="text-xs text-gray-600">
+                                Single chart view for quick printing.
+                            </span>
+                        </button>
+                    </div>
+
+                    {selectedExportType === 'pattern-pack' && (
+                        <div className="space-y-2 mb-3">
+                            <h4 className="text-xs font-semibold text-gray-500 uppercase">Pattern Pack Options</h4>
+                            <div className="flex flex-col gap-1">
+                                <label className="flex items-center cursor-pointer text-sm">
+                                    <input
+                                        type="checkbox"
+                                        className="mr-2"
+                                        checked={includeColorChart}
+                                        onChange={(e) => setIncludeColorChart(e.target.checked)}
+                                    />
+                                    Color chart
+                                </label>
+                                <label className="flex items-center cursor-pointer text-sm">
+                                    <input
+                                        type="checkbox"
+                                        className="mr-2"
+                                        checked={includeStitchChart}
+                                        onChange={(e) => setIncludeStitchChart(e.target.checked)}
+                                    />
+                                    Stitch chart
+                                </label>
+                            </div>
+                            <div className="space-y-2 mt-3 pt-2 border-t border-gray-100">
+                                <h4 className="text-xs font-semibold text-gray-500 uppercase">Content Options</h4>
+                                <label className="flex items-center cursor-pointer text-sm">
+                                    <input
+                                        type="checkbox"
+                                        className="mr-2"
+                                        checked={includePages}
+                                        onChange={(e) => setIncludePages(e.target.checked)}
+                                    />
+                                    Include pages (multi-page)
+                                </label>
+                                <label className="flex items-center cursor-pointer text-sm">
+                                    <input
+                                        type="checkbox"
+                                        className="mr-2"
+                                        checked={includeOverviewPage}
+                                        onChange={(e) => setIncludeOverviewPage(e.target.checked)}
+                                    />
+                                    Include pattern overview
+                                </label>
+                                <label className="flex items-center cursor-pointer text-sm">
+                                    <input
+                                        type="checkbox"
+                                        className="mr-2"
+                                        checked={includeStitchLegend}
+                                        onChange={(e) => setIncludeStitchLegend(e.target.checked)}
+                                    />
+                                    Include stitch legend
+                                </label>
+                            </div>
+                        </div>
+                    )}
+
+                    {selectedExportType === 'chart-only' && (
+                        <div className="space-y-2 mb-3">
+                            <h4 className="text-xs font-semibold text-gray-500 uppercase">Chart Options</h4>
+                            <div className="flex flex-wrap gap-3 text-sm">
+                                <label className="flex items-center cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="export-chart-mode"
+                                        className="mr-1"
+                                        checked={chartOnlyMode === 'color'}
+                                        onChange={() => setChartOnlyMode('color')}
+                                    />
+                                    Color chart
+                                </label>
+                                <label className="flex items-center cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="export-chart-mode"
+                                        className="mr-1"
+                                        checked={chartOnlyMode === 'stitch'}
+                                        onChange={() => setChartOnlyMode('stitch')}
+                                    />
+                                    Stitch chart
+                                </label>
+                            </div>
+                            <div className="space-y-2 mt-3 pt-2 border-t border-gray-100">
+                                <h4 className="text-xs font-semibold text-gray-500 uppercase">Content Options</h4>
+                                <label className="flex items-center cursor-pointer text-sm">
+                                    <input
+                                        type="checkbox"
+                                        className="mr-2"
+                                        checked={includeYarnRequirements}
+                                        onChange={(e) => setIncludeYarnRequirements(e.target.checked)}
+                                    />
+                                    Include yarn requirements
+                                </label>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="border-t pt-3 mt-2">
+                        <button
+                            type="button"
+                            className="flex items-center justify-between w-full text-xs font-semibold text-gray-600"
+                            onClick={() => setIsAdvancedOpen((prev) => !prev)}
+                        >
+                            <span>Advanced settings</span>
+                            <span>{isAdvancedOpen ? '▴' : '▾'}</span>
+                        </button>
+
+                        {isAdvancedOpen && (
+                            <div className="mt-3 space-y-3">
+                                <div>
+                                    <h5 className="text-xs font-semibold text-gray-500 uppercase mb-1">Branding</h5>
+                                    <div className="flex flex-col gap-2">
+                                        <input
+                                            type="text"
+                                            className="border rounded px-2 py-1 text-sm w-full"
+                                            placeholder="Designer name (optional)"
+                                            value={exportDesignerName}
+                                            onChange={(e) => setExportDesignerName(e.target.value)}
+                                        />
+                                        <input
+                                            type="text"
+                                            className="border rounded px-2 py-1 text-sm w-full"
+                                            placeholder="Website or shop URL (optional)"
+                                            value={exportWebsite}
+                                            onChange={(e) => setExportWebsite(e.target.value)}
+                                        />
+                                        <input
+                                            type="text"
+                                            className="border rounded px-2 py-1 text-sm w-full"
+                                            placeholder="Custom copyright line (optional)"
+                                            value={exportCopyright}
+                                            onChange={(e) => setExportCopyright(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h5 className="text-xs font-semibold text-gray-500 uppercase mb-1">Chart appearance</h5>
+                                    <label className="flex items-center cursor-pointer text-sm">
+                                        <input
+                                            type="checkbox"
+                                            className="mr-2"
+                                        />
+                                        Show symbols in cells
+                                    </label>
+                                    <label className="flex items-center cursor-pointer text-sm mt-1">
+                                        <input
+                                            type="checkbox"
+                                            className="mr-2"
+                                            checked={showCellBackgrounds}
+                                            onChange={(e) => setShowCellBackgrounds(e.target.checked)}
+                                        />
+                                        Show cell background colors
+                                    </label>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="flex justify-between items-center pt-4 border-t mt-4">
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <Icon name="info" className="w-4 h-4" />
+                            <span>You can preview your PDF before downloading.</span>
+                        </div>
+                        <div className="flex gap-2">
+                            <Button variant="secondary" onClick={() => setIsExportModalOpen(false)}>
+                                Cancel
+                            </Button>
+                            <Button variant="secondary" onClick={handlePreviewExport} disabled={!projectData}>
+                                <Icon name="eye" className="w-4 h-4 mr-1" /> Preview PDF
+                            </Button>
+                            <Button variant="primary" onClick={handleConfirmExport} disabled={!projectData}>
+                                <Icon name="download" className="w-4 h-4 mr-1" /> Export PDF
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </Modal>
@@ -1387,7 +1656,16 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
                     <div>
                         <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Export</h4>
-                        <Button variant="secondary" onClick={() => setIsExportModalOpen(true)} className="w-full justify-center"><Icon name="download" className="w-4 h-4 mr-2" /> Export</Button>
+                        <Button
+                            variant="secondary"
+                            onClick={() => setIsExportModalOpen(true)}
+                            className="w-full justify-center mb-2"
+                        >
+                            <Icon name="download" className="w-4 h-4 mr-2" /> Export Project...
+                        </Button>
+                        <p className="text-xs text-gray-600">
+                            Create printable PDFs with charts, yarn requirements, and optional branding. You can preview your export before downloading.
+                        </p>
                     </div>
 
 

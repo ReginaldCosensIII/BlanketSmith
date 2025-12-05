@@ -1,0 +1,24 @@
+
+export interface ExportOptions {
+    // NEW (required for future calls)
+    exportType?: ExportType;  // 'pattern-pack' | 'chart-only'; default internally to 'pattern-pack'
+
+    // Existing fields (keep these so current calls still work)
+    forceSinglePage?: boolean;
+    chartMode?: 'color' | 'stitch'; // Assuming ChartMode type, using string literal for now based on usage
+    includeColorChart?: boolean;
+    includeStitchChart?: boolean;
+
+    // NEW feature flags
+    includeYarnRequirements?: boolean;
+    includeStitchLegend?: boolean;
+    includeRowInstructions?: boolean;
+    includeNotesPage?: boolean;
+
+    // NEW: branding and visuals
+    branding?: BrandingOptions;
+    chartVisual?: ChartVisualOptions;
+
+    // NEW: preview mode
+    preview?: boolean; // if true, open PDF in new tab/window instead of downloading
+}
