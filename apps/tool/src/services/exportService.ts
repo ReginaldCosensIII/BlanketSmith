@@ -397,6 +397,71 @@ export const exportPixelGridToPDF = (
     // For Chart Only: Single page with one chart
     // For Pattern Pack: Conditional multi-page charts
 
+    // Helper function to draw full cover page
+    const drawFullCoverPage = () => {
+        doc.addPage();
+        const centerX = pageW / 2;
+        const centerY = pageH / 2;
+
+        doc.setFontSize(24);
+        doc.text(projectName, centerX, centerY - 40, { align: 'center' });
+
+        doc.setFontSize(14);
+        if (branding.designerName) {
+            doc.text(`Designed by ${branding.designerName}`, centerX, centerY, { align: 'center' });
+        }
+        if (branding.website) {
+            doc.setTextColor(100);
+            doc.text(branding.website, centerX, centerY + 20, { align: 'center' });
+            doc.setTextColor(0);
+        }
+        if (branding.copyrightLine) {
+            doc.setFontSize(10);
+            doc.setTextColor(150);
+            doc.text(branding.copyrightLine, centerX, pageH - margin, { align: 'center' });
+            doc.setTextColor(0);
+        }
+    };
+
+    // Helper function to draw pattern overview v2
+    const drawOverviewPage = () => {
+        doc.addPage();
+        doc.setFontSize(16);
+        doc.text("Pattern Overview", margin, margin + 20);
+
+        const availW = pageW - margin * 2;
+        const availH = pageH - margin * 2 - 80; // Space for title & metadata
+        const cellW = availW / gridData.width;
+        const cellH = availH / gridData.height;
+        const size = Math.min(cellW, cellH);
+
+        const startX = margin + (availW - (gridData.width * size)) / 2;
+        const startY = margin + 40;
+
+        // Draw simple colored grid
+        for (let y = 0; y < gridData.height; y++) {
+            for (let x = 0; x < gridData.width; x++) {
+                const index = y * gridData.width + x;
+                const cell = gridData.grid[index];
+                if (cell.colorId) {
+                    const c = yarnColorMap.get(cell.colorId);
+                    if (c) {
+                        doc.setFillColor(c.hex);
+                        doc.rect(startX + x * size, startY + y * size, size, size, 'F');
+                    }
+                }
+            }
+        }
+
+        // Metadata
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        const metaY = startY + (gridData.height * size) + 20;
+        doc.text(`Dimensions: ${gridData.width} x ${gridData.height}`, margin, metaY);
+        doc.text(`Colors: ${yarnPalette.length}`, margin, metaY + 15);
+        doc.setTextColor(0);
+    };
+
     // Helper function to draw a color chart page
     const drawColorChart = (
         startX: number,
@@ -406,7 +471,8 @@ export const exportPixelGridToPDF = (
         cellSize: number,
         pageTitle: string,
         pageInfo: string = '',
-        yOffset: number = margin + 30
+        yOffset: number = margin + 30,
+        mode: 'color' | 'hybrid' = 'color'
     ) => {
         const sliceW = endX - startX;
         const sliceH = endY - startY;
@@ -492,7 +558,12 @@ export const exportPixelGridToPDF = (
 
                     let cellText = "";
                     if (chartVisual.showCellSymbols) {
-                        cellText = colorSymbolMap.get(cell.colorId) || "";
+                        if (mode === 'hybrid' && cell.stitchId) {
+                            const s = stitchMap.get(cell.stitchId);
+                            if (s) cellText = s.symbol;
+                        } else {
+                            cellText = colorSymbolMap.get(cell.colorId) || "";
+                        }
                     } else {
                         cellText = numbering[index];
                     }
@@ -598,6 +669,116 @@ export const exportPixelGridToPDF = (
                 }
             }
         }
+    };
+
+    // Helper function to draw a hybrid chart page
+    const drawHybridChart = (
+        startX: number,
+        startY: number,
+        endX: number,
+        endY: number,
+        cellSize: number,
+        pageTitle: string,
+        pageInfo: string = '',
+        yOffset: number = margin + 30
+    ) => {
+        const sliceW = endX - startX;
+        const sliceH = endY - startY;
+        const drawX = margin + 40;
+        const drawY = yOffset;
+
+        doc.setFontSize(10);
+        doc.text(pageTitle, margin, yOffset - 25);
+        if (pageInfo) {
+            doc.text(pageInfo, pageW - margin, margin, { align: 'right' });
+        }
+
+        doc.setFontSize(PDF_CONFIG.fontSize.ruler);
+        const showRulers = cellSize > 5;
+
+        if (showRulers) {
+            // Column Numbers (Top)
+            for (let i = 0; i < sliceW; i++) {
+                const gridX = startX + i;
+                if (i % 5 === 0 || isChartOnly)
+                    doc.text(String(gridX + 1), drawX + (i + 0.5) * cellSize, drawY - 5, { align: 'center' });
+            }
+
+            // Row Numbers (Sides)
+            for (let i = 0; i < sliceH; i++) {
+                const gridY = startY + i;
+                const rowNum = gridY + 1;
+                const isOdd = rowNum % 2 !== 0;
+                const showOnLeft = isLeftHanded ? !isOdd : isOdd;
+
+                if (showOnLeft) {
+                    doc.text(String(rowNum), drawX - 5, drawY + (i + 0.5) * cellSize, { align: 'right', baseline: 'middle' });
+                } else {
+                    doc.text(String(rowNum), drawX + (sliceW * cellSize) + 5, drawY + (i + 0.5) * cellSize, { align: 'left', baseline: 'middle' });
+                }
+            }
+        }
+
+        doc.setLineWidth(0.5);
+        doc.setDrawColor('#CCCCCC');
+
+        const forceNumbers = isChartOnly;
+        const renderNumbers = cellSize >= 10 || forceNumbers;
+
+        for (let y = 0; y < sliceH; y++) {
+            for (let x = 0; x < sliceW; x++) {
+                const gridX = startX + x;
+                const gridY = startY + y;
+                const index = gridY * gridData.width + gridX;
+                const cell = gridData.grid[index];
+
+                const cx = drawX + x * cellSize;
+                const cy = drawY + y * cellSize;
+
+                // Hybrid: Always yarn color background
+                doc.setFillColor(255, 255, 255);
+                if (cell.colorId) {
+                    const c = yarnColorMap.get(cell.colorId);
+                    if (c && chartVisual.showCellBackgrounds !== false) {
+                        doc.setFillColor(c.hex);
+                        doc.rect(cx, cy, cellSize, cellSize, 'FD');
+                    } else {
+                        doc.rect(cx, cy, cellSize, cellSize, 'S');
+                    }
+                } else {
+                    doc.rect(cx, cy, cellSize, cellSize, 'S'); // Empty cell
+                }
+
+                if (renderNumbers && cell.colorId) {
+                    // Respect showCellSymbols
+                    if (!chartVisual.showCellSymbols) continue;
+
+                    const c = yarnColorMap.get(cell.colorId);
+                    const showBackgrounds = chartVisual.showCellBackgrounds !== false;
+                    const textColor = (c && showBackgrounds) ? getTextColor(c.hex) : '#000000';
+                    doc.setTextColor(textColor);
+
+                    const dynamicFontSize = forceNumbers ? Math.max(2, cellSize * 0.7) : cellSize * 0.6;
+                    doc.setFontSize(dynamicFontSize);
+
+                    let cellText = "";
+                    // Hybrid: Show stitch symbols
+                    if (cell.stitchId) {
+                        const s = stitchMap.get(cell.stitchId);
+                        if (s) cellText = s.symbol;
+                    }
+
+                    if (cellText) {
+                        doc.text(
+                            cellText,
+                            cx + cellSize / 2,
+                            cy + cellSize / 2,
+                            { align: 'center', baseline: 'middle' }
+                        );
+                    }
+                }
+            }
+        }
         doc.setTextColor(0);
     };
 
@@ -655,6 +836,10 @@ export const exportPixelGridToPDF = (
 
     // --- CHART GENERATION LOGIC ---
 
+    if (options.includeCoverPage) {
+        drawFullCoverPage();
+    }
+
     if (isChartOnly) {
         // CHART ONLY MODE: Single page, one chart type
         // D.1: Removed doc.addPage() to avoid blank first page
@@ -691,11 +876,21 @@ export const exportPixelGridToPDF = (
 
         if (chartMode === 'stitch') {
             drawStitchChart(0, 0, gridData.width, gridData.height, singlePageCellSize, 'Stitch Chart', '', startY);
+        } else if (chartMode === 'hybrid') {
+            drawHybridChart(0, 0, gridData.width, gridData.height, singlePageCellSize, 'Hybrid Chart', '', startY);
         } else {
-            drawColorChart(0, 0, gridData.width, gridData.height, singlePageCellSize, 'Color Chart', '', startY);
+            drawColorChart(0, 0, gridData.width, gridData.height, singlePageCellSize, 'Color Chart', '', startY, 'color');
         }
     } else {
         // PATTERN PACK MODE: Conditional multi-page charts
+
+        if (includeOverview) {
+            drawOverviewPage();
+        }
+
+        // Determine mode and title for color/hybrid chart
+        const ppMode = chartVisual.symbolMode === 'hybrid' ? 'hybrid' : 'color';
+        const ppTitle = ppMode === 'hybrid' ? 'Hybrid Chart' : 'Color Chart';
 
         // Determine if we need multi-page split for color chart
         const needsMultiPage = singlePageCellSize < PDF_CONFIG.minCellSize;
@@ -718,11 +913,22 @@ export const exportPixelGridToPDF = (
                         const pageNum = (py * pagesX) + px + 1;
                         const totalPages = pagesX * pagesY;
 
-                        drawColorChart(
-                            startX, startY, endX, endY, cellSize,
-                            `Color Chart - Page ${pageNum} of ${totalPages}`,
-                            `Cols ${startX + 1}-${endX} | Rows ${startY + 1}-${endY}`
-                        );
+                        if (ppMode === 'hybrid') {
+                            drawHybridChart(
+                                startX, startY, endX, endY, cellSize,
+                                `${ppTitle} - Page ${pageNum} of ${totalPages}`,
+                                `Cols ${startX + 1}-${endX} | Rows ${startY + 1}-${endY}`,
+                                margin + 30
+                            );
+                        } else {
+                            drawColorChart(
+                                startX, startY, endX, endY, cellSize,
+                                `${ppTitle} - Page ${pageNum} of ${totalPages}`,
+                                `Cols ${startX + 1}-${endX} | Rows ${startY + 1}-${endY}`,
+                                margin + 30,
+                                ppMode
+                            );
+                        }
                     }
                 }
             }
@@ -733,7 +939,11 @@ export const exportPixelGridToPDF = (
             const fullChartCellH = (availableH - 40) / gridData.height;
             const fullChartCellSize = Math.min(fullChartCellW, fullChartCellH);
 
-            drawColorChart(0, 0, gridData.width, gridData.height, fullChartCellSize, 'Full Color Chart');
+            if (ppMode === 'hybrid') {
+                drawHybridChart(0, 0, gridData.width, gridData.height, fullChartCellSize, `Full ${ppTitle}`, '', margin + 30);
+            } else {
+                drawColorChart(0, 0, gridData.width, gridData.height, fullChartCellSize, `Full ${ppTitle}`, '', margin + 30, ppMode);
+            }
         }
 
         if (includeStitchChart) {

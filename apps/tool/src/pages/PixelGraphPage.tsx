@@ -154,12 +154,14 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [exportShowCellSymbols, setExportShowCellSymbols] = useState<boolean>(true);
     const [includeColorChart, setIncludeColorChart] = useState<boolean>(true);
     const [includeStitchChart, setIncludeStitchChart] = useState<boolean>(true);
-    const [chartOnlyMode, setChartOnlyMode] = useState<'color' | 'stitch'>('color');
+    const [chartOnlyMode, setChartOnlyMode] = useState<'color' | 'stitch' | 'hybrid'>('color');
     const [includePages, setIncludePages] = useState<boolean>(true);
     const [includeYarnRequirements, setIncludeYarnRequirements] = useState<boolean>(true);
     const [includeOverviewPage, setIncludeOverviewPage] = useState<boolean>(false);
+    const [includeCoverPage, setIncludeCoverPage] = useState<boolean>(false);
     const [includeStitchLegend, setIncludeStitchLegend] = useState<boolean>(true);
     const [showCellBackgrounds, setShowCellBackgrounds] = useState<boolean>(true);
+    const [symbolMode, setSymbolMode] = useState<'color-index' | 'stitch-symbol' | 'hybrid'>('color-index');
     const [isAdvancedOpen, setIsAdvancedOpen] = useState<boolean>(false);
 
     // Hydrate export settings from project
@@ -750,6 +752,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             includeYarnRequirements: includeYarnRequirements,
             includeStitchLegend: includeStitchLegend,
             includeOverviewPage: includeOverviewPage,
+            includeCoverPage: includeCoverPage,
             branding: {
                 designerName: exportDesignerName || undefined,
                 website: exportWebsite || undefined,
@@ -758,7 +761,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             chartVisual: {
                 showCellSymbols: exportShowCellSymbols,
                 showCellBackgrounds: showCellBackgrounds,
-                symbolMode: 'color-index',
+                symbolMode: symbolMode,
             },
         };
     };
@@ -1156,24 +1159,6 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                     />
                                     Include pages (multi-page)
                                 </label>
-                                <label className="flex items-center cursor-pointer text-sm">
-                                    <input
-                                        type="checkbox"
-                                        className="mr-2"
-                                        checked={includeOverviewPage}
-                                        onChange={(e) => setIncludeOverviewPage(e.target.checked)}
-                                    />
-                                    Include pattern overview
-                                </label>
-                                <label className="flex items-center cursor-pointer text-sm">
-                                    <input
-                                        type="checkbox"
-                                        className="mr-2"
-                                        checked={includeStitchLegend}
-                                        onChange={(e) => setIncludeStitchLegend(e.target.checked)}
-                                    />
-                                    Include stitch legend
-                                </label>
                             </div>
                         </div>
                     )}
@@ -1202,19 +1187,18 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                     />
                                     Stitch chart
                                 </label>
-                            </div>
-                            <div className="space-y-2 mt-3 pt-2 border-t border-gray-100">
-                                <h4 className="text-xs font-semibold text-gray-500 uppercase">Content Options</h4>
-                                <label className="flex items-center cursor-pointer text-sm">
+                                <label className="flex items-center cursor-pointer">
                                     <input
-                                        type="checkbox"
-                                        className="mr-2"
-                                        checked={includeYarnRequirements}
-                                        onChange={(e) => setIncludeYarnRequirements(e.target.checked)}
+                                        type="radio"
+                                        name="export-chart-mode"
+                                        className="mr-1"
+                                        checked={chartOnlyMode === 'hybrid'}
+                                        onChange={() => setChartOnlyMode('hybrid')}
                                     />
-                                    Include yarn requirements
+                                    Hybrid chart
                                 </label>
                             </div>
+
                         </div>
                     )}
 
@@ -1229,9 +1213,107 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                         </button>
 
                         {isAdvancedOpen && (
-                            <div className="mt-3 space-y-3">
+                            <div className="mt-3 space-y-4">
+                                {/* STITCH & SYMBOL OPTIONS */}
                                 <div>
-                                    <h5 className="text-xs font-semibold text-gray-500 uppercase mb-1">Branding</h5>
+                                    <h5 className="text-xs font-semibold text-gray-500 uppercase mb-2">Stitch & Symbol Options</h5>
+                                    <div className="space-y-2">
+                                        <label className="flex items-center cursor-pointer text-sm">
+                                            <input
+                                                type="checkbox"
+                                                className="mr-2"
+                                                checked={exportShowCellSymbols}
+                                                onChange={(e) => setExportShowCellSymbols(e.target.checked)}
+                                            />
+                                            Show symbols in cells
+                                        </label>
+                                        <label className="flex items-center cursor-pointer text-sm">
+                                            <input
+                                                type="checkbox"
+                                                className="mr-2"
+                                                checked={showCellBackgrounds}
+                                                onChange={(e) => setShowCellBackgrounds(e.target.checked)}
+                                            />
+                                            Show cell background colors
+                                        </label>
+                                        <div className="pt-1">
+                                            <span className="text-sm block mb-1">Symbol mode:</span>
+                                            <select
+                                                className="border rounded px-2 py-1 text-sm w-full"
+                                                value={symbolMode}
+                                                onChange={(e) => setSymbolMode(e.target.value as any)}
+                                            >
+                                                <option value="color-index">Color numbers</option>
+                                                <option value="stitch-symbol">Stitch symbols</option>
+                                                <option value="hybrid">Hybrid (Color + Symbol)</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* LAYOUT OPTIONS */}
+                                <div>
+                                    <h5 className="text-xs font-semibold text-gray-500 uppercase mb-2">Layout Options</h5>
+                                    <div className="space-y-2">
+                                        {/* Cover Page moved to Part 2B - Hidden for now */}
+
+                                        {selectedExportType === 'pattern-pack' && (
+                                            <>
+                                                <label className="flex items-center cursor-pointer text-sm">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="mr-2"
+                                                        checked={includeOverviewPage}
+                                                        onChange={(e) => setIncludeOverviewPage(e.target.checked)}
+                                                    />
+                                                    Include Pattern Overview
+                                                </label>
+                                                <label className="flex items-center cursor-pointer text-sm">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="mr-2"
+                                                        checked={includeColorChart}
+                                                        onChange={(e) => setIncludeColorChart(e.target.checked)}
+                                                    />
+                                                    Include Color Chart
+                                                </label>
+                                                <label className="flex items-center cursor-pointer text-sm">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="mr-2"
+                                                        checked={includeStitchChart}
+                                                        onChange={(e) => setIncludeStitchChart(e.target.checked)}
+                                                    />
+                                                    Include Stitch Chart
+                                                </label>
+                                                <label className="flex items-center cursor-pointer text-sm">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="mr-2"
+                                                        checked={includeStitchLegend}
+                                                        onChange={(e) => setIncludeStitchLegend(e.target.checked)}
+                                                    />
+                                                    Include Stitch Legend
+                                                </label>
+                                            </>
+                                        )}
+                                        {selectedExportType === 'chart-only' && (
+                                            <label className="flex items-center cursor-pointer text-sm">
+                                                <input
+                                                    type="checkbox"
+                                                    className="mr-2"
+                                                    checked={includeYarnRequirements}
+                                                    onChange={(e) => setIncludeYarnRequirements(e.target.checked)}
+                                                />
+                                                Include Yarn Requirements
+                                            </label>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* BRANDING */}
+                                <div>
+                                    <h5 className="text-xs font-semibold text-gray-500 uppercase mb-2">Branding</h5>
                                     <div className="flex flex-col gap-2">
                                         <input
                                             type="text"
@@ -1255,28 +1337,6 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                             onChange={(e) => setExportCopyright(e.target.value)}
                                         />
                                     </div>
-                                </div>
-
-                                <div>
-                                    <h5 className="text-xs font-semibold text-gray-500 uppercase mb-1">Chart appearance</h5>
-                                    <label className="flex items-center cursor-pointer text-sm">
-                                        <input
-                                            type="checkbox"
-                                            className="mr-2"
-                                            checked={exportShowCellSymbols}
-                                            onChange={(e) => setExportShowCellSymbols(e.target.checked)}
-                                        />
-                                        Show symbols in cells
-                                    </label>
-                                    <label className="flex items-center cursor-pointer text-sm mt-1">
-                                        <input
-                                            type="checkbox"
-                                            className="mr-2"
-                                            checked={showCellBackgrounds}
-                                            onChange={(e) => setShowCellBackgrounds(e.target.checked)}
-                                        />
-                                        Show cell background colors
-                                    </label>
                                 </div>
                             </div>
                         )}
