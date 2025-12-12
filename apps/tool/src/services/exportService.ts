@@ -564,11 +564,13 @@ export const exportPixelGridToPDF = (
         // --- CHART ONLY LAYOUT ---
         // Page 1 is currently either the Cover Page (if drawn) or a fresh page.
 
-        if (hasContent) {
+        if (includeCoverPage) {
+            // Fix: Cover Page is P1. Force P2 for Chart layout.
             doc.addPage();
-            hasContent = true; // Added page 2
+            hasContent = true;
         } else {
-            // We are on Page 1.
+            // Fix: No Cover Page. Header is on P1.
+            // Check if we need a new page? No, we just started P1 roughly.
             hasContent = true;
         }
 
@@ -580,8 +582,9 @@ export const exportPixelGridToPDF = (
         if (!includeCoverPage) {
             chartStartY = drawProjectHeader(margin + 20);
         } else {
-            // If Cover Page exists, start high up on Page 2
-            chartStartY = margin + 30;
+            // Cover page exists and we already successfully added P2.
+            // Start fresh at top margin.
+            chartStartY = margin + 20;
         }
 
 
@@ -634,8 +637,10 @@ export const exportPixelGridToPDF = (
             packCursorY = drawProjectHeader(margin + 20);
             hasContent = true;
         } else {
-            // Cover already drawn. We are on Page 2 (or later logic handles addPage).
+            // Fix: Cover Page exists (P1). We MUST add P2 now.
+            doc.addPage();
             packCursorY = margin + 20;
+            hasContent = true;
         }
 
         // 2. Pattern Overview
