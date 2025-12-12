@@ -93,7 +93,7 @@ export interface BrandingOptions {
   copyrightLine?: string;
 }
 
-export type SymbolMode = 'color-index' | 'stitch-symbol';
+export type SymbolMode = 'color-index' | 'stitch-symbol' | 'hybrid';
 
 export interface ChartVisualOptions {
   showCellSymbols?: boolean;      // default: true for charts
@@ -123,12 +123,13 @@ export interface ContextMenuItem {
 export interface ExportOptions {
   exportType?: ExportType;
   forceSinglePage?: boolean;
-  chartMode?: 'color' | 'stitch';
+  chartMode?: 'color' | 'stitch' | 'hybrid';
   includeColorChart?: boolean;
   includeStitchChart?: boolean;
   includeYarnRequirements?: boolean;
   includeStitchLegend?: boolean;
   includeOverviewPage?: boolean;
+  includeCoverPage?: boolean;
   includeRowInstructions?: boolean;
   includeNotesPage?: boolean;
   branding?: BrandingOptions;

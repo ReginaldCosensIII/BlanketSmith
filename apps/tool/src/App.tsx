@@ -5,6 +5,7 @@ import { FloatingSelectionProvider } from './context/FloatingSelectionContext';
 import { Header, Sidebar, Footer } from './components/layout/Layout';
 import { ProjectsPage } from './pages/ProjectsPage';
 import { PixelGraphPage } from './pages/PixelGraphPage';
+import { ExportEngineTestPage } from './pages/ExportEngineTestPage';
 
 // --- STATIC PAGES ---
 const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
@@ -56,7 +57,12 @@ const App: React.FC = () => {
                                 <Route path="/stripes" element={<PlaceholderPage title="Stripe Generator" />} />
                                 <Route path="/granny" element={<PlaceholderPage title="Granny Square Planner" />} />
                                 <Route path="/contact" element={<ContactPage />} />
+                                <Route path="/contact" element={<ContactPage />} />
                                 <Route path="/partner" element={<PartnerPage />} />
+                                {/* Dev Only Routes */}
+                                {(import.meta.env.DEV || process.env.NODE_ENV === 'development') && (
+                                    <Route path="/qa-export" element={<ExportEngineTestPage />} />
+                                )}
                             </Routes>
                         </div>
 

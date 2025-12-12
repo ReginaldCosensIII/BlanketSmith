@@ -37,8 +37,8 @@ const generateNumberingData = (grid: CellData[], width: number, height: number, 
 
         // Numbering Direction Logic:
         // Standard (Right-Handed):
-        //   Row 1 (Odd): Left -> Right (indices increase) [User Spec: "Odd numbers on Left"]
-        //   Row 2 (Even): Right -> Left (indices decrease) [User Spec: "Even numbers on Right"]
+        //   Row 1 (Odd): Left -> Right (indices increase)
+        //   Row 2 (Even): Right -> Left (indices decrease)
 
         // Left-Handed (Mirrored):
         //   Row 1 (Odd): Right -> Left (indices decrease)
@@ -79,8 +79,6 @@ const generateNumberingData = (grid: CellData[], width: number, height: number, 
     return numbers;
 };
 
-
-
 const buildColorSymbolMap = (yarnPalette: YarnColor[]): Map<string, string> => {
     const map = new Map<string, string>();
     yarnPalette.forEach((yarn, index) => {
@@ -90,6 +88,34 @@ const buildColorSymbolMap = (yarnPalette: YarnColor[]): Map<string, string> => {
         map.set(key, symbol);
     });
     return map;
+};
+
+export const exportPixelGridToImage = (projectName: string, gridData: PixelGridData, yarnPalette: YarnColor[]) => {
+    // Basic implementation to restore functionality
+    const canvas = document.createElement('canvas');
+    const scale = 20; // Fixed scale for export
+    canvas.width = gridData.width * scale;
+    canvas.height = gridData.height * scale;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const yarnColorMap = new Map(yarnPalette.map(yc => [yc.id, yc]));
+
+    gridData.grid.forEach((cell, i) => {
+        const x = (i % gridData.width) * scale;
+        const y = Math.floor(i / gridData.width) * scale;
+
+        if (cell.colorId) {
+            const c = yarnColorMap.get(cell.colorId);
+            ctx.fillStyle = c ? c.hex : '#FFFFFF';
+            ctx.fillRect(x, y, scale, scale);
+        }
+    });
+
+    const link = document.createElement('a');
+    link.download = `${projectName}.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
 };
 
 export const exportPixelGridToPDF = (
@@ -115,54 +141,79 @@ export const exportPixelGridToPDF = (
     const yarnColorMap = new Map(yarnPalette.map(yc => [yc.id, yc]));
     const stitchMap = new Map(DEFAULT_STITCH_LIBRARY.map(s => [s.id, s]));
     const numbering = generateNumberingData(gridData.grid, gridData.width, gridData.height, isLeftHanded);
+    const colorSymbolMap = buildColorSymbolMap(yarnPalette);
 
-    // NEW: Derive internal flags
+    // --- OPTION NORMALIZATION (V2 Spec) ---
     const exportType: ExportType = options.exportType || (options.forceSinglePage ? 'chart-only' : 'pattern-pack');
     const isChartOnly = exportType === 'chart-only';
     const isPatternPack = exportType === 'pattern-pack';
 
+    const branding: BrandingOptions = options.branding || {};
+
+    // Layout Flags
+    const includeCoverPage = options.includeCoverPage ?? false;
+    const includeOverview = options.includeOverviewPage ?? false;
+    // Pattern Pack uses dedicated toggles; Chart-Only uses passed toggle which defaults to false in UI
+    const includeYarnRequirements = options.includeYarnRequirements ?? (isPatternPack ? true : false);
+    const includeStitchLegend = options.includeStitchLegend ?? (isPatternPack ? true : false);
+    const includeColorChart = isPatternPack ? (options.includeColorChart ?? true) : false;
+    const includeStitchChart = isPatternPack ? (options.includeStitchChart ?? false) : false;
+
+    // Chart Mode & Visuals
+    // For Chart-Only: Use explicit mode ('color', 'stitch', 'hybrid').
+    // For Pattern Pack: Mode is derived from the drawing loop (Color vs Stitch).
+    const chartOnlyMode = options.chartMode || 'color';
+
     const chartVisual: ChartVisualOptions = {
         showCellSymbols: options.chartVisual?.showCellSymbols ?? true,
+        showCellBackgrounds: options.chartVisual?.showCellBackgrounds ?? true,
         symbolMode: options.chartVisual?.symbolMode ?? 'color-index',
-        grayscaleFriendly: options.chartVisual?.grayscaleFriendly ?? false,
     };
-    const branding: BrandingOptions = options.branding || {};
-    const colorSymbolMap = buildColorSymbolMap(yarnPalette);
 
-    // Determine which chart mode to use
-    const chartMode = options.chartMode || 'color';
+    // --- LAYOUT HELPERS ---
 
-    // Determine which charts to include (Pattern Pack only)
-    const includeColorChart = options.includeColorChart ?? true;
-    const includeStitchChart = options.includeStitchChart ?? false;
-    const includeYarnRequirements = isChartOnly ? (options.includeYarnRequirements ?? false) : true;
-    const includeStitchLegend = options.includeStitchLegend ?? false;
-    const includeOverview = options.includeOverviewPage ?? false;
-    const includePages = options.includePages ?? true; // Default to true for now if not passed
+    const measureYarnLegendHeight = (): number => {
+        // Approximate height calculation only (to decide page breaks)
+        // Title (20) + Header (15) + (Rows * 25)
+        const sortedYarns = gridData.palette.filter(id => (yarnUsage.get(id) || 0) > 0);
+        return 20 + 15 + (sortedYarns.length * 25);
+    };
 
+    const drawCoverPage = () => {
+        // Ensure we are on page 1 (implicitly true if called first)
+        // Draw Project Title
+        const centerX = pageW / 2;
+        let cursorY = pageH / 2 - 40;
 
-    // --- STEP 1: CALCULATE LAYOUT ---
-    const availableW = pageW - margin * 2;
-    const availableH = pageH - margin * 2 - 60;
+        doc.setFontSize(PDF_CONFIG.fontSize.title);
+        doc.text(projectName, centerX, cursorY, { align: 'center' });
+        cursorY += 40;
 
-    const singlePageCellW = (availableW - 40) / gridData.width;
-    const singlePageCellH = (availableH - 40) / gridData.height;
-    const singlePageCellSize = Math.min(singlePageCellW, singlePageCellH);
+        // Designer / Branding
+        doc.setFontSize(14);
+        if (branding.designerName) {
+            doc.text(`Designed by ${branding.designerName}`, centerX, cursorY, { align: 'center' });
+            cursorY += 20;
+        }
+        if (branding.website) {
+            doc.setTextColor(100);
+            doc.text(branding.website, centerX, cursorY, { align: 'center' });
+            doc.setTextColor(0);
+        }
 
-    let pagesX = 1;
-    let pagesY = 1;
-    let cellSize = singlePageCellSize;
+        // Stats
+        doc.setFontSize(12);
+        doc.text(`Dimensions: ${gridData.width} x ${gridData.height} stitches`, centerX, cursorY + 40, { align: 'center' });
 
-    if (singlePageCellSize < PDF_CONFIG.minCellSize && !options.forceSinglePage) {
-        cellSize = PDF_CONFIG.minCellSize;
-        const cellsPerW = Math.floor((availableW - 40) / cellSize);
-        const cellsPerH = Math.floor((availableH - 40) / cellSize);
+        // Copyright
+        if (branding.copyrightLine) {
+            doc.setFontSize(10);
+            doc.setTextColor(150);
+            doc.text(branding.copyrightLine, centerX, pageH - margin, { align: 'center' });
+            doc.setTextColor(0);
+        }
+    };
 
-        pagesX = Math.ceil(gridData.width / cellsPerW);
-        pagesY = Math.ceil(gridData.height / cellsPerH);
-    }
-
-    // Helper to draw yarn legend (extracted for reuse in Chart Only mode)
     const drawYarnLegend = (startY: number): number => {
         let legendY = startY;
         doc.setFontSize(14);
@@ -175,7 +226,7 @@ export const exportPixelGridToPDF = (
         const sortedYarns = gridData.palette
             .sort((a, b) => (yarnUsage.get(b) || 0) - (yarnUsage.get(a) || 0));
 
-        // Header for legend
+        // Header
         doc.setFont("helvetica", "bold");
         doc.text("Symbol", margin, legendY);
         doc.text("Color", margin + 40, legendY);
@@ -187,249 +238,210 @@ export const exportPixelGridToPDF = (
         sortedYarns.forEach(yarnId => {
             const yarn = yarnColorMap.get(yarnId);
             const count = yarnUsage.get(yarnId) || 0;
+            if (!yarn || count === 0) return;
 
             const yarnPerStitch = projectSettings?.yarnPerStitch || 1;
             const totalYards = Math.ceil((count * yarnPerStitch) / 36);
-            const skeinsNeeded = Math.ceil(totalYards / (yarn?.skeinLength || 295));
+            const skeinsNeeded = Math.ceil(totalYards / (yarn.skeinLength || 295));
 
-            if (yarn) {
-                if (legendY > pageH - margin) {
-                    doc.addPage();
-                    legendY = margin;
-                }
-
-                doc.setFillColor(yarn.hex);
-                doc.setDrawColor(0);
-
-                // Draw Symbol
-                const symbol = colorSymbolMap.get(yarn.id) || "?";
-                doc.rect(margin, legendY, swatchSize, swatchSize); // Symbol box
-                doc.text(symbol, margin + swatchSize / 2, legendY + 11, { align: 'center' });
-
-                // Draw Swatch
-                // Draw Swatch (fixed to use 'F' mode for correct colors)
-                const [r, g, b] = yarn.rgb;
-                doc.setFillColor(r, g, b);
-                doc.rect(margin + 40, legendY, swatchSize, swatchSize, 'F');
-                doc.setDrawColor(0);
-                doc.rect(margin + 40, legendY, swatchSize, swatchSize, 'S');
-
-                doc.text(`${yarn.name}`, margin + 65, legendY + 11);
-                doc.setFontSize(8);
-                doc.text(`${yarn.brand} | ${yarn.yarnWeight || 'DK'}`, margin + 165, legendY + 11);
-                doc.setFontSize(10);
-                doc.text(`${count} sts  |  ${totalYards} yds  |  ${skeinsNeeded} skein${skeinsNeeded !== 1 ? 's' : ''}`, margin + 365, legendY + 11);
-
-                legendY += 25;
+            if (legendY > pageH - margin) {
+                doc.addPage();
+                legendY = margin;
             }
+
+            // Symbol Box
+            doc.setFillColor(yarn.hex);
+            doc.setDrawColor(0);
+            const symbol = colorSymbolMap.get(yarn.id) || "?";
+            doc.rect(margin, legendY, swatchSize, swatchSize);
+            doc.text(symbol, margin + swatchSize / 2, legendY + 11, { align: 'center' });
+
+            // Color Swatch
+            const [r, g, b] = yarn.rgb;
+            doc.setFillColor(r, g, b);
+            doc.rect(margin + 40, legendY, swatchSize, swatchSize, 'F');
+            doc.rect(margin + 40, legendY, swatchSize, swatchSize, 'S');
+
+            // Text Info
+            doc.text(`${yarn.name}`, margin + 65, legendY + 11);
+            doc.setFontSize(8);
+            doc.text(`${yarn.brand} | ${yarn.yarnWeight || 'DK'}`, margin + 165, legendY + 11);
+            doc.setFontSize(10);
+            doc.text(`${count} sts  |  ${totalYards} yds  |  ${skeinsNeeded} skein${skeinsNeeded !== 1 ? 's' : ''}`, margin + 365, legendY + 11);
+
+            legendY += 25;
         });
+
         return legendY;
     };
 
-    // --- STEP 2: GENERATE COVER PAGE (Pattern Pack Only) ---
-    if (isPatternPack) {
-        doc.setFontSize(PDF_CONFIG.fontSize.title);
-        doc.text(projectName, margin, margin + 20);
+    const drawStitchLegend = () => {
+        // Collect used stitches
+        const usedStitches = new Set<string>();
+        gridData.grid.forEach(cell => {
+            if (cell.stitchId) usedStitches.add(cell.stitchId);
+        });
 
-        doc.setFontSize(12);
-        doc.text(`Dimensions: ${gridData.width} x ${gridData.height} stitches`, margin, margin + 50);
-        doc.text(`Generated by BlanketSmith`, margin, margin + 65);
+        if (usedStitches.size === 0) return;
 
-        if (branding.designerName) {
-            doc.text(`Designed by ${branding.designerName}`, margin, margin + 35);
+        // Force new page for stitched legend in Pattern Pack or Chart Only (appended)
+        doc.addPage();
+
+        doc.setFontSize(14);
+        doc.text("Stitch Legend", margin, margin + 20);
+
+        let legendY = margin + 50;
+        const swatchSize = 20;
+        doc.setFontSize(10);
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Symbol", margin, legendY);
+        doc.text("Stitch Name", margin + 60, legendY);
+        doc.text("Abbreviation", margin + 250, legendY);
+        doc.setFont("helvetica", "normal");
+        legendY += 20;
+
+        usedStitches.forEach(stitchId => {
+            const stitch = stitchMap.get(stitchId);
+            if (!stitch) return;
+
+            // Symbol
+            doc.rect(margin, legendY, swatchSize, swatchSize);
+            doc.setFontSize(12); // Larger symbol
+            doc.text(stitch.symbol, margin + swatchSize / 2, legendY + 14, { align: 'center' });
+
+            // Text
+            doc.setFontSize(10);
+            doc.text(stitch.name, margin + 60, legendY + 14);
+            doc.text(stitch.id.toUpperCase(), margin + 250, legendY + 14);
+
+            legendY += 30;
+        });
+    };
+
+    const drawOverviewPage = (customStartY?: number) => {
+        // Doc page addition handled by caller
+        doc.setFontSize(16);
+        const titleY = customStartY ?? (margin + 20);
+        doc.text("Pattern Overview", margin, titleY);
+
+        // V2 MVP: Simplified one-page centered grid
+        // Adjust available height based on titleY
+        const availW = pageW - margin * 2;
+        const availH = pageH - titleY - 60; // -60 for bottom stats/margin
+        const cellW = availW / gridData.width;
+        const cellH = availH / gridData.height;
+        const size = Math.min(cellW, cellH);
+
+        const startX = margin + (availW - (gridData.width * size)) / 2;
+        const startY = titleY + 20;
+
+        // Draw simple colored grid
+        for (let y = 0; y < gridData.height; y++) {
+            for (let x = 0; x < gridData.width; x++) {
+                const index = y * gridData.width + x;
+                const cell = gridData.grid[index];
+                if (cell.colorId) {
+                    const c = yarnColorMap.get(cell.colorId);
+                    if (c) {
+                        doc.setFillColor(c.hex);
+                        doc.rect(startX + x * size, startY + y * size, size, size, 'F');
+                    }
+                }
+            }
         }
 
-        const now = new Date();
-        const year = now.getFullYear();
-        const copyrightLine = branding.copyrightLine ||
-            (branding.designerName ? `© ${year} ${branding.designerName}. All rights reserved.` : `© ${year} BlanketSmith pattern. All rights reserved.`);
+        // Stats Metadata
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        const metaY = startY + (gridData.height * size) + 30;
+        doc.text(`Dimensions: ${gridData.width} x ${gridData.height}`, margin, metaY);
+        doc.text(`Colors: ${yarnPalette.length}`, margin, metaY + 15);
+        doc.setTextColor(0);
+    };
 
-        doc.setFontSize(9);
-        doc.text(copyrightLine, margin, margin + 80);
+    const drawProjectHeader = (startY: number): number => {
+        let cursorY = startY;
+
+        // Title
+        doc.setFontSize(24);
+        doc.text(projectName, margin, cursorY);
+        cursorY += 20;
+
+        // Designer & Mode
         doc.setFontSize(12);
-        if (options.forceSinglePage) {
-            doc.setTextColor(100);
-            doc.text("(Overview Mode)", margin + 200, margin + 20);
-            doc.setTextColor(0);
+        if (branding.designerName) {
+            doc.text(`Designed by ${branding.designerName}`, margin, cursorY);
         }
         if (isLeftHanded) {
-            doc.setTextColor(100);
-            doc.text("(Left-Handed Mode)", margin + 200, margin + 35);
+            doc.setTextColor(150);
+            doc.text('(Left-Handed Mode)', pageW - margin, cursorY, { align: 'right' });
             doc.setTextColor(0);
         }
+        cursorY += 15;
 
-        // Draw Yarn Legend
-        let legendY = drawYarnLegend(margin + 100);
-
-
-        // Pattern Overview for Multipage or if requested
-        if ((pagesX > 1 || pagesY > 1) || includeOverview) {
-            // Calculate available space on current page
-            const availableHeight = pageH - legendY - margin - 60; // 60 for title and spacing
-            const availableWidth = pageW - margin * 2;
-
-            // Calculate required dimensions for overview
-            const maxOverviewWidth = Math.min(400, availableWidth);
-            const overviewScaleByWidth = maxOverviewWidth / gridData.width;
-            const requiredHeight = gridData.height * overviewScaleByWidth;
-
-            // Minimum readable size
-            const minCellSize = 1.5;
-            const minRequiredHeight = gridData.height * minCellSize;
-
-            let shouldMoveToNewPage = false;
-            let overviewScale = overviewScaleByWidth;
-
-            // Check if overview fits on current page
-            if (requiredHeight > availableHeight) {
-                // Try to scale down to fit available height
-                const scaleByHeight = availableHeight / gridData.height;
-
-                if (scaleByHeight >= minCellSize) {
-                    // Can fit by scaling down
-                    overviewScale = Math.min(scaleByHeight, availableWidth / gridData.width);
-                } else {
-                    // Too small to be readable, move to new page
-                    shouldMoveToNewPage = true;
-                }
-            }
-
-            if (shouldMoveToNewPage) {
-                // Move to dedicated Pattern Overview page
-                doc.addPage();
-
-                const newPageAvailableH = pageH - margin * 2 - 60;
-                const newPageAvailableW = pageW - margin * 2;
-
-                // Calculate scale for new page
-                const scaleW = newPageAvailableW / gridData.width;
-                const scaleH = newPageAvailableH / gridData.height;
-                overviewScale = Math.min(scaleW, scaleH);
-
-                const mapY = margin + 40;
-                doc.setFontSize(14);
-                doc.text("Pattern Overview", margin, margin + 20);
-
-                // Draw overview
-                for (let y = 0; y < gridData.height; y++) {
-                    for (let x = 0; x < gridData.width; x++) {
-                        const cell = gridData.grid[y * gridData.width + x];
-                        if (cell.colorId) {
-                            const c = yarnColorMap.get(cell.colorId);
-                            if (c) {
-                                doc.setFillColor(c.hex);
-                                doc.rect(margin + x * overviewScale, mapY + y * overviewScale, overviewScale, overviewScale, 'F');
-                            }
-                        }
-                    }
-                }
-
-                // Grid Overlay
-                doc.setDrawColor(0);
-                doc.setLineWidth(1);
-                const cellsPerW = Math.floor((availableW - 40) / cellSize);
-                const cellsPerH = Math.floor((availableH - 40) / cellSize);
-
-                for (let py = 0; py < pagesY; py++) {
-                    for (let px = 0; px < pagesX; px++) {
-                        const sx = px * cellsPerW;
-                        const sy = py * cellsPerH;
-                        const w = Math.min(cellsPerW, gridData.width - sx);
-                        const h = Math.min(cellsPerH, gridData.height - sy);
-
-                        doc.rect(margin + sx * overviewScale, mapY + sy * overviewScale, w * overviewScale, h * overviewScale, 'S');
-
-                        const pageNum = (py * pagesX) + px + 1;
-                        doc.setFontSize(10);
-                        doc.setTextColor('#FF0000');
-                        doc.text(String(pageNum), margin + (sx + w / 2) * overviewScale, mapY + (sy + h / 2) * overviewScale, { align: 'center', baseline: 'middle' });
-                        doc.setTextColor(0);
-                    }
-                }
-            } else {
-                // Fits on current page
-                const mapY = legendY + 40;
-                doc.setFontSize(14);
-                doc.text("Pattern Overview", margin, mapY - 10);
-
-                // Draw overview with calculated scale
-                for (let y = 0; y < gridData.height; y++) {
-                    for (let x = 0; x < gridData.width; x++) {
-                        const cell = gridData.grid[y * gridData.width + x];
-                        if (cell.colorId) {
-                            const c = yarnColorMap.get(cell.colorId);
-                            if (c) {
-                                doc.setFillColor(c.hex);
-                                doc.rect(margin + x * overviewScale, mapY + y * overviewScale, overviewScale, overviewScale, 'F');
-                            }
-                        }
-                    }
-                }
-
-                // Grid Overlay
-                doc.setDrawColor(0);
-                doc.setLineWidth(1);
-                const cellsPerW = Math.floor((availableW - 40) / cellSize);
-                const cellsPerH = Math.floor((availableH - 40) / cellSize);
-
-                for (let py = 0; py < pagesY; py++) {
-                    for (let px = 0; px < pagesX; px++) {
-                        const sx = px * cellsPerW;
-                        const sy = py * cellsPerH;
-                        const w = Math.min(cellsPerW, gridData.width - sx);
-                        const h = Math.min(cellsPerH, gridData.height - sy);
-
-                        doc.rect(margin + sx * overviewScale, mapY + sy * overviewScale, w * overviewScale, h * overviewScale, 'S');
-
-                        const pageNum = (py * pagesX) + px + 1;
-                        doc.setFontSize(10);
-                        doc.setTextColor('#FF0000');
-                        doc.text(String(pageNum), margin + (sx + w / 2) * overviewScale, mapY + (sy + h / 2) * overviewScale, { align: 'center', baseline: 'middle' });
-                        doc.setTextColor(0);
-                    }
-                }
-            }
+        // Website (if exists, put under designer)
+        if (branding.website) {
+            doc.setFontSize(10);
+            doc.setTextColor(100);
+            doc.text(branding.website, margin, cursorY);
+            doc.setTextColor(0);
+            cursorY += 15;
         }
-    } // End of Pattern Pack cover page
 
-    // --- STEP 3: GENERATE CHART PAGES ---
-    // For Chart Only: Single page with one chart
-    // For Pattern Pack: Conditional multi-page charts
+        // Stats
+        doc.setFontSize(10);
+        doc.text(`Dimensions: ${gridData.width} x ${gridData.height} stitches`, margin, cursorY);
+        cursorY += 15;
 
-    // Helper function to draw a color chart page
-    const drawColorChart = (
+        // Generated By
+        doc.setTextColor(150);
+        doc.text("Generated by BlanketSmith", margin, cursorY);
+        cursorY += 15;
+
+        // Copyright (Small, gray)
+        if (branding.copyrightLine) {
+            doc.setFontSize(8);
+            doc.text(branding.copyrightLine, margin, cursorY);
+            cursorY += 15;
+        }
+
+        doc.setTextColor(0);
+        return cursorY + 10; // Padding
+    };
+
+    // --- CHART DRAWING HELPERS ---
+
+    const drawConfiguredChart = (
+        mode: 'color' | 'stitch' | 'hybrid',
         startX: number,
         startY: number,
         endX: number,
         endY: number,
         cellSize: number,
         pageTitle: string,
-        pageInfo: string = '',
-        yOffset: number = margin + 30
+        yOffset: number
     ) => {
         const sliceW = endX - startX;
         const sliceH = endY - startY;
-        const drawX = margin + 40;
+        const drawX = margin + 40; // Offset for row numbers
         const drawY = yOffset;
 
+        // Title
         doc.setFontSize(10);
-        doc.text(pageTitle, margin, margin);
-        if (pageInfo) {
-            doc.text(pageInfo, pageW - margin, margin, { align: 'right' });
-        }
+        doc.text(pageTitle, margin, yOffset - 25);
 
+        // Rulers
         doc.setFontSize(PDF_CONFIG.fontSize.ruler);
         const showRulers = cellSize > 5;
-
         if (showRulers) {
-            // Column Numbers (Top)
+            // Columns
             for (let i = 0; i < sliceW; i++) {
                 const gridX = startX + i;
                 if (i % 5 === 0 || isChartOnly)
                     doc.text(String(gridX + 1), drawX + (i + 0.5) * cellSize, drawY - 5, { align: 'center' });
             }
-
-            // Row Numbers (Sides)
+            // Rows
             for (let i = 0; i < sliceH; i++) {
                 const gridY = startY + i;
                 const rowNum = gridY + 1;
@@ -447,9 +459,7 @@ export const exportPixelGridToPDF = (
         doc.setLineWidth(0.5);
         doc.setDrawColor('#CCCCCC');
 
-        const forceNumbers = isChartOnly;
-        const renderNumbers = cellSize >= 10 || forceNumbers;
-
+        // Draw Cells
         for (let y = 0; y < sliceH; y++) {
             for (let x = 0; x < sliceW; x++) {
                 const gridX = startX + x;
@@ -460,35 +470,72 @@ export const exportPixelGridToPDF = (
                 const cx = drawX + x * cellSize;
                 const cy = drawY + y * cellSize;
 
+                // Background Logic
                 doc.setFillColor(255, 255, 255);
-                if (cell.colorId) {
-                    const c = yarnColorMap.get(cell.colorId);
-                    if (c) doc.setFillColor(c.hex);
-                }
-                doc.rect(cx, cy, cellSize, cellSize, 'FD');
+                const hasColor = cell.colorId;
+                const c = hasColor ? yarnColorMap.get(cell.colorId!) : null;
 
-                if (renderNumbers && cell.colorId) {
-                    // D.3: Respect showCellSymbols toggle
-                    if (!chartVisual.showCellSymbols) {
-                        // If toggle is OFF, do not draw any text in cells
-                        continue;
-                    }
-
-                    const c = yarnColorMap.get(cell.colorId);
-                    const textColor = c ? getTextColor(c.hex) : '#000000';
-                    doc.setTextColor(textColor);
-
-                    const dynamicFontSize = forceNumbers ? Math.max(2, cellSize * 0.7) : cellSize * 0.6;
-                    doc.setFontSize(dynamicFontSize);
-
-                    let cellText = "";
-                    if (chartVisual.showCellSymbols) {
-                        cellText = colorSymbolMap.get(cell.colorId) || "";
+                if (mode === 'stitch') {
+                    // Stitch Mode: Always white/pale background
+                    doc.rect(cx, cy, cellSize, cellSize, 'FD');
+                } else {
+                    // Color / Hybrid Mode
+                    if (hasColor && c && chartVisual.showCellBackgrounds !== false) {
+                        doc.setFillColor(c.hex);
+                        doc.rect(cx, cy, cellSize, cellSize, 'FD');
                     } else {
-                        cellText = numbering[index];
+                        doc.rect(cx, cy, cellSize, cellSize, 'S');
+                    }
+                }
+
+                // Content Logic
+                if (chartVisual.showCellSymbols !== false) {
+                    let cellText = "";
+                    let textColor = "#000000";
+
+                    if (mode === 'stitch') {
+                        // Stitch Mode: Always black text, show symbol if stitchId
+                        if (cell.stitchId) {
+                            const s = stitchMap.get(cell.stitchId);
+                            if (s) cellText = s.symbol;
+                        }
+                    } else if (mode === 'hybrid') {
+                        // Hybrid: Show symbol if stitchId
+                        if (cell.stitchId) {
+                            const s = stitchMap.get(cell.stitchId);
+                            if (s) cellText = s.symbol;
+                        }
+                        // Contrast calculation only if we have a background
+                        if (c && chartVisual.showCellBackgrounds !== false) {
+                            textColor = getTextColor(c.hex);
+                        }
+                    } else {
+                        // Color Mode
+                        if (chartVisual.symbolMode === 'stitch-symbol') {
+                            if (cell.stitchId) {
+                                const s = stitchMap.get(cell.stitchId);
+                                if (s) cellText = s.symbol;
+                            }
+                        } else {
+                            // Color Numbers (Default)
+                            if (cell.colorId) {
+                                cellText = colorSymbolMap.get(cell.colorId!) || "";
+                            }
+                        }
+
+                        if (c && chartVisual.showCellBackgrounds !== false) {
+                            textColor = getTextColor(c.hex);
+                        }
                     }
 
                     if (cellText) {
+                        doc.setTextColor(textColor);
+                        // Font Size
+                        const fontSize = (mode === 'stitch' || chartVisual.symbolMode === 'stitch-symbol')
+                            ? cellSize * 0.7
+                            : cellSize * 0.6;
+                        doc.setFontSize(Math.max(2, fontSize));
+
                         doc.text(
                             cellText,
                             cx + cellSize / 2,
@@ -502,318 +549,421 @@ export const exportPixelGridToPDF = (
         doc.setTextColor(0);
     };
 
-    // Helper function to draw a stitch chart page
-    const drawStitchChart = (
-        startX: number,
-        startY: number,
-        endX: number,
-        endY: number,
-        cellSize: number,
-        pageTitle: string,
-        pageInfo: string = '',
-        yOffset: number = margin + 30
-    ) => {
-        const sliceW = endX - startX;
-        const sliceH = endY - startY;
-        const drawX = margin + 40;
-        const drawY = yOffset;
+    // --- MAIN EXECUTION LOGIC ---
 
-        doc.setFontSize(10);
-        doc.text(pageTitle, margin, margin);
-        if (pageInfo) {
-            doc.text(pageInfo, pageW - margin, margin, { align: 'right' });
-        }
+    // 1. Cover Page
+    let hasContent = false;
 
-        doc.setFontSize(PDF_CONFIG.fontSize.ruler);
-        const showRulers = cellSize > 5;
-
-        if (showRulers) {
-            // Column Numbers (Top)
-            for (let i = 0; i < sliceW; i++) {
-                const gridX = startX + i;
-                if (i % 5 === 0 || isChartOnly)
-                    doc.text(String(gridX + 1), drawX + (i + 0.5) * cellSize, drawY - 5, { align: 'center' });
-            }
-
-            // Row Numbers (Sides)
-            for (let i = 0; i < sliceH; i++) {
-                const gridY = startY + i;
-                const rowNum = gridY + 1;
-                const isOdd = rowNum % 2 !== 0;
-                const showOnLeft = isLeftHanded ? !isOdd : isOdd;
-
-                if (showOnLeft) {
-                    doc.text(String(rowNum), drawX - 5, drawY + (i + 0.5) * cellSize, { align: 'right', baseline: 'middle' });
-                } else {
-                    doc.text(String(rowNum), drawX + (sliceW * cellSize) + 5, drawY + (i + 0.5) * cellSize, { align: 'left', baseline: 'middle' });
-                }
-            }
-        }
-
-        doc.setLineWidth(0.5);
-        doc.setDrawColor('#CCCCCC');
-
-        const renderSymbols = cellSize >= 10 || isChartOnly;
-
-        for (let y = 0; y < sliceH; y++) {
-            for (let x = 0; x < sliceW; x++) {
-                const gridX = startX + x;
-                const gridY = startY + y;
-                const index = gridY * gridData.width + gridX;
-                const cell = gridData.grid[index];
-
-                const cx = drawX + x * cellSize;
-                const cy = drawY + y * cellSize;
-
-                // Stitch charts have white/pale background
-                doc.setFillColor(255, 255, 255);
-                doc.rect(cx, cy, cellSize, cellSize, 'FD');
-
-                // Draw stitch symbol if present
-                // D.3: Respect showCellSymbols toggle for stitch charts too
-                if (chartVisual.showCellSymbols && renderSymbols && cell.stitchId) {
-                    const stitch = stitchMap.get(cell.stitchId);
-                    if (stitch) {
-                        doc.setTextColor(0, 0, 0); // Black text for stitch symbols
-
-                        const dynamicFontSize = isChartOnly ? Math.max(2, cellSize * 0.7) : cellSize * 0.6;
-                        doc.setFontSize(dynamicFontSize);
-
-                        doc.text(
-                            stitch.symbol,
-                            cx + cellSize / 2,
-                            cy + cellSize / 2,
-                            { align: 'center', baseline: 'middle' }
-                        );
-                    }
-                }
-            }
-        }
-        doc.setTextColor(0);
-    };
-
-    // Helper function to draw stitch legend
-    const drawStitchLegend = () => {
-        // Collect used stitches
-        const usedStitches = new Set<string>();
-        gridData.grid.forEach(cell => {
-            if (cell.stitchId) usedStitches.add(cell.stitchId);
-        });
-
-        // D.2: Fix blank page when no stitches - check before adding page
-        if (usedStitches.size === 0) return; // No stitches to show
-
-        doc.addPage();
-
-        doc.setFontSize(14);
-        doc.text("Stitch Legend", margin, margin + 20);
-
-        let legendY = margin + 45;
-        doc.setFontSize(10);
-
-        // Header
-        doc.setFont("helvetica", "bold");
-        doc.text("Symbol", margin, legendY);
-        doc.text("Name", margin + 60, legendY);
-        doc.text("Abbreviation", margin + 200, legendY);
-        doc.text("Description", margin + 300, legendY);
-        doc.setFont("helvetica", "normal");
-        legendY += 15;
-
-        // Draw each stitch
-        usedStitches.forEach(stitchId => {
-            const stitch = stitchMap.get(stitchId);
-            if (stitch) {
-                if (legendY > pageH - margin) {
-                    doc.addPage();
-                    legendY = margin;
-                }
-
-                doc.setFontSize(16);
-                doc.text(stitch.symbol, margin + 15, legendY, { align: 'center' });
-
-                doc.setFontSize(10);
-                doc.text(stitch.name, margin + 60, legendY);
-                doc.text(stitch.shortCode, margin + 200, legendY);
-                if (stitch.description) {
-                    doc.text(stitch.description, margin + 300, legendY);
-                }
-
-                legendY += 20;
-            }
-        });
-    };
-
-    // --- CHART GENERATION LOGIC ---
+    if (includeCoverPage) {
+        // Always first
+        drawCoverPage();
+        hasContent = true;
+    }
 
     if (isChartOnly) {
-        // CHART ONLY MODE: Single page, one chart type
-        // D.1: Removed doc.addPage() to avoid blank first page
+        // --- CHART ONLY LAYOUT ---
+        // Page 1 is currently either the Cover Page (if drawn) or a fresh page.
 
-        // D.4: Optional Yarn Requirements in Chart Only mode
-        let startY = margin;
-        if (includeYarnRequirements) {
-            startY = drawYarnLegend(startY);
-            startY += 20; // Spacing after legend
-        }
-
-        // Calculate available space for the chart
-        // If yarn legend took up space, we need to check if chart fits
-        const chartAvailableH = pageH - startY - margin;
-
-        // We need to re-calculate cell size based on remaining space if we are on the same page
-        // But the chart drawing functions take start/end coords and cellSize.
-        // We'll use the logic: if it fits reasonably, draw it. If not, add page.
-
-        const singlePageCellW = (availableW - 40) / gridData.width;
-        const singlePageCellH = (chartAvailableH - 40) / gridData.height;
-        let singlePageCellSize = Math.min(singlePageCellW, singlePageCellH);
-
-        // If the cell size becomes too small due to yarn legend, move chart to next page
-        if (singlePageCellSize < 5 && includeYarnRequirements) {
+        if (hasContent) {
             doc.addPage();
-            // Reset to full page dimensions
-            const fullPageCellH = (availableH - 40) / gridData.height;
-            singlePageCellSize = Math.min(singlePageCellW, fullPageCellH);
-        }
-
-        if (chartMode === 'stitch') {
-            drawStitchChart(0, 0, gridData.width, gridData.height, singlePageCellSize, 'Stitch Chart', '', startY + 10);
+            hasContent = true; // Added page 2
         } else {
-            drawColorChart(0, 0, gridData.width, gridData.height, singlePageCellSize, 'Color Chart', '', startY + 10);
+            // We are on Page 1.
+            hasContent = true;
         }
-    } else {
-        // PATTERN PACK MODE: Conditional multi-page charts
 
-        // Determine if we need multi-page split for color chart
-        const needsMultiPage = singlePageCellSize < PDF_CONFIG.minCellSize;
+        const availHeight = pageH - margin * 2 - 40; // Title margin
+        let startY = margin + 40;
+        let chartStartY = startY;
 
-        if (includeColorChart) {
-            if (needsMultiPage) {
-                // Multi-page color chart
-                const cellsPerW = Math.floor((availableW - 40) / cellSize);
-                const cellsPerH = Math.floor((availableH - 40) / cellSize);
+        // Branding Header (if no cover page)
+        if (!includeCoverPage) {
+            chartStartY = drawProjectHeader(margin + 20);
+        } else {
+            // If Cover Page exists, start high up on Page 2
+            chartStartY = margin + 30;
+        }
 
-                for (let py = 0; py < pagesY; py++) {
-                    for (let px = 0; px < pagesX; px++) {
-                        doc.addPage();
 
-                        const startX = px * cellsPerW;
-                        const startY = py * cellsPerH;
-                        const endX = Math.min(startX + cellsPerW, gridData.width);
-                        const endY = Math.min(startY + cellsPerH, gridData.height);
+        if (includeYarnRequirements) {
+            const legendH = measureYarnLegendHeight();
+            const spaceRemaining = pageH - chartStartY - margin;
 
-                        const pageNum = (py * pagesX) + px + 1;
-                        const totalPages = pagesX * pagesY;
+            // Draw Legend
+            const newY = drawYarnLegend(chartStartY);
+            const remainingForChart = pageH - newY - margin;
 
-                        drawColorChart(
-                            startX, startY, endX, endY, cellSize,
-                            `Color Chart - Page ${pageNum} of ${totalPages}`,
-                            `Cols ${startX + 1}-${endX} | Rows ${startY + 1}-${endY}`
-                        );
-                    }
-                }
+            // If remaining space is very small (e.g. < 200pt), page break.
+            if (remainingForChart < 200) {
+                doc.addPage();
+                chartStartY = margin + 40;
+            } else {
+                chartStartY = newY + 20;
             }
-
-            // Always add full color chart page for pattern pack
-            doc.addPage();
-            const fullChartCellW = (availableW - 40) / gridData.width;
-            const fullChartCellH = (availableH - 40) / gridData.height;
-            const fullChartCellSize = Math.min(fullChartCellW, fullChartCellH);
-
-            drawColorChart(0, 0, gridData.width, gridData.height, fullChartCellSize, 'Full Color Chart');
         }
 
-        if (includeStitchChart) {
-            // Add stitch chart page(s)
-            if (needsMultiPage) {
-                // Multi-page stitch chart
-                const cellsPerW = Math.floor((availableW - 40) / cellSize);
-                const cellsPerH = Math.floor((availableH - 40) / cellSize);
+        // Draw The One Chart
+        const availChartW = pageW - margin * 2 - 40; // -40 for row numbers
+        const availChartH = pageH - chartStartY - margin;
 
-                for (let py = 0; py < pagesY; py++) {
-                    for (let px = 0; px < pagesX; px++) {
-                        doc.addPage();
+        // Calculate Cell Size to fit
+        const cellW = availChartW / gridData.width;
+        const cellH = availChartH / gridData.height;
+        const cellSize = Math.min(cellW, cellH);
 
-                        const startX = px * cellsPerW;
-                        const startY = py * cellsPerH;
-                        const endX = Math.min(startX + cellsPerW, gridData.width);
-                        const endY = Math.min(startY + cellsPerH, gridData.height);
+        drawConfiguredChart(
+            chartOnlyMode,
+            0, 0, gridData.width, gridData.height,
+            cellSize,
+            "", // No sub-title
+            chartStartY
+        );
 
-                        const pageNum = (py * pagesX) + px + 1;
-                        const totalPages = pagesX * pagesY;
-
-                        drawStitchChart(
-                            startX, startY, endX, endY, cellSize,
-                            `Stitch Chart - Page ${pageNum} of ${totalPages}`,
-                            `Cols ${startX + 1}-${endX} | Rows ${startY + 1}-${endY}`
-                        );
-                    }
-                }
-            }
-
-            // Always add full stitch chart page
-            doc.addPage();
-            const fullChartCellW = (availableW - 40) / gridData.width;
-            const fullChartCellH = (availableH - 40) / gridData.height;
-            const fullChartCellSize = Math.min(fullChartCellW, fullChartCellH);
-
-            drawStitchChart(0, 0, gridData.width, gridData.height, fullChartCellSize, 'Full Stitch Chart');
-        }
-
-        // Add stitch legend if requested and stitch chart was included
-        if (includeStitchLegend && includeStitchChart) {
+        if (includeStitchLegend) {
             drawStitchLegend();
         }
-    }
 
-    const fileName = isChartOnly
-        ? `${projectName}_chart_only.pdf`
-        : `${projectName}_pattern_pack.pdf`;
-
-    if (options.preview) {
-        const dataUrl = doc.output('bloburl');
-        window.open(dataUrl, '_blank');
     } else {
-        doc.save(fileName);
-    }
-};
+        // --- PATTERN PACK LAYOUT ---
+        // Cover -> Overview -> Yarn -> Charts -> Legends
 
-export const exportPixelGridToImage = (
-    projectName: string,
-    gridData: PixelGridData,
-    yarnPalette: YarnColor[]
-): void => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+        let packCursorY = margin + 20;
 
-    // Determine scale (ensure it's large enough to be visible, e.g., 10px per cell)
-    const scale = 10;
-    canvas.width = gridData.width * scale;
-    canvas.height = gridData.height * scale;
+        if (!includeCoverPage) {
+            // If no cover page, we are on Page 1. Draw header.
+            packCursorY = drawProjectHeader(margin + 20);
+            hasContent = true;
+        } else {
+            // Cover already drawn. We are on Page 2 (or later logic handles addPage).
+            packCursorY = margin + 20;
+        }
 
-    const yarnColorMap = new Map(yarnPalette.map(yc => [yc.id, yc]));
+        // 2. Pattern Overview
+        if (includeOverview) {
+            let overviewY = margin + 20;
 
-    // Draw grid
-    for (let y = 0; y < gridData.height; y++) {
-        for (let x = 0; x < gridData.width; x++) {
-            const cell = gridData.grid[y * gridData.width + x];
-            if (cell.colorId) {
-                const color = yarnColorMap.get(cell.colorId);
-                if (color) {
-                    ctx.fillStyle = color.hex;
-                    ctx.fillRect(x * scale, y * scale, scale, scale);
+            if (!includeCoverPage && hasContent) {
+                // No cover page, Header drawn on P1.
+                // Draw Overview on P1 below Header.
+                overviewY = packCursorY + 10;
+            } else if (includeCoverPage && hasContent) {
+                // Cover page exists, force new page for Overview
+                doc.addPage();
+            }
+            // else: fresh P1 (impossible if hasContent check is correct, but safe default)
+
+            drawOverviewPage(overviewY);
+            hasContent = true;
+            // Overview consumes rest of page usually, so next items go to new page unless overview is tiny?
+            // With current simplistic drawOverviewPage logic, it scales to fit.
+            // So we assume it fills the page.
+            packCursorY = pageH - margin; // Mark page as full
+        }
+
+        // 3. Yarn Requirements
+        if (includeYarnRequirements) {
+            let yarnY = margin + 20;
+            let shouldAddPage = false;
+
+            if (packCursorY < pageH - margin - 100) {
+                // Suggests we have space on current page?
+                // PackCursorY is only set by Header or Overview.
+                // If Overview ran, it's full.
+                // If Header ran (no Overview), we have space.
+                yarnY = packCursorY + 10;
+            } else if (hasContent) {
+                shouldAddPage = true;
+            }
+
+            if (shouldAddPage) {
+                doc.addPage();
+                yarnY = margin + 20;
+            }
+
+            const endY = drawYarnLegend(yarnY);
+            packCursorY = endY;
+            hasContent = true;
+        }
+
+        // 4. Color Charts (Color or Hybrid)
+        if (includeColorChart) {
+            // Check if we can fit at least one row of chart?
+            // Need to estimate cell size.
+            const availW = pageW - margin * 2 - 40;
+            const availH_Full = pageH - margin * 2 - 60;
+
+            // Preliminary calculation of cell size to see if it fits remaining space
+            let predictedCellSize = Math.max(PDF_CONFIG.minCellSize, Math.min(availW / gridData.width, availH_Full / gridData.height));
+
+            // If multi-page atlas needed, we likely want a fresh page to start?
+            // But user says: "if we can fit the Yarn Requirement section and the next chart on the same page we should do so".
+            // So let's check remaining height.
+            const spaceRemaining = pageH - packCursorY - margin;
+
+            // If we have > 30% of page, try to fit?
+            // Or check if grid height * predictedCellSize fits?
+            const neededH = (gridData.height * predictedCellSize) + 60; // + title/margin
+
+            if (hasContent && (spaceRemaining < 200 || neededH > spaceRemaining)) {
+                doc.addPage();
+                packCursorY = margin + 20;
+            } else {
+                // Fit on current page
+                packCursorY += 20;
+            }
+
+            // Now run the loop, but constrained by startY?
+            // The Atlas Loop below assumes full page logic for multi-page.
+            // If we fit on one page, great.
+            // If we need multi-page, we should probably start fresh page unless the FIRST part fits?
+            // Let's adapt the atlas loop to use `packCursorY` as startY for the FIRST iteration.
+
+            let finalCellSize = Math.max(PDF_CONFIG.minCellSize, Math.min(availW / gridData.width, (pageH - packCursorY - margin) / gridData.height));
+            // Recalculate if it falls below min
+            if (finalCellSize < PDF_CONFIG.minCellSize) {
+                // Too small for remaining space. 
+                // If we were trying to fit on current page, give up and add page.
+                // If we already added page, then it's just a multi-page large chart.
+                if (packCursorY > margin + 50) { // If not fresh page
+                    doc.addPage();
+                    packCursorY = margin + 20;
+                    // Recalculate for full page
+                    finalCellSize = Math.max(PDF_CONFIG.minCellSize, Math.min(availW / gridData.width, availH_Full / gridData.height));
                 }
+            }
+
+            if (finalCellSize < PDF_CONFIG.minCellSize) {
+                finalCellSize = PDF_CONFIG.minCellSize; // enforce min, use Atlas
+            }
+
+            const cellsPerW = Math.floor(availW / finalCellSize);
+            const cellsPerH = Math.floor((pageH - margin * 2 - 60) / finalCellSize); // Use full page height for slicing calc
+
+            // First page might have less height if we are appending?
+            // This complicates Atlas significantly. 
+            // Simplified approach: If it fits in one block, use packCursorY.
+            // If it requires splitting, ALWAYS Start fresh page for consistent tiling.
+
+            const isMultiPage = (gridData.width > cellsPerW || gridData.height > Math.floor((pageH - packCursorY - margin) / finalCellSize));
+
+            if (isMultiPage && packCursorY > margin + 50) {
+                doc.addPage();
+                packCursorY = margin + 20;
+            }
+
+            // Re-calc atlas vars with final decision
+            const availH_Current = pageH - packCursorY - margin;
+            const cellsPerH_Current = Math.floor(availH_Current / finalCellSize);
+            // Note: If multi-page, subsequent pages use full height.
+            // This loop needs to handle variable height? 
+            // V2 Atlas logic usually assumes uniform pages.
+            // A truly robust "Flowing Atlas" is complex. 
+            // I will use "Start new page if MultiPage". 
+            // "Fit on current page if SinglePage".
+
+            // ... (Logic simplified for reliability) ...
+
+            // Re-calculate simply:
+            const fitOnCurrent = !isMultiPage;
+            const startY = packCursorY;
+
+            let pagesX = Math.ceil(gridData.width / cellsPerW);
+            let pagesY = Math.ceil(gridData.height / (fitOnCurrent ? cellsPerH_Current : Math.floor((pageH - margin * 2 - 60) / finalCellSize)));
+
+            // Correction: If we accepted to fit on current, pagesY should be 1.
+            if (fitOnCurrent) pagesY = 1;
+
+            const effectiveMode = (chartVisual.symbolMode === 'stitch-symbol' && chartVisual.showCellSymbols) ? 'hybrid' : 'color';
+
+            for (let py = 0; py < pagesY; py++) {
+                for (let px = 0; px < pagesX; px++) {
+                    const isFirstOfBlock = (px === 0 && py === 0);
+                    if (!isFirstOfBlock) doc.addPage();
+
+                    // If strictly new page needed (not first block OR first block but we forced new page above)
+                    // The above logic handled doc.addPage() for fresh start.
+                    // But if pagesY > 1, subsequent rows need new page.
+
+                    const currentTitleY = (isFirstOfBlock) ? startY + 20 : margin + 40;
+                    // drawConfiguredChart takes yOffset (top of chart area).
+
+                    const thisPageCellsH = (isFirstOfBlock) ? cellsPerH_Current : Math.floor((pageH - margin * 2 - 60) / finalCellSize);
+
+                    const startX_Idx = px * cellsPerW;
+                    const endX_Idx = Math.min(startX_Idx + cellsPerW, gridData.width);
+
+                    // Atlas indexing calc is tricky if pages differ. 
+                    // To simplify: If MultiPage, we forced New Page above, so all pages are uniform height.
+                    // If SinglePage, there is only 1 page.
+                    // So we can assume uniform height *except* if fitOnCurrent=true (which means pagesY=1).
+
+                    // If fitOnCurrent, standard loops work (py=0). 
+                    // If !fitOnCurrent, we forced full page.
+                    // So standard logic applies.
+
+                    const stdCellsPerH = Math.floor((pageH - margin * 2 - 60) / finalCellSize);
+                    const sY = py * stdCellsPerH;
+                    const eY = Math.min(sY + stdCellsPerH, gridData.height);
+                    const sX = px * cellsPerW;
+                    const eX = Math.min(sX + cellsPerW, gridData.width);
+
+                    const title = (pagesX > 1 || pagesY > 1) ? `Color Chart - Page ${py * pagesX + px + 1}` : "Color Chart";
+
+                    // If fitOnCurrent, use startY (packCursorY). Else use margin+40 (fresh page).
+                    const drawY = (fitOnCurrent) ? startY + 20 : margin + 40;
+
+                    drawConfiguredChart(effectiveMode, sX, sY, eX, eY, finalCellSize, title, drawY);
+
+                    if (isFirstOfBlock) {
+                        // Update cursor only for the *last* block rendered?
+                        // If multi-page, this is loop.
+                    }
+                }
+            }
+
+            // Update packCursorY after chart
+            if (fitOnCurrent) {
+                packCursorY = startY + 20 + (gridData.height * finalCellSize) + 20;
+            } else {
+                packCursorY = pageH - margin;
+            }
+            hasContent = true;
+        }
+
+        // 5. Stitch Charts
+        if (includeStitchChart) {
+            // Logic identical to Color Chart copy-paste
+            // Check space for Single Page Fit
+            const availW = pageW - margin * 2 - 40;
+            const availH_Full = pageH - margin * 2 - 60;
+            let finalCellSize = Math.max(PDF_CONFIG.minCellSize, Math.min(availW / gridData.width, availH_Full / gridData.height));
+
+            const spaceRemaining = pageH - packCursorY - margin;
+
+            // Check needed height
+            const neededH = (gridData.height * finalCellSize) + 60;
+
+            if (hasContent && (spaceRemaining < 200 || neededH > spaceRemaining)) {
+                doc.addPage();
+                packCursorY = margin + 20;
+            } else {
+                packCursorY += 20;
+            }
+
+            // Recalc size based on new constraint (packCursorY)
+            let constrainedMaxH = pageH - packCursorY - margin;
+            // But if we are starting fresh page, maxH is full.
+            // If we appended, maxH is smaller.
+
+            let currentSize = Math.max(PDF_CONFIG.minCellSize, Math.min(availW / gridData.width, constrainedMaxH / gridData.height));
+
+            if (currentSize < PDF_CONFIG.minCellSize) {
+                // Too small for remaining space. Force new page if we haven't already.
+                if (packCursorY > margin + 50) {
+                    doc.addPage();
+                    packCursorY = margin + 20;
+                    // Recalc standard full page size
+                    currentSize = Math.max(PDF_CONFIG.minCellSize, Math.min(availW / gridData.width, availH_Full / gridData.height));
+                }
+            }
+            if (currentSize < PDF_CONFIG.minCellSize) currentSize = PDF_CONFIG.minCellSize;
+            finalCellSize = currentSize;
+
+            const cellsPerW = Math.floor(availW / finalCellSize);
+            const stdCellsPerH = Math.floor((pageH - margin * 2 - 60) / finalCellSize);
+
+            const isMultiPage = (gridData.width > cellsPerW || gridData.height > Math.floor((pageH - packCursorY - margin) / finalCellSize)); // check fit in current slot
+
+            if (isMultiPage && packCursorY > margin + 50) {
+                doc.addPage();
+                packCursorY = margin + 20;
+                // Now it's full page multi-page
+            }
+
+            const fitOnCurrent = !isMultiPage;
+
+            if (fitOnCurrent) {
+                drawConfiguredChart('stitch', 0, 0, gridData.width, gridData.height, finalCellSize, "Stitch Chart", packCursorY + 20);
+                packCursorY = packCursorY + 20 + (gridData.height * finalCellSize) + 20;
+            } else {
+                let pagesX = Math.ceil(gridData.width / cellsPerW);
+                let pagesY = Math.ceil(gridData.height / stdCellsPerH);
+                for (let py = 0; py < pagesY; py++) {
+                    for (let px = 0; px < pagesX; px++) {
+                        if (px > 0 || py > 0) doc.addPage();
+                        const sY = py * stdCellsPerH;
+                        const eY = Math.min(sY + stdCellsPerH, gridData.height);
+                        const sX = px * cellsPerW;
+                        const eX = Math.min(sX + cellsPerW, gridData.width);
+                        const title = `Stitch Chart - Page ${py * pagesX + px + 1}`;
+                        drawConfiguredChart('stitch', sX, sY, eX, eY, finalCellSize, title, margin + 40);
+                    }
+                }
+                packCursorY = pageH - margin;
+            }
+            hasContent = true;
+        }
+
+        // 6. Stitch Legend
+        if (includeStitchLegend) {
+            // Check space
+            const count = new Set(gridData.grid.filter(c => c.stitchId).map(c => c.stitchId)).size;
+            if (count > 0) {
+                const neededH = 50 + (count * 30);
+                const spaceRemaining = pageH - packCursorY - margin;
+                let legendY = packCursorY + 20;
+
+                if (hasContent && neededH > spaceRemaining) {
+                    doc.addPage();
+                    legendY = margin + 40;
+                }
+
+                // Manually call specialized render logic or refactored helper?
+                // Helper was NOT refactored in previous step because I missed it.
+                // I will inline the logic here to avoid signature mismatch risk.
+
+                doc.setFontSize(14);
+                doc.text("Stitch Legend", margin, legendY);
+
+                let currY = legendY + 30;
+                const swatchSize = 20;
+                doc.setFontSize(10);
+
+                doc.setFont("helvetica", "bold");
+                doc.text("Symbol", margin, currY);
+                doc.text("Stitch Name", margin + 60, currY);
+                doc.text("Abbreviation", margin + 250, currY);
+                doc.setFont("helvetica", "normal");
+                currY += 20;
+
+                const usedStitches = new Set<string>();
+                gridData.grid.forEach(cell => { if (cell.stitchId) usedStitches.add(cell.stitchId); });
+
+                usedStitches.forEach(stitchId => {
+                    const stitch = stitchMap.get(stitchId);
+                    if (!stitch) return;
+
+                    if (currY > pageH - margin) {
+                        doc.addPage();
+                        currY = margin + 40;
+                    }
+
+                    doc.rect(margin, currY, swatchSize, swatchSize);
+                    doc.setFontSize(12);
+                    doc.text(stitch.symbol, margin + swatchSize / 2, currY + 14, { align: 'center' });
+                    doc.setFontSize(10);
+                    doc.text(stitch.name, margin + 60, currY + 14);
+                    doc.text(stitch.id.toUpperCase(), margin + 250, currY + 14);
+                    currY += 30;
+                });
             }
         }
     }
 
-    // Trigger download
-    const link = document.createElement('a');
-    link.download = `${projectName}.png`;
-    link.href = canvas.toDataURL('image/png');
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    if (options.preview) {
+        const pdfBlob = doc.output('bloburl');
+        window.open(pdfBlob, '_blank');
+    } else {
+        doc.save(`${projectName}.pdf`);
+    }
 };

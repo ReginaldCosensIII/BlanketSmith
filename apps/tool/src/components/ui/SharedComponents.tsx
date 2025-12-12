@@ -30,6 +30,7 @@ export const Icon: React.FC<{ name: string; className?: string }> = ({ name, cla
     'mirror-t-b': <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18m-9-3v1.5m0 1.5v1.5m0 3l3-3m0 0l-3-3m3 3H9" />,
     'mirror-b-t': <path strokeLinecap="round" strokeLinejoin="round" d="M3 12h18m-9 3v-1.5m0-1.5V9m0-3l3 3m0 0l-3 3m3-3H9" />,
     'plus': <path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4" />,
+    'close': <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />,
   };
 
   return (
@@ -59,14 +60,17 @@ export const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: stri
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md" onClick={(e) => e.stopPropagation()}>
-        <div className="p-4 border-b">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+        <div className="p-4 border-b flex-shrink-0 flex justify-between items-center">
           <h2 className="text-xl font-bold text-gray-800">{title}</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+            <Icon name="close" className="w-5 h-5" />
+          </button>
         </div>
-        <div className="p-4">
+        <div className="p-4 overflow-y-auto">
           {children}
         </div>
-        <div className="p-4 border-t flex justify-end gap-2">
+        <div className="p-4 border-t flex justify-end gap-2 flex-shrink-0">
           {footer ? footer : <Button variant="secondary" onClick={onClose}>Close</Button>}
         </div>
       </div>
