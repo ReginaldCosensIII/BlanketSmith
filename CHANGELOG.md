@@ -11,7 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Export Center**: New modal for managing exports with "Pattern Pack" and "Chart Only" presets.
 - **Pattern Pack**: Multi-page PDF generation including cover page, yarn requirements, color charts, stitch charts, and stitch legend.
 - **Chart Only**: Single-page optimized export for quick printing.
-- **Advanced Settings**: Options for branding (designer name, website, copyright), chart appearance (show symbols in cells, background colors), and content toggles.
+- **Advanced Settings**: Reorganized into logical groups (Stitch & Symbol, Layout, Branding) for improved usability.
+- **Hybrid Chart Mode**: New export mode rendering both cell background colors and stitch symbols simultaneously.
 - **Stitch Charts**: Dedicated rendering mode for stitch symbols with high-contrast visibility.
 - **Yarn Requirements**: Detailed yarn usage table with estimated yardage and skein counts.
 - **Preview Mode**: Ability to preview generated PDFs in the browser before downloading.
@@ -19,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cursor Update**: Changed Fill tool cursor to `crosshair` for better precision.
 - **Gauge & Yarn Settings**: Restored gauge configuration UI in Project Settings modal with unit selector, stitches/rows per unit, yarn per stitch, and hook size inputs.
 - **Estimated Size Display**: Added real-time physical size calculation based on gauge settings.
+- **Compact Layout**: Auto-optimization of Pattern Pack layout to fit Yarn Requirements and Charts on the first page when no cover page is selected.
+- **Dev Tools**: Added `ExportEngineTestPage` QA harness (dev-only) for rapid verification of PDF export scenarios.
 - **Stitch System (Phase 1)**: Implemented core stitch system including:
     - **Data Model**: Added `stitchId` to cell data and created `StitchDefinition` library.
     - **Stitch Palette**: New UI for managing primary/secondary stitches.
@@ -30,6 +33,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - **Export Layout**: Fixed layout overlaps in Chart Only mode when yarn requirements are included.
 - **Blank Pages**: Resolved issues with blank first pages in Chart Only mode and empty Stitch Legend pages.
+- **Stitch Legend**: Fixed crash when generating stitch legend (corrected property access) and improved layout logic.
 - **Symbol Visibility**: Enforced consistent behavior for "Show Symbols in Cells" across both color and stitch charts.
 - **Stitch System**: Fixed Brush tool optimization bug where stitches weren't applied if color remained unchanged in Combo Mode.
 - **Stitch System**: Fixed Non-Combo Paint behavior to correctly remove/clear stitches when painting in "Color Only" mode.

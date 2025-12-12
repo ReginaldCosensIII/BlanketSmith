@@ -155,14 +155,23 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [includeColorChart, setIncludeColorChart] = useState<boolean>(true);
     const [includeStitchChart, setIncludeStitchChart] = useState<boolean>(true);
     const [chartOnlyMode, setChartOnlyMode] = useState<'color' | 'stitch' | 'hybrid'>('color');
-    const [includePages, setIncludePages] = useState<boolean>(true);
     const [includeYarnRequirements, setIncludeYarnRequirements] = useState<boolean>(true);
     const [includeOverviewPage, setIncludeOverviewPage] = useState<boolean>(false);
     const [includeCoverPage, setIncludeCoverPage] = useState<boolean>(false);
     const [includeStitchLegend, setIncludeStitchLegend] = useState<boolean>(true);
     const [showCellBackgrounds, setShowCellBackgrounds] = useState<boolean>(true);
     const [symbolMode, setSymbolMode] = useState<'color-index' | 'stitch-symbol' | 'hybrid'>('color-index');
-    const [isAdvancedOpen, setIsAdvancedOpen] = useState<boolean>(false);
+
+    // Default Layout Options Logic
+    useEffect(() => {
+        if (selectedExportType === 'pattern-pack') {
+            setIncludeYarnRequirements(true);
+            setIncludeStitchLegend(true);
+        } else if (selectedExportType === 'chart-only') {
+            setIncludeYarnRequirements(false);
+            setIncludeStitchLegend(false);
+        }
+    }, [selectedExportType]);
 
     // Hydrate export settings from project
     useEffect(() => {
@@ -742,17 +751,30 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
         const exportType: ExportType = selectedExportType;
 
+        // V2 Spec: Explicit Logical Constraints
+        let effectiveSymbolMode = symbolMode;
+        if (exportType === 'chart-only') {
+            if (chartOnlyMode === 'stitch' || chartOnlyMode === 'hybrid') {
+                effectiveSymbolMode = 'stitch-symbol'; // Locked
+            }
+        }
+
         return {
             exportType,
             preview,
+            // Chart-Only uses the explicit mode; Pattern Pack defaults to 'color' (engine handles multi-chart logic)
             chartMode: exportType === 'chart-only' ? chartOnlyMode : 'color',
             forceSinglePage: exportType === 'chart-only',
-            includeColorChart: exportType === 'pattern-pack' ? includeColorChart : (chartOnlyMode === 'color'),
+
+            // Map inclusions based on new UI sections
+            includeColorChart: exportType === 'pattern-pack' ? includeColorChart : (chartOnlyMode !== 'stitch'),
             includeStitchChart: exportType === 'pattern-pack' ? includeStitchChart : (chartOnlyMode === 'stitch'),
+
             includeYarnRequirements: includeYarnRequirements,
             includeStitchLegend: includeStitchLegend,
             includeOverviewPage: includeOverviewPage,
             includeCoverPage: includeCoverPage,
+
             branding: {
                 designerName: exportDesignerName || undefined,
                 website: exportWebsite || undefined,
@@ -761,7 +783,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             chartVisual: {
                 showCellSymbols: exportShowCellSymbols,
                 showCellBackgrounds: showCellBackgrounds,
-                symbolMode: symbolMode,
+                symbolMode: effectiveSymbolMode,
             },
         };
     };
@@ -1093,264 +1115,17 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             )}
 
             {/* Export Modal */}
-            <Modal isOpen={isExportModalOpen} onClose={() => setIsExportModalOpen(false)} title="Export Center">
-                <div className="space-y-4">
-                    <p className="text-sm text-gray-600 mb-3">
-                        Choose an export format and options. You can preview your PDF before downloading.
-                    </p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                        <button
-                            type="button"
-                            onClick={() => setSelectedExportType('pattern-pack')}
-                            className={`border rounded-lg p-3 text-left flex flex-col gap-1 ${selectedExportType === 'pattern-pack' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 bg-white'
-                                }`}
-                        >
-                            <span className="text-sm font-semibold">Pattern Pack (PDF)</span>
-                            <span className="text-xs text-gray-600">
-                                Cover, yarn requirements, charts & legends. Ideal for sharing or selling.
-                            </span>
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={() => setSelectedExportType('chart-only')}
-                            className={`border rounded-lg p-3 text-left flex flex-col gap-1 ${selectedExportType === 'chart-only' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 bg-white'
-                                }`}
-                        >
-                            <span className="text-sm font-semibold">Chart Only (PDF)</span>
-                            <span className="text-xs text-gray-600">
-                                Single chart view for quick printing.
-                            </span>
-                        </button>
-                    </div>
-
-                    {selectedExportType === 'pattern-pack' && (
-                        <div className="space-y-2 mb-3">
-                            <h4 className="text-xs font-semibold text-gray-500 uppercase">Pattern Pack Options</h4>
-                            <div className="flex flex-col gap-1">
-                                <label className="flex items-center cursor-pointer text-sm">
-                                    <input
-                                        type="checkbox"
-                                        className="mr-2"
-                                        checked={includeColorChart}
-                                        onChange={(e) => setIncludeColorChart(e.target.checked)}
-                                    />
-                                    Color chart
-                                </label>
-                                <label className="flex items-center cursor-pointer text-sm">
-                                    <input
-                                        type="checkbox"
-                                        className="mr-2"
-                                        checked={includeStitchChart}
-                                        onChange={(e) => setIncludeStitchChart(e.target.checked)}
-                                    />
-                                    Stitch chart
-                                </label>
-                            </div>
-                            <div className="space-y-2 mt-3 pt-2 border-t border-gray-100">
-                                <h4 className="text-xs font-semibold text-gray-500 uppercase">Content Options</h4>
-                                <label className="flex items-center cursor-pointer text-sm">
-                                    <input
-                                        type="checkbox"
-                                        className="mr-2"
-                                        checked={includePages}
-                                        onChange={(e) => setIncludePages(e.target.checked)}
-                                    />
-                                    Include pages (multi-page)
-                                </label>
-                            </div>
-                        </div>
-                    )}
-
-                    {selectedExportType === 'chart-only' && (
-                        <div className="space-y-2 mb-3">
-                            <h4 className="text-xs font-semibold text-gray-500 uppercase">Chart Options</h4>
-                            <div className="flex flex-wrap gap-3 text-sm">
-                                <label className="flex items-center cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="export-chart-mode"
-                                        className="mr-1"
-                                        checked={chartOnlyMode === 'color'}
-                                        onChange={() => setChartOnlyMode('color')}
-                                    />
-                                    Color chart
-                                </label>
-                                <label className="flex items-center cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="export-chart-mode"
-                                        className="mr-1"
-                                        checked={chartOnlyMode === 'stitch'}
-                                        onChange={() => setChartOnlyMode('stitch')}
-                                    />
-                                    Stitch chart
-                                </label>
-                                <label className="flex items-center cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="export-chart-mode"
-                                        className="mr-1"
-                                        checked={chartOnlyMode === 'hybrid'}
-                                        onChange={() => setChartOnlyMode('hybrid')}
-                                    />
-                                    Hybrid chart
-                                </label>
-                            </div>
-
-                        </div>
-                    )}
-
-                    <div className="border-t pt-3 mt-2">
-                        <button
-                            type="button"
-                            className="flex items-center justify-between w-full text-xs font-semibold text-gray-600"
-                            onClick={() => setIsAdvancedOpen((prev) => !prev)}
-                        >
-                            <span>Advanced settings</span>
-                            <span>{isAdvancedOpen ? '▴' : '▾'}</span>
-                        </button>
-
-                        {isAdvancedOpen && (
-                            <div className="mt-3 space-y-4">
-                                {/* STITCH & SYMBOL OPTIONS */}
-                                <div>
-                                    <h5 className="text-xs font-semibold text-gray-500 uppercase mb-2">Stitch & Symbol Options</h5>
-                                    <div className="space-y-2">
-                                        <label className="flex items-center cursor-pointer text-sm">
-                                            <input
-                                                type="checkbox"
-                                                className="mr-2"
-                                                checked={exportShowCellSymbols}
-                                                onChange={(e) => setExportShowCellSymbols(e.target.checked)}
-                                            />
-                                            Show symbols in cells
-                                        </label>
-                                        <label className="flex items-center cursor-pointer text-sm">
-                                            <input
-                                                type="checkbox"
-                                                className="mr-2"
-                                                checked={showCellBackgrounds}
-                                                onChange={(e) => setShowCellBackgrounds(e.target.checked)}
-                                            />
-                                            Show cell background colors
-                                        </label>
-                                        <div className="pt-1">
-                                            <span className="text-sm block mb-1">Symbol mode:</span>
-                                            <select
-                                                className="border rounded px-2 py-1 text-sm w-full"
-                                                value={symbolMode}
-                                                onChange={(e) => setSymbolMode(e.target.value as any)}
-                                            >
-                                                <option value="color-index">Color numbers</option>
-                                                <option value="stitch-symbol">Stitch symbols</option>
-                                                <option value="hybrid">Hybrid (Color + Symbol)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* LAYOUT OPTIONS */}
-                                <div>
-                                    <h5 className="text-xs font-semibold text-gray-500 uppercase mb-2">Layout Options</h5>
-                                    <div className="space-y-2">
-                                        {/* Cover Page moved to Part 2B - Hidden for now */}
-
-                                        {selectedExportType === 'pattern-pack' && (
-                                            <>
-                                                <label className="flex items-center cursor-pointer text-sm">
-                                                    <input
-                                                        type="checkbox"
-                                                        className="mr-2"
-                                                        checked={includeOverviewPage}
-                                                        onChange={(e) => setIncludeOverviewPage(e.target.checked)}
-                                                    />
-                                                    Include Pattern Overview
-                                                </label>
-                                                <label className="flex items-center cursor-pointer text-sm">
-                                                    <input
-                                                        type="checkbox"
-                                                        className="mr-2"
-                                                        checked={includeColorChart}
-                                                        onChange={(e) => setIncludeColorChart(e.target.checked)}
-                                                    />
-                                                    Include Color Chart
-                                                </label>
-                                                <label className="flex items-center cursor-pointer text-sm">
-                                                    <input
-                                                        type="checkbox"
-                                                        className="mr-2"
-                                                        checked={includeStitchChart}
-                                                        onChange={(e) => setIncludeStitchChart(e.target.checked)}
-                                                    />
-                                                    Include Stitch Chart
-                                                </label>
-                                                <label className="flex items-center cursor-pointer text-sm">
-                                                    <input
-                                                        type="checkbox"
-                                                        className="mr-2"
-                                                        checked={includeStitchLegend}
-                                                        onChange={(e) => setIncludeStitchLegend(e.target.checked)}
-                                                    />
-                                                    Include Stitch Legend
-                                                </label>
-                                            </>
-                                        )}
-                                        {selectedExportType === 'chart-only' && (
-                                            <label className="flex items-center cursor-pointer text-sm">
-                                                <input
-                                                    type="checkbox"
-                                                    className="mr-2"
-                                                    checked={includeYarnRequirements}
-                                                    onChange={(e) => setIncludeYarnRequirements(e.target.checked)}
-                                                />
-                                                Include Yarn Requirements
-                                            </label>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* BRANDING */}
-                                <div>
-                                    <h5 className="text-xs font-semibold text-gray-500 uppercase mb-2">Branding</h5>
-                                    <div className="flex flex-col gap-2">
-                                        <input
-                                            type="text"
-                                            className="border rounded px-2 py-1 text-sm w-full"
-                                            placeholder="Designer name (optional)"
-                                            value={exportDesignerName}
-                                            onChange={(e) => setExportDesignerName(e.target.value)}
-                                        />
-                                        <input
-                                            type="text"
-                                            className="border rounded px-2 py-1 text-sm w-full"
-                                            placeholder="Website or shop URL (optional)"
-                                            value={exportWebsite}
-                                            onChange={(e) => setExportWebsite(e.target.value)}
-                                        />
-                                        <input
-                                            type="text"
-                                            className="border rounded px-2 py-1 text-sm w-full"
-                                            placeholder="Custom copyright line (optional)"
-                                            value={exportCopyright}
-                                            onChange={(e) => setExportCopyright(e.target.value)}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="flex justify-between items-center pt-4 border-t mt-4">
+            <Modal
+                isOpen={isExportModalOpen}
+                onClose={() => setIsExportModalOpen(false)}
+                title="Export Center"
+                footer={
+                    <div className="flex justify-between items-center w-full">
                         <div className="flex items-center gap-2 text-xs text-gray-500">
                             <Icon name="info" className="w-4 h-4" />
                             <span>You can preview your PDF before downloading.</span>
                         </div>
                         <div className="flex gap-2">
-                            <Button variant="secondary" onClick={() => setIsExportModalOpen(false)}>
-                                Cancel
-                            </Button>
                             <Button variant="secondary" onClick={handlePreviewExport} disabled={!projectData}>
                                 <Icon name="eye" className="w-4 h-4 mr-1" /> Preview PDF
                             </Button>
@@ -1359,11 +1134,240 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             </Button>
                         </div>
                     </div>
+                }
+            >
+                <div className="space-y-4">
+                    <p className="text-sm text-gray-600 mb-3">
+                        Choose an export format and options. You can preview your PDF before downloading.
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+                        <button
+                            type="button"
+                            onClick={() => setSelectedExportType('pattern-pack')}
+                            className={`border rounded-lg p-3 text-left flex flex-col gap-1 transition-colors ${selectedExportType === 'pattern-pack' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 bg-white hover:bg-gray-50'
+                                }`}
+                        >
+                            <span className="text-sm font-semibold">Pattern Pack (PDF)</span>
+                            <span className="text-xs text-gray-600">
+                                Professional booklet with multi-page charts, legends, and cover.
+                            </span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => setSelectedExportType('chart-only')}
+                            className={`border rounded-lg p-3 text-left flex flex-col gap-1 transition-colors ${selectedExportType === 'chart-only' ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 bg-white hover:bg-gray-50'
+                                }`}
+                        >
+                            <span className="text-sm font-semibold">Chart Only (PDF)</span>
+                            <span className="text-xs text-gray-600">
+                                Single diagram focus. Ideal for working copies or quick prints.
+                            </span>
+                        </button>
+                    </div>
+
+                    <div className="space-y-6">
+                        {/* SECTION A: CHART STYLE */}
+                        <div>
+                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wider">Chart Style</h4>
+                            {selectedExportType === 'pattern-pack' ? (
+                                <div className="flex flex-col gap-2">
+                                    <label className="flex items-center cursor-pointer text-sm p-2 border rounded hover:bg-gray-50">
+                                        <input
+                                            type="checkbox"
+                                            className="mr-3 h-4 w-4 text-indigo-600"
+                                            checked={includeColorChart}
+                                            onChange={(e) => setIncludeColorChart(e.target.checked)}
+                                        />
+                                        <div>
+                                            <span className="font-medium">Include Color Chart</span>
+                                            <p className="text-xs text-gray-500">Standard colored grid.</p>
+                                        </div>
+                                    </label>
+                                    <label className="flex items-center cursor-pointer text-sm p-2 border rounded hover:bg-gray-50">
+                                        <input
+                                            type="checkbox"
+                                            className="mr-3 h-4 w-4 text-indigo-600"
+                                            checked={includeStitchChart}
+                                            onChange={(e) => setIncludeStitchChart(e.target.checked)}
+                                        />
+                                        <div>
+                                            <span className="font-medium">Include Stitch Chart</span>
+                                            <p className="text-xs text-gray-500">Black & white symbol chart for texture.</p>
+                                        </div>
+                                    </label>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 gap-2">
+                                    <label className={`flex items-center cursor-pointer text-sm p-2 border rounded ${chartOnlyMode === 'color' ? 'border-indigo-500 bg-indigo-50' : 'hover:bg-gray-50'}`}>
+                                        <input
+                                            type="radio"
+                                            name="chartOnlyMode"
+                                            className="mr-3 h-4 w-4 text-indigo-600"
+                                            checked={chartOnlyMode === 'color'}
+                                            onChange={() => setChartOnlyMode('color')}
+                                        />
+                                        <div>
+                                            <span className="font-medium">Color Chart</span>
+                                            <p className="text-xs text-gray-500">Colored blocks. Best for Mosaic/Intarsia.</p>
+                                        </div>
+                                    </label>
+                                    <label className={`flex items-center cursor-pointer text-sm p-2 border rounded ${chartOnlyMode === 'stitch' ? 'border-indigo-500 bg-indigo-50' : 'hover:bg-gray-50'}`}>
+                                        <input
+                                            type="radio"
+                                            name="chartOnlyMode"
+                                            className="mr-3 h-4 w-4 text-indigo-600"
+                                            checked={chartOnlyMode === 'stitch'}
+                                            onChange={() => setChartOnlyMode('stitch')}
+                                        />
+                                        <div>
+                                            <span className="font-medium">Stitch Chart</span>
+                                            <p className="text-xs text-gray-500">Symbols only (B&W). Best for Lace/Texture.</p>
+                                        </div>
+                                    </label>
+                                    <label className={`flex items-center cursor-pointer text-sm p-2 border rounded ${chartOnlyMode === 'hybrid' ? 'border-indigo-500 bg-indigo-50' : 'hover:bg-gray-50'}`}>
+                                        <input
+                                            type="radio"
+                                            name="chartOnlyMode"
+                                            className="mr-3 h-4 w-4 text-indigo-600"
+                                            checked={chartOnlyMode === 'hybrid'}
+                                            onChange={() => setChartOnlyMode('hybrid')}
+                                        />
+                                        <div>
+                                            <span className="font-medium">Hybrid Chart</span>
+                                            <p className="text-xs text-gray-500">Color background + Symbols overlay.</p>
+                                        </div>
+                                    </label>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* SECTION B: CELL APPEARANCE */}
+                        <div>
+                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wider">Cell Appearance</h4>
+                            <div className="space-y-3 pl-1">
+                                <div className="flex items-center justify-between">
+                                    <label className="flex items-center cursor-pointer text-sm">
+                                        <input
+                                            type="checkbox"
+                                            className="mr-2 rounded text-indigo-600"
+                                            checked={exportShowCellSymbols}
+                                            onChange={(e) => setExportShowCellSymbols(e.target.checked)}
+                                        />
+                                        Show symbols in cells
+                                    </label>
+                                    {/* Conditional Symbol Style Dropdown */}
+                                    {exportShowCellSymbols && (
+                                        <div className="ml-4">
+                                            {(selectedExportType === 'chart-only' && (chartOnlyMode === 'stitch' || chartOnlyMode === 'hybrid')) ? (
+                                                <span className="text-xs text-gray-400 italic bg-gray-50 px-2 py-1 rounded border">Locked: Stitch Symbols</span>
+                                            ) : (
+                                                <select
+                                                    className="text-xs border rounded px-2 py-1 bg-white"
+                                                    value={symbolMode}
+                                                    onChange={(e) => setSymbolMode(e.target.value as any)}
+                                                >
+                                                    <option value="color-index">Color Numbers</option>
+                                                    <option value="stitch-symbol">Stitch Symbols</option>
+                                                </select>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Background toggle only for Color-capable modes */}
+                                {((selectedExportType === 'pattern-pack') || (chartOnlyMode !== 'stitch')) && (
+                                    <label className="flex items-center cursor-pointer text-sm">
+                                        <input
+                                            type="checkbox"
+                                            className="mr-2 rounded text-indigo-600"
+                                            checked={showCellBackgrounds}
+                                            onChange={(e) => setShowCellBackgrounds(e.target.checked)}
+                                        />
+                                        Show background colors
+                                    </label>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* SECTION C: LAYOUT OPTIONS */}
+                        <div>
+                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wider">Layout Options</h4>
+                            <div className="grid grid-cols-2 gap-y-2 gap-x-4 pl-1">
+                                {selectedExportType === 'pattern-pack' ? (
+                                    <>
+                                        <label className="flex items-center cursor-pointer text-sm">
+                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={includeCoverPage} onChange={(e) => setIncludeCoverPage(e.target.checked)} />
+                                            Include Cover Page
+                                        </label>
+                                        <label className="flex items-center cursor-pointer text-sm">
+                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={includeOverviewPage} onChange={(e) => setIncludeOverviewPage(e.target.checked)} />
+                                            Include Overview
+                                        </label>
+                                        <label className="flex items-center cursor-pointer text-sm">
+                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={includeYarnRequirements} onChange={(e) => setIncludeYarnRequirements(e.target.checked)} />
+                                            Include Yarn Legend
+                                        </label>
+                                        <label className="flex items-center cursor-pointer text-sm">
+                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={includeStitchLegend} onChange={(e) => setIncludeStitchLegend(e.target.checked)} />
+                                            Include Stitch Key
+                                        </label>
+                                    </>
+                                ) : (
+                                    <>
+                                        <label className="flex items-center cursor-pointer text-sm">
+                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={includeCoverPage} onChange={(e) => setIncludeCoverPage(e.target.checked)} />
+                                            Include Cover Page
+                                        </label>
+                                        <label className="flex items-center cursor-pointer text-sm">
+                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={includeYarnRequirements} onChange={(e) => setIncludeYarnRequirements(e.target.checked)} />
+                                            Include Yarn Legend
+                                        </label>
+                                        <label className="flex items-center cursor-pointer text-sm">
+                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={includeStitchLegend} onChange={(e) => setIncludeStitchLegend(e.target.checked)} />
+                                            Include Stitch Key
+                                        </label>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* SECTION D: BRANDING */}
+                        <div>
+                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wider">Branding</h4>
+                            <div className="space-y-2 pl-1">
+                                <input
+                                    type="text"
+                                    className="border rounded px-3 py-2 text-sm w-full"
+                                    placeholder="Designer Name"
+                                    value={exportDesignerName}
+                                    onChange={(e) => setExportDesignerName(e.target.value)}
+                                />
+                                <input
+                                    type="text"
+                                    className="border rounded px-3 py-2 text-sm w-full"
+                                    placeholder="Website / Shop URL"
+                                    value={exportWebsite}
+                                    onChange={(e) => setExportWebsite(e.target.value)}
+                                />
+                                <input
+                                    type="text"
+                                    className="border rounded px-3 py-2 text-sm w-full"
+                                    placeholder="Copyright Line (e.g., © 2024 Your Name)"
+                                    value={exportCopyright}
+                                    onChange={(e) => setExportCopyright(e.target.value)}
+                                />
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
+
             </Modal>
 
             {/* Generate Pattern Modal */}
-            <Modal isOpen={isGenerateModalOpen} onClose={() => setIsGenerateModalOpen(false)} title="Generate Pattern from Image">
+            < Modal isOpen={isGenerateModalOpen} onClose={() => setIsGenerateModalOpen(false)} title="Generate Pattern from Image" >
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">1. Upload Image</label>
@@ -1417,41 +1421,43 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                         <Button variant="primary" onClick={handleImportConfirm} disabled={!previewGrid}>Import Pattern</Button>
                     </div>
                 </div>
-            </Modal>
+            </Modal >
 
             {/* Full Screen Preview Modal */}
-            {isPreviewFullScreen && previewGrid && (
-                <div className="fixed inset-0 z-50 bg-black/90 flex flex-col p-4">
-                    <div className="flex justify-between items-center mb-4 text-white">
-                        <div className="flex items-center gap-4">
-                            <h3 className="text-lg font-bold">Pattern Preview</h3>
-                            <div className="flex items-center gap-2 bg-gray-800 rounded px-3 py-1">
-                                <span className="text-xs text-gray-400">Zoom:</span>
-                                <input
-                                    type="range"
-                                    min="0.1"
-                                    max="5"
-                                    step="0.1"
-                                    value={previewZoom}
-                                    onChange={(e) => setPreviewZoom(Number(e.target.value))}
-                                    className="w-32"
-                                />
-                                <span className="text-xs w-8 text-right">{previewZoom.toFixed(1)}x</span>
+            {
+                isPreviewFullScreen && previewGrid && (
+                    <div className="fixed inset-0 z-50 bg-black/90 flex flex-col p-4">
+                        <div className="flex justify-between items-center mb-4 text-white">
+                            <div className="flex items-center gap-4">
+                                <h3 className="text-lg font-bold">Pattern Preview</h3>
+                                <div className="flex items-center gap-2 bg-gray-800 rounded px-3 py-1">
+                                    <span className="text-xs text-gray-400">Zoom:</span>
+                                    <input
+                                        type="range"
+                                        min="0.1"
+                                        max="5"
+                                        step="0.1"
+                                        value={previewZoom}
+                                        onChange={(e) => setPreviewZoom(Number(e.target.value))}
+                                        className="w-32"
+                                    />
+                                    <span className="text-xs w-8 text-right">{previewZoom.toFixed(1)}x</span>
+                                </div>
                             </div>
+                            <Button variant="secondary" onClick={() => setIsPreviewFullScreen(false)}><Icon name="close" className="w-4 h-4 mr-2" /> Close</Button>
                         </div>
-                        <Button variant="secondary" onClick={() => setIsPreviewFullScreen(false)}><Icon name="close" className="w-4 h-4 mr-2" /> Close</Button>
+                        <div className="flex-1 overflow-auto flex items-center justify-center p-8">
+                            <canvas
+                                ref={fullScreenCanvasRef}
+                                style={{
+                                    imageRendering: 'pixelated',
+                                    boxShadow: '0 0 20px rgba(0,0,0,0.5)'
+                                }}
+                            />
+                        </div>
                     </div>
-                    <div className="flex-1 overflow-auto flex items-center justify-center p-8">
-                        <canvas
-                            ref={fullScreenCanvasRef}
-                            style={{
-                                imageRendering: 'pixelated',
-                                boxShadow: '0 0 20px rgba(0,0,0,0.5)'
-                            }}
-                        />
-                    </div>
-                </div>
-            )}
+                )
+            }
 
             <main className="flex-1 relative min-w-0">
                 <PixelGridEditor
