@@ -275,6 +275,102 @@ export const exportPixelGridToPDF = (
         return legendY;
     };
 
+    const drawHybridLegend = (startY: number): number => {
+        let legendY = startY;
+        doc.setFontSize(14);
+        doc.text("Materials & Stitch Key", margin, legendY);
+        legendY += 20;
+
+        const swatchSize = 15;
+        doc.setFontSize(10);
+
+        const sortedYarns = gridData.palette
+            .sort((a, b) => (yarnUsage.get(b) || 0) - (yarnUsage.get(a) || 0));
+
+        // Hybrid Header: No "Symbol" Column. Start with Color Swatch.
+        doc.setFont("helvetica", "bold");
+        // Layout: Swatch(margin) -> Color Name(margin+20) -> Details(margin+130) -> Usage(margin+330)
+        doc.text("Color", margin, legendY);
+        doc.text("Details", margin + 130, legendY);
+        doc.text("Usage", margin + 330, legendY);
+        doc.setFont("helvetica", "normal");
+        legendY += 15;
+
+        // 1. Yarn Table
+        sortedYarns.forEach(yarnId => {
+            const yarn = yarnColorMap.get(yarnId);
+            const count = yarnUsage.get(yarnId) || 0;
+            if (!yarn || count === 0) return;
+
+            const yarnPerStitch = projectSettings?.yarnPerStitch || 1;
+            const totalYards = Math.ceil((count * yarnPerStitch) / 36);
+            const skeinsNeeded = Math.ceil(totalYards / (yarn.skeinLength || 295));
+
+            if (legendY > pageH - margin) {
+                doc.addPage();
+                legendY = margin;
+            }
+
+            // Color Swatch (No Symbol)
+            const [r, g, b] = yarn.rgb;
+            doc.setFillColor(r, g, b);
+            doc.rect(margin, legendY, swatchSize, swatchSize, 'F');
+            doc.rect(margin, legendY, swatchSize, swatchSize, 'S'); // Border
+
+            // Text Info
+            doc.text(`${yarn.name}`, margin + 25, legendY + 11);
+            doc.setFontSize(8);
+            doc.text(`${yarn.brand} | ${yarn.yarnWeight || 'DK'}`, margin + 130, legendY + 11);
+            doc.setFontSize(10);
+            doc.text(`${count} sts  |  ${totalYards} yds  |  ${skeinsNeeded} skein${skeinsNeeded !== 1 ? 's' : ''}`, margin + 330, legendY + 11);
+
+            legendY += 25;
+        });
+
+        // 2. Integrated Stitch Key (Compact)
+        const usedStitches = new Set<string>();
+        gridData.grid.forEach(cell => {
+            if (cell.stitchId) usedStitches.add(cell.stitchId);
+        });
+
+        if (usedStitches.size > 0) {
+            legendY += 10;
+            // Check for space
+            if (legendY > pageH - margin - 50) { // arbitrary buffer
+                doc.addPage();
+                legendY = margin;
+            }
+
+            doc.setFont("helvetica", "bold");
+            doc.text("Stitch Key:", margin, legendY);
+            doc.setFont("helvetica", "normal");
+
+            // Inline/Compact list: "X = Single Crochet, % = Double Crochet"
+            // Or simple vertical list if space allows. Let's do a simple vertical table for clarity.
+            legendY += 15;
+
+            const stitches = Array.from(usedStitches).map(id => stitchMap.get(id)).filter(s => s);
+
+            stitches.forEach(stitch => {
+                if (legendY > pageH - margin) {
+                    doc.addPage();
+                    legendY = margin;
+                }
+
+                // Draw Symbol
+                doc.rect(margin, legendY - 10, 15, 15);
+                doc.setFontSize(10);
+                doc.text(stitch.symbol, margin + 7.5, legendY, { align: 'center' });
+
+                // Name
+                doc.text(`=  ${stitch.name} (${stitch.id.toUpperCase()})`, margin + 25, legendY);
+                legendY += 20;
+            });
+        }
+
+        return legendY;
+    };
+
     const drawStitchLegend = () => {
         // Collect used stitches
         const usedStitches = new Set<string>();
@@ -593,7 +689,14 @@ export const exportPixelGridToPDF = (
             const spaceRemaining = pageH - chartStartY - margin;
 
             // Draw Legend
-            const newY = drawYarnLegend(chartStartY);
+            // Fix: Use Hybrid Legend if chart mode is hybrid
+            let newY = 0;
+            if (chartOnlyMode === 'hybrid') {
+                newY = drawHybridLegend(chartStartY);
+            } else {
+                newY = drawYarnLegend(chartStartY);
+            }
+
             const remainingForChart = pageH - newY - margin;
 
             // If remaining space is very small (e.g. < 200pt), page break.
@@ -666,9 +769,16 @@ export const exportPixelGridToPDF = (
         }
 
         // 3. Yarn Requirements
+        // 3. Yarn Requirements (Or Materials & Stitch Key for Hybrid)
         if (includeYarnRequirements) {
             let yarnY = margin + 20;
             let shouldAddPage = false;
+
+            // Check for Effective Hybrid Mode in Pattern Pack
+            // Criteria: Include Color Chart AND Symbols Enabled AND Mode is Stitch-Symbol
+            const isHybridEffective = includeColorChart &&
+                chartVisual.showCellSymbols &&
+                chartVisual.symbolMode === 'stitch-symbol';
 
             if (packCursorY < pageH - margin - 100) {
                 // Suggests we have space on current page?
@@ -685,7 +795,13 @@ export const exportPixelGridToPDF = (
                 yarnY = margin + 20;
             }
 
-            const endY = drawYarnLegend(yarnY);
+            let endY = 0;
+            if (isHybridEffective) {
+                endY = drawHybridLegend(yarnY);
+            } else {
+                endY = drawYarnLegend(yarnY);
+            }
+
             packCursorY = endY;
             hasContent = true;
         }
