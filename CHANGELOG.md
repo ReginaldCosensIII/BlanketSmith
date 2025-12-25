@@ -33,7 +33,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Toolbar**: Refactored main toolbar with logical grouping (Drawing, Shapes, Palette, etc.).
 - **UI**: Added contextual tool inputs (Brush Size, etc.) below tool selection and sticky Settings button.
 - **Pattern Generation**: New "Generate Pattern" modal with canvas-based preview, responsive sizing, and full-screen zoom.
-- **Export**: Consolidated export options into a single modal with PDF (Pattern Pack, Chart Only) and PNG Image support.
+- **Export**: Consolidated export options into a single modal with PDF (Pattern Pack, Chart Only) and Image support.
+
+### Changed
+- **Export Engine V2 QA Polish**:
+    - **Beta Stability**: Forced fresh page breaks for charts to prevent layout collisions.
+    - **Pattern Overview**: Restored "Overview Page" with miniature map and red "Page X" atlas overlays for both Chart-Only and Pattern Pack modes.
+    - **UX Polish**: Simplified overview overlay labels to large bold numbers; removed blank page glitch in Pattern Pack exports.
+    - **Legibility**: Enforced minimum cell sizes (12pt) for single-page fits, falling back to atlas otherwise.
 
 ## [v0.1.0-stable-baseline] - 2025-11-25
 

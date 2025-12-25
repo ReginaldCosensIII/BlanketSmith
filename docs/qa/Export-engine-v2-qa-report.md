@@ -157,7 +157,11 @@ Atlas slicing is applied before evaluating whether the chart can fit at a reason
   - Red page numbers indicating how atlas pages fit together
 - Current overview omits this information, reducing usefulness for large patterns.
 
-**Status:** 🔷 Identified, non-blocking for beta.
+**Status:** ✅ Resolved (Implemented Pattern Overview Restoration).
+- **Corrected Footer Alignment:** Metadata anchored to bottom margin.
+- **Added Atlas Overlays:** Miniature map now renders red rectangles with page numbers (e.g., "1", "2") corresponding to the chart atlas.
+- **Implemented for Pattern Pack & Chart-Only:** Logic wired into both export flows.
+- **Polished:** Removed blank page bug in Pattern Pack and simplifed labels.
 
 ---
 
@@ -173,6 +177,31 @@ Atlas slicing is applied before evaluating whether the chart can fit at a reason
 - Clarify scenarios where stitch legend/chart flags are enabled but no stitches exist.
 
 ---
+
+## 5a. Beta Stability Rules (New)
+
+To ensure maximum reliability during the beta release, the following layout rules have been hard-coded:
+
+1.  **Fresh Page Enforcement:**
+    *   **Chart-Only:** If Yarn Requirements or Overview are present, the Grid **ALWAYS** starts on a fresh page.
+    *   **Pattern Pack:** Color Charts and Stitch Charts **ALWAYS** start on a fresh page.
+2.  **Atlas Safety:**
+    *   Any grid that cannot fit on a single page with `cell_size >= 12pt` will automatically split into a multi-page atlas.
+    *   Small grids (15x15) force-fit to single page if they meet the 12pt threshold.
+
+---
+
+## 5b. Verification / Harness Evidence
+
+The following QA Harness scenarios were used to certify this release:
+
+| ID | Name | Outcome | Feature Verified |
+| :--- | :--- | :--- | :--- |
+| `16` | **P2: CO 60x60 Atlas + Overview** | **PASS** | Chart-Only Overview, Atlas Calculation, Numeric Overlays |
+| `17` | **P2: PP 60x60 Atlas + Overview** | **PASS** | Pattern Pack Overview, Blank Page Fix, Color-Priority Atlas |
+| `18` | **Fix: CO 15x15 Fit + Yarn** | **PASS** | Force Fresh Page Logic (Beta Rule) |
+| `14` | **Fix: CO Large 60x60 Atlas** | **PASS** | Chart-Only Atlas Slicing |
+| `12` | **Fix: PP Small 15x15 Fit** | **PASS** | Fit-to-Page Logic |
 
 ## 6. System Health Assessment
 
