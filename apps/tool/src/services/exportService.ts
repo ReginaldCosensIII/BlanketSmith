@@ -10,6 +10,7 @@ const PDF_CONFIG = {
     margin: 30,
     headerHeight: 40,
     minCellSize: 18,
+    minSinglePageCellSize: 12,
     fontSize: {
         title: 24,
         header: 14,
@@ -520,12 +521,17 @@ export const exportPixelGridToPDF = (
     ) => {
         const sliceW = endX - startX;
         const sliceH = endY - startY;
+
+        // P2.3 Fix: explicit layout. yOffset is TOP of tile region.
+        const titleY = yOffset + 10;
+        const gridDrawY = yOffset + 30; // Reserve 30pt band for title
+
         const drawX = margin + 40; // Offset for row numbers
-        const drawY = yOffset;
+        const drawY = gridDrawY;
 
         // Title
         doc.setFontSize(10);
-        doc.text(pageTitle, margin, yOffset - 25);
+        doc.text(pageTitle, margin, titleY);
 
         // Rulers
         doc.setFontSize(PDF_CONFIG.fontSize.ruler);
@@ -715,15 +721,119 @@ export const exportPixelGridToPDF = (
         // Calculate Cell Size to fit
         const cellW = availChartW / gridData.width;
         const cellH = availChartH / gridData.height;
-        const cellSize = Math.min(cellW, cellH);
+        let cellSize = Math.min(cellW, cellH);
 
-        drawConfiguredChart(
-            chartOnlyMode,
-            0, 0, gridData.width, gridData.height,
-            cellSize,
-            "", // No sub-title
-            chartStartY
-        );
+        // Fix: P1 Fit-to-Page Logic & P1.5 Atlas Support
+        const candidateSize = Math.floor(cellSize);
+        let forceSinglePage = false;
+
+        if (candidateSize >= PDF_CONFIG.minSinglePageCellSize) {
+            // Fit-to-Page Success
+            cellSize = candidateSize;
+            forceSinglePage = true;
+        } else {
+            // P2.2: Legend Forcing Atlas Fix
+            // Calculate candidate if we force a fresh page
+            const fullPageH = pageH - margin * 2 - PDF_CONFIG.headerHeight; // Standard Page Height for Fresh Page
+            const freshCellW = (pageW - margin * 2 - 40) / gridData.width;
+            const freshCellH = fullPageH / gridData.height;
+            const freshCandidate = Math.floor(Math.min(freshCellW, freshCellH));
+
+            if (freshCandidate >= PDF_CONFIG.minSinglePageCellSize) {
+                doc.addPage();
+                chartStartY = margin + PDF_CONFIG.headerHeight; // Reset StartY for fresh page
+                cellSize = freshCandidate;
+                forceSinglePage = true;
+            } else {
+                // P1.5: Atlas Fallback
+                // If we can't fit on one page at 12pt, we use Atlas at standard min size (18pt)
+                cellSize = Math.max(PDF_CONFIG.minCellSize, Math.min(cellW, cellH));
+            }
+        }
+
+        if (forceSinglePage) {
+            // Single Page Render
+            drawConfiguredChart(
+                chartOnlyMode,
+                0, 0, gridData.width, gridData.height,
+                cellSize,
+                "", // No sub-title
+                chartStartY
+            );
+        } else {
+            // Multi-Page Atlas Render
+            const finalCellSize = cellSize;
+
+            // P2.3: Force Fresh Page if Yarn Requirements present
+            if (includeYarnRequirements) {
+                doc.addPage();
+                chartStartY = margin + PDF_CONFIG.headerHeight;
+            }
+
+            // Calculate Layout
+            const availW = availChartW;
+
+            // Heights MUST account for the new 30pt Title Band in drawConfiguredChart
+            const titleBand = 30;
+
+            // Page 1 Height
+            const page1H = pageH - chartStartY - margin - titleBand;
+            // Subsequent Page Height
+            const fullPageH = pageH - margin * 2 - PDF_CONFIG.headerHeight - titleBand;
+
+            // Tiles
+            const cellsPerW = Math.floor(availW / finalCellSize);
+            const cellsPerH_P1 = Math.floor(page1H / finalCellSize);
+            const cellsPerH_Full = Math.floor(fullPageH / finalCellSize);
+
+            let currentY = 0; // Grid row index
+            let pageIndex = 0;
+
+            while (currentY < gridData.height) {
+                const isFirstRowOfTiles = (currentY === 0);
+                // Note: If we Forced Fresh Page, Page 1 behaves like a Full Page conceptually, 
+                // but our variable `page1H` handles the `chartStartY` (which we reset to headerHeight).
+                // So the logic holds.
+
+                const tileRowsH = (currentY === 0) ? cellsPerH_P1 : cellsPerH_Full;
+                const rowsToRender = Math.min(tileRowsH, gridData.height - currentY);
+                if (rowsToRender <= 0) break;
+
+                // Iterate Columns
+                let currentX = 0;
+                while (currentX < gridData.width) {
+                    const colsToRender = Math.min(cellsPerW, gridData.width - currentX);
+
+                    if (currentY > 0 || currentX > 0) {
+                        doc.addPage();
+                    }
+
+                    // Determine Draw Y
+                    // P2.3: drawConfiguredChart adds the band internally. 
+                    // We just pass the Top of Region.
+                    const drawY = (currentY === 0) ? chartStartY : margin + PDF_CONFIG.headerHeight;
+
+                    // Title
+                    const tileLabel = `Chart - Part ${pageIndex + 1}`;
+
+                    // Draw
+                    drawConfiguredChart(
+                        chartOnlyMode,
+                        currentX, currentY,
+                        currentX + colsToRender,
+                        currentY + rowsToRender,
+                        finalCellSize,
+                        tileLabel,
+                        drawY
+                    );
+
+                    currentX += colsToRender;
+                    pageIndex++;
+                }
+
+                currentY += rowsToRender;
+            }
+        }
 
         if (includeStitchLegend) {
             drawStitchLegend();
@@ -840,8 +950,18 @@ export const exportPixelGridToPDF = (
             // Let's adapt the atlas loop to use `packCursorY` as startY for the FIRST iteration.
 
             let finalCellSize = Math.max(PDF_CONFIG.minCellSize, Math.min(availW / gridData.width, (pageH - packCursorY - margin) / gridData.height));
-            // Recalculate if it falls below min
-            if (finalCellSize < PDF_CONFIG.minCellSize) {
+
+            // Fix: P1 Fit-to-Page Logic (Color Chart)
+            const fitCandidate = Math.floor(Math.min(availW / gridData.width, (pageH - packCursorY - margin) / gridData.height));
+            let forceSinglePage = false;
+
+            if (fitCandidate >= PDF_CONFIG.minSinglePageCellSize) {
+                finalCellSize = fitCandidate;
+                forceSinglePage = true;
+            }
+
+            // Recalculate if it falls below min (and not forced)
+            if (!forceSinglePage && finalCellSize < PDF_CONFIG.minCellSize) {
                 // Too small for remaining space. 
                 // If we were trying to fit on current page, give up and add page.
                 // If we already added page, then it's just a multi-page large chart.
@@ -850,10 +970,17 @@ export const exportPixelGridToPDF = (
                     packCursorY = margin + 20;
                     // Recalculate for full page
                     finalCellSize = Math.max(PDF_CONFIG.minCellSize, Math.min(availW / gridData.width, availH_Full / gridData.height));
+
+                    // Re-check Fit-to-Page on full fresh page
+                    const fitCandidateFresh = Math.floor(Math.min(availW / gridData.width, availH_Full / gridData.height));
+                    if (fitCandidateFresh >= PDF_CONFIG.minSinglePageCellSize) {
+                        finalCellSize = fitCandidateFresh;
+                        forceSinglePage = true;
+                    }
                 }
             }
 
-            if (finalCellSize < PDF_CONFIG.minCellSize) {
+            if (finalCellSize < PDF_CONFIG.minCellSize && !forceSinglePage) {
                 finalCellSize = PDF_CONFIG.minCellSize; // enforce min, use Atlas
             }
 
@@ -865,7 +992,10 @@ export const exportPixelGridToPDF = (
             // Simplified approach: If it fits in one block, use packCursorY.
             // If it requires splitting, ALWAYS Start fresh page for consistent tiling.
 
-            const isMultiPage = (gridData.width > cellsPerW || gridData.height > Math.floor((pageH - packCursorY - margin) / finalCellSize));
+            let isMultiPage = false;
+            if (!forceSinglePage) {
+                isMultiPage = (gridData.width > cellsPerW || gridData.height > Math.floor((pageH - packCursorY - margin) / finalCellSize));
+            }
 
             if (isMultiPage && packCursorY > margin + 50) {
                 doc.addPage();
@@ -978,22 +1108,44 @@ export const exportPixelGridToPDF = (
 
             let currentSize = Math.max(PDF_CONFIG.minCellSize, Math.min(availW / gridData.width, constrainedMaxH / gridData.height));
 
-            if (currentSize < PDF_CONFIG.minCellSize) {
+            // Fix: P1 Fit-to-Page Logic (Stitch Chart)
+            const fitStitchCandidate = Math.floor(Math.min(availW / gridData.width, constrainedMaxH / gridData.height));
+            let forceSinglePageStitch = false;
+
+            if (fitStitchCandidate >= PDF_CONFIG.minSinglePageCellSize) {
+                currentSize = fitStitchCandidate;
+                forceSinglePageStitch = true;
+            }
+
+            if (!forceSinglePageStitch && currentSize < PDF_CONFIG.minCellSize) {
                 // Too small for remaining space. Force new page if we haven't already.
                 if (packCursorY > margin + 50) {
                     doc.addPage();
                     packCursorY = margin + 20;
                     // Recalc standard full page size
                     currentSize = Math.max(PDF_CONFIG.minCellSize, Math.min(availW / gridData.width, availH_Full / gridData.height));
+
+                    // Check Fit on Fresh Page
+                    const fitFresh = Math.floor(Math.min(availW / gridData.width, availH_Full / gridData.height));
+                    if (fitFresh >= PDF_CONFIG.minSinglePageCellSize) {
+                        currentSize = fitFresh;
+                        forceSinglePageStitch = true;
+                    }
                 }
             }
-            if (currentSize < PDF_CONFIG.minCellSize) currentSize = PDF_CONFIG.minCellSize;
+
+            if (currentSize < PDF_CONFIG.minCellSize && !forceSinglePageStitch) {
+                currentSize = PDF_CONFIG.minCellSize;
+            }
             finalCellSize = currentSize;
 
             const cellsPerW = Math.floor(availW / finalCellSize);
             const stdCellsPerH = Math.floor((pageH - margin * 2 - 60) / finalCellSize);
 
-            const isMultiPage = (gridData.width > cellsPerW || gridData.height > Math.floor((pageH - packCursorY - margin) / finalCellSize)); // check fit in current slot
+            let isMultiPage = false;
+            if (!forceSinglePageStitch) {
+                isMultiPage = (gridData.width > cellsPerW || gridData.height > Math.floor((pageH - packCursorY - margin) / finalCellSize));
+            }
 
             if (isMultiPage && packCursorY > margin + 50) {
                 doc.addPage();

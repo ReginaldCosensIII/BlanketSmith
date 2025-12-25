@@ -113,7 +113,35 @@ Atlas slicing is applied before evaluating whether the chart can fit at a reason
   - If cell size ≥ minimum readable threshold, render as single page
   - Fall back to atlas slicing only when necessary
 
-**Status:** 🔶 Identified, pending implementation.
+**Status:** ✅ Resolved (Implemented Fit-to-Page logic).
+
+---
+
+### P1.5 — Chart-Only Atlas Support (RESOLVED)
+
+**Problem:** Large charts in Chart-Only mode were shrinking to unreadable single pages instead of splitting into a multi-page atlas.
+
+**Resolution Implemented:**
+- Implemented Atlas Slicing Loop in Chart-Only section.
+- Added harness scenarios (`co_lg_60_atlas`) to verify multi-page output for large grids.
+
+**Status:** ✅ Resolved.
+
+---
+
+### P2 — Chart-Only Layout Fixes (RESOLVED)
+
+**Issues:**
+1. **Header Collision (P2.1):** Atlas tile labels ("Chart - Part X") collided with copyright metadata.
+2. **Legend Forcing Atlas (P2.2):** Yarn legend on Page 1 forced small charts to split into atlas unnecessarily.
+3. **Atlas Tile Label Overlap (P2.3):** Negative Y-offsets caused tile labels to overlap headers/charts.
+
+**Resolution Implemented:**
+- **P2.1 & P2.3:** Implemented explicit "Header Band" (Positive Offset) for tiles, ensuring clean separation from metadata.
+- **P2.2:** Added "Fresh Page Candidate" check. If a small chart fits singly on a fresh page, we page-break instead of falling back to atlas.
+- **Atlas+Yarn:** Enforced fresh page start for Atlas tiles when Yarn Legend is present.
+
+**Status:** ✅ Resolved.
 
 ---
 
