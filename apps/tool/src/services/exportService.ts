@@ -1,4 +1,4 @@
-
+﻿
 // @ts-nocheck
 import { PixelGridData, YarnColor, CellData, ExportType, BrandingOptions, ChartVisualOptions, ExportOptions } from '../types';
 import { DEFAULT_STITCH_LIBRARY, StitchDefinition } from '../data/stitches';
@@ -17,6 +17,11 @@ const PDF_CONFIG = {
         cell: 7,
         legend: 10,
         ruler: 8
+    },
+    // Commit 1a: Overview Sizing Contract
+    overview: {
+        maxHeight: 400, // Max height clamp
+        minHeight: 200, // Min height to fit on current page
     }
 };
 
@@ -144,7 +149,7 @@ export const exportPixelGridToPDF = (
     const numbering = generateNumberingData(gridData.grid, gridData.width, gridData.height, isLeftHanded);
     const colorSymbolMap = buildColorSymbolMap(yarnPalette);
 
-    // --- OPTION NORMALIZATION (V2 Spec) ---
+    // --- OPTION NORMALIZATION (V2 Spec: Commit 1) ---
     const exportType: ExportType = options.exportType || (options.forceSinglePage ? 'chart-only' : 'pattern-pack');
     const isChartOnly = exportType === 'chart-only';
     const isPatternPack = exportType === 'pattern-pack';
@@ -153,12 +158,26 @@ export const exportPixelGridToPDF = (
 
     // Layout Flags
     const includeCoverPage = options.includeCoverPage ?? false;
-    const includeOverview = options.includeOverviewPage ?? false;
-    // Pattern Pack uses dedicated toggles; Chart-Only uses passed toggle which defaults to false in UI
+
+    // Overview Mode Normalization (Tri-State)
+    let overviewMode: 'auto' | 'always' | 'never' = 'auto';
+    if (options.overviewMode) {
+        overviewMode = options.overviewMode;
+    } else if (options.includeOverviewPage === true) {
+        overviewMode = 'always';
+    }
+
+    // Pattern Pack Options
     const includeYarnRequirements = options.includeYarnRequirements ?? (isPatternPack ? true : false);
     const includeStitchLegend = options.includeStitchLegend ?? (isPatternPack ? true : false);
     const includeColorChart = isPatternPack ? (options.includeColorChart ?? true) : false;
     const includeStitchChart = isPatternPack ? (options.includeStitchChart ?? false) : false;
+    // Hybrid support in Pattern Pack
+    const includeHybridChart = isPatternPack ? (options.includeHybridChart ?? false) : false;
+
+    // Placeholder Options (Instructions - Reserved Slot)
+    const instructionsMode = options.instructionsMode || 'none';
+    // const instructionsText = options.instructionsText || '';
 
     // Chart Mode & Visuals
     // For Chart-Only: Use explicit mode ('color', 'stitch', 'hybrid').
@@ -170,6 +189,10 @@ export const exportPixelGridToPDF = (
         showCellBackgrounds: options.chartVisual?.showCellBackgrounds ?? true,
         symbolMode: options.chartVisual?.symbolMode ?? 'color-index',
     };
+
+    // Helper for Tri-state Overview Logic
+    // Logic moved to usage site with AtlasPlan
+    // const shouldIncludeOverview = ... (Removed legacy helper)
 
     // --- LAYOUT HELPERS ---
     interface AtlasRegion {
@@ -266,6 +289,66 @@ export const exportPixelGridToPDF = (
         }
 
         return regions;
+    };
+
+    interface AtlasPlan {
+        isMultiPage: boolean;
+        regions: AtlasRegion[]; // If single page, contains 1 region covering whole grid
+        cellSize: number;
+    }
+
+    // Shared Atlas Planner (Internal Helper)
+    // Runs ONCE per chart type to determine layout.
+    // Enforces strict "Charts start on Fresh Page" rule.
+    const predictAtlasLayout = (
+        targetGridW: number,
+        targetGridH: number
+    ): AtlasPlan => {
+        // Available space on a fresh page
+        const availW = pageW - margin * 2 - 40; // -40 for row numbers
+        const titleBand = 30; // Copied from internal logic
+        const availH = pageH - margin * 2 - PDF_CONFIG.headerHeight - titleBand;
+
+        // 1. Try Single Page Fit
+        let testSize = Math.floor(Math.min(availW / targetGridW, availH / targetGridH));
+        const minSingle = PDF_CONFIG.minSinglePageCellSize || 12;
+
+        if (testSize >= minSingle) {
+            // Fits cleanly on one page
+            return {
+                isMultiPage: false,
+                regions: [{
+                    pageIndex: 0,
+                    startRow: 0,
+                    endRow: targetGridH,
+                    startCol: 0,
+                    endCol: targetGridW
+                }],
+                cellSize: testSize
+            };
+        }
+
+        // 2. Atlas Fallback
+        let atlasSize = Math.max(PDF_CONFIG.minCellSize, Math.min(availW / targetGridW, availH / targetGridH));
+        atlasSize = Math.max(atlasSize, PDF_CONFIG.minCellSize); // Ensure >= 18
+
+        const regions = calculateAtlasRegions(
+            targetGridW,
+            targetGridH,
+            availW,
+            pageH,
+            margin,
+            PDF_CONFIG.headerHeight,
+            atlasSize,
+            true, // Always start on fresh page
+            0
+        );
+
+        return {
+            isMultiPage: true,
+            regions,
+            cellSize: atlasSize
+        };
     };
 
     const measureYarnLegendHeight = (): number => {
@@ -511,17 +594,21 @@ export const exportPixelGridToPDF = (
         });
     };
 
-    const drawOverviewPage = (customStartY?: number, atlasRegions: AtlasRegion[] = [], labelPrefix: string = "Part") => {
+    const drawOverviewPage = (
+        customStartY: number | undefined,
+        maxContentHeight: number,
+        atlasRegions: AtlasRegion[] = [],
+        labelPrefix: string = "Part"
+    ) => {
         // Doc page addition handled by caller
         doc.setFontSize(16);
         const titleY = customStartY ?? (margin + 20);
         doc.text("Pattern Overview", margin, titleY);
 
         // V2 MVP: Simplified one-page centered grid
-        // P2 Fix: Anchor Footer to Bottom
-        const footerSpace = 60;
         const availW = pageW - margin * 2;
-        const availH = pageH - titleY - 20 - footerSpace; // titleY + 20 is top of grid
+        // Commit 1a: Enforce explicit max height constraint
+        const availH = maxContentHeight - 40; // -40 for title space (approx)
 
         const cellW = availW / gridData.width;
         const cellH = availH / gridData.height;
@@ -531,8 +618,6 @@ export const exportPixelGridToPDF = (
         const startY = titleY + 20;
 
         // Draw simple colored grid
-        // PERFORMANCE: If grid is massive (100x200), drawing thousands of rects is slow.
-        // But for 60x60 (3600), it's fine.
         for (let y = 0; y < gridData.height; y++) {
             for (let x = 0; x < gridData.width; x++) {
                 const index = y * gridData.width + x;
@@ -547,7 +632,7 @@ export const exportPixelGridToPDF = (
             }
         }
 
-        // P2 Fix: Atlas Overlays
+        // P2 Fix: Atlas Overlays (Canonical Labels)
         if (atlasRegions.length > 0) {
             doc.setDrawColor(255, 0, 0); // Red
             doc.setLineWidth(1.5);
@@ -563,21 +648,15 @@ export const exportPixelGridToPDF = (
                 // Draw Red Box
                 doc.rect(rX, rY, rW, rH);
 
-                // Draw Page Number (Center of Box)
-                // P2 Polish: Simple Number, Bold, Large
-                const label = String(i + 1); // just "1", "2"
+                // Draw Page Number (Part 1..N) via pageIndex
+                // Commit 1 Rule: Lock to Reference Chart Page Sequence
+                const label = String(region.pageIndex + 1);
 
-                // Check if box is big enough for text?
+                // Check if box is big enough for text
                 if (rW > 15 && rH > 10) {
                     doc.setFont("helvetica", "bold");
-                    // Dynamic size? Or just big.
-                    // Max size that fits box? Or fixed large.
-                    doc.setFontSize(24); // Bold and visible
-
-                    // Center
+                    doc.setFontSize(24);
                     doc.text(label, rX + rW / 2, rY + rH / 2, { align: 'center', baseline: 'middle' });
-
-                    // Reset font
                     doc.setFont("helvetica", "normal");
                 }
             });
@@ -588,13 +667,7 @@ export const exportPixelGridToPDF = (
             doc.setLineWidth(1);
         }
 
-        // Stats Metadata (Anchored to Bottom)
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        const metaY = pageH - margin - 30; // 30pt from bottom margin
-        doc.text(`Dimensions: ${gridData.width} x ${gridData.height}`, margin, metaY);
-        doc.text(`Colors: ${yarnPalette.length}`, margin, metaY + 15);
-        doc.setTextColor(0);
+        // Commit 1a: Footer metadata removed entirely.
     };
 
     const drawProjectHeader = (startY: number): number => {
@@ -791,753 +864,180 @@ export const exportPixelGridToPDF = (
         doc.setTextColor(0);
     };
 
-    // --- MAIN EXECUTION LOGIC ---
+    // --- MAIN EXECUTION LOGIC (Canonical Flow) ---
 
-    // 1. Cover Page
+    // 0. Pre-Calculation: Used Colors & Atlas Plan
+    const usedColorsSet = new Set<string>();
+    gridData.grid.forEach(c => { if (c.colorId) usedColorsSet.add(c.colorId); });
+    const usedColorCount = usedColorsSet.size;
+
+    // Unified Atlas Plan: Computed ONCE for the reference logic, used for all.
+    const atlasPlan = predictAtlasLayout(gridData.width, gridData.height);
+
+    // Flow State
+    let currentY = margin;
     let hasContent = false;
 
+    // 1. Cover Page
     if (includeCoverPage) {
-        // Always first
         drawCoverPage();
+        doc.addPage();
+        // Now on P2 (Fresh)
+        currentY = margin;
+        hasContent = false;
+    }
+
+    // 2. Project Header (Only on Page 1 if no cover)
+    if (!includeCoverPage) {
+        // We are on P1.
+        currentY = drawProjectHeader(margin + 20);
         hasContent = true;
     }
 
-    if (isChartOnly) {
-        // --- CHART ONLY LAYOUT ---
-        // Page 1 is currently either the Cover Page (if drawn) or a fresh page.
+    // 3. Pattern Overview
+    // Tri-State Placement Logic
+    const showOverview = (overviewMode === 'always') || (overviewMode === 'auto' && atlasPlan.isMultiPage);
+
+    if (showOverview) {
+        let overviewStartY = currentY;
+        let allowedHeight = PDF_CONFIG.overview.maxHeight;
 
         if (includeCoverPage) {
-            // Fix: Cover Page is P1. Force P2 for Chart layout.
-            doc.addPage();
-            hasContent = true;
+            // Already fresh P2. Just draw.
+            overviewStartY = margin + 20;
+            // On fresh page, we layout with standard max height
         } else {
-            // Fix: No Cover Page. Header is on P1.
-            // Check if we need a new page? No, we just started P1 roughly.
-            hasContent = true;
-        }
+            // No Cover. Header is on P1. Check fit.
+            const spaceRemaining = pageH - currentY - margin;
 
-        const availHeight = pageH - margin * 2 - 40; // Title margin
-        let startY = margin + 40;
-        let chartStartY = startY;
-
-        // Branding Header (if no cover page)
-        if (!includeCoverPage) {
-            chartStartY = drawProjectHeader(margin + 20);
-        } else {
-            // Cover page exists and we already successfully added P2.
-            // Start fresh at top margin.
-            chartStartY = margin + 20;
-        }
-
-        // P2: Overview Page Integration (Chart-Only)
-        if (includeOverview) {
-            // 1. Calculate Future Layout to know about Atlas
-            const testAvailW = pageW - margin * 2 - 40;
-            const testAvailH = pageH - chartStartY - margin;
-
-            // Replicate Sizing Choice
-            const cellW = testAvailW / gridData.width;
-            const cellH = testAvailH / gridData.height;
-            let testCellSize = Math.min(cellW, cellH);
-
-            // Logic Matches Line 873
-            // If shrinking below threshold, assume atlas (clamped to minCellSize)
-            const minSingle = PDF_CONFIG.minSinglePageCellSize || 12;
-            let isAtlas = false;
-
-            if (testCellSize < minSingle) {
-                // Check Fresh Page Candidate (P2.2) logic...
-                const freshAvailH = pageH - margin * 2 - PDF_CONFIG.headerHeight;
-                const freshCellH = freshAvailH / gridData.height;
-                const freshCellSize = Math.min(cellW, freshCellH);
-
-                if (freshCellSize >= minSingle) {
-                    // Will fit fresh. Not Atlas.
-                    isAtlas = false;
-                } else {
-                    // Will fall back to Atlas.
-                    isAtlas = true;
-                    testCellSize = PDF_CONFIG.minCellSize; // 18
-                }
-            }
-
-            // 2. Calculate Regions if Atlas
-            let regions: AtlasRegion[] = [];
-            if (isAtlas) {
-                // P2.3: Force Fresh Page logic implies startOnFreshPage is true for atlas if yarn is present.
-                // Or if we ran out of space.
-                // Simplification: In Chart Only, if we hit Atlas, we usually assume flow.
-                // But calculateAtlasRegions needs explicit start.
-                // We pass 'includeYarnRequirements' as proxy for "Will Force Fresh Page".
-                // Even if no Yarn, we effectively start at "chartStartY" which is top-of-area.
-                // And calculateAtlasRegions handles the "first page shorter" logic if passed startOnFreshPage=false.
-                // So:
-                const effectiveStartOnFresh = includeYarnRequirements ? true : false;
-
-                regions = calculateAtlasRegions(
-                    gridData.width,
-                    gridData.height,
-                    testAvailW,
-                    pageH,
-                    margin,
-                    PDF_CONFIG.headerHeight,
-                    testCellSize,
-                    effectiveStartOnFresh,
-                    chartStartY
-                );
-            }
-
-            // 3. Render Overview
-            // If Cover Page exists, we are on P2. If not, P1.
-            // drawOverviewPage assumes we are on the correct page.
-            // But wait, if Cover Page exists, we just added P2 above (Line 801).
-            // So we are good.
-
-            // If no Cover Page, we are on P1.
-            // So existing content (header) is there.
-            // drawOverviewPage(customStartY) handles titleY.
-
-            drawOverviewPage(chartStartY, regions, "Chart - Part");
-
-            // 4. Force Page Break for Next Section (Yarn or Chart)
-            // Overview takes a full page usually.
-            doc.addPage();
-            chartStartY = margin + 20; // Reset for next content
-
-            // If No Cover, we might need to redraw header?
-            // "If includeCoverPage is false, Overview should still be page 1... or page 2"
-            // If P1 has header -> Overview -> New Page.
-            // The Next Page (P2) needs a header if it's Yarn/Chart?
-            // Usually internal pages get standard header. 
-            // Our logic handles internal pages?
-            // Yarn Legend handles bounds.
-            // Chart handles bounds.
-            // So we just reset chartStartY to top margin.
-        }
-
-
-        if (includeYarnRequirements) {
-            const legendH = measureYarnLegendHeight();
-            const spaceRemaining = pageH - chartStartY - margin;
-
-            // Draw Legend
-            // Fix: Use Hybrid Legend if chart mode is hybrid
-            let newY = 0;
-            if (chartOnlyMode === 'hybrid') {
-                newY = drawHybridLegend(chartStartY);
-            } else {
-                newY = drawYarnLegend(chartStartY);
-            }
-
-            const remainingForChart = pageH - newY - margin;
-
-            // If remaining space is very small (e.g. < 200pt), page break.
-            if (remainingForChart < 200) {
+            // Commit 1a: Enforce Layout Contract
+            if (hasContent && spaceRemaining < PDF_CONFIG.overview.minHeight) {
+                // Not enough space -> Force New Page
                 doc.addPage();
-                chartStartY = margin + 40;
+                overviewStartY = margin + 20;
+                currentY = overviewStartY;
+                // allowedHeight remains default max
             } else {
-                chartStartY = newY + 20;
+                // Fit on current page, but clamp to max
+                // Also clamp to remaining space? (If remaining < max, but > min)
+                // Actually, if we are here, spaceRemaining >= minHeight.
+                // We should use min(spaceRemaining, max) to be safe? 
+                // Or just max? If max > spaceRemaining, it might overflow page.
+                // Better to clamp to spaceRemaining to be safe, though visually we prefer regular size.
+                // Let's use standard logic: 
+                allowedHeight = Math.min(spaceRemaining, PDF_CONFIG.overview.maxHeight);
+                overviewStartY = currentY + 20;
             }
         }
 
-        // Draw The One Chart
-        const availChartW = pageW - margin * 2 - 40; // -40 for row numbers
-        const availChartH = pageH - chartStartY - margin;
+        drawOverviewPage(overviewStartY, allowedHeight, atlasPlan.isMultiPage ? atlasPlan.regions : [], "Part");
 
-        // Calculate Cell Size to fit
-        const cellW = availChartW / gridData.width;
-        const cellH = availChartH / gridData.height;
-        let cellSize = Math.min(cellW, cellH);
+        hasContent = true;
+        // Move semantic cursor to bottom to encourage next section to break if needed
+        // Current logic: we consumed 'allowedHeight' nominally? 
+        // drawOverviewPage doesn't return Y.
+        // We assume it takes the space. 
+        // Simplest strategy: Set currentY to bottom margin to force next section to break if it relies on flow.
+        // (This matches previous logic)
+        currentY = pageH - margin;
+    }
 
-        // Fix: P1 Fit-to-Page Logic & P1.5 Atlas Support
-        const candidateSize = Math.floor(cellSize);
-        let forceSinglePage = false;
-
-        if (candidateSize >= PDF_CONFIG.minSinglePageCellSize) {
-            // Fit-to-Page Success
-            cellSize = candidateSize;
-            forceSinglePage = true;
-        } else {
-            // P2.2: Legend Forcing Atlas Fix
-            // Calculate candidate if we force a fresh page
-            const fullPageH = pageH - margin * 2 - PDF_CONFIG.headerHeight; // Standard Page Height for Fresh Page
-            const freshCellW = (pageW - margin * 2 - 40) / gridData.width;
-            const freshCellH = fullPageH / gridData.height;
-            const freshCandidate = Math.floor(Math.min(freshCellW, freshCellH));
-
-            if (freshCandidate >= PDF_CONFIG.minSinglePageCellSize) {
-                doc.addPage();
-                chartStartY = margin + PDF_CONFIG.headerHeight; // Reset StartY for fresh page
-                cellSize = freshCandidate;
-                forceSinglePage = true;
-            } else {
-                // P1.5: Atlas Fallback
-                // If we can't fit on one page at 12pt, we use Atlas at standard min size (18pt)
-                cellSize = Math.max(PDF_CONFIG.minCellSize, Math.min(cellW, cellH));
-            }
-        }
-
-        if (forceSinglePage) {
-            // Single Page Render
-            drawConfiguredChart(
-                chartOnlyMode,
-                0, 0, gridData.width, gridData.height,
-                cellSize,
-                "", // No sub-title
-                chartStartY
-            );
-        } else {
-            // Multi-Page Atlas Render
-            const finalCellSize = cellSize;
-
-            // P2.3: Force Fresh Page if Yarn Requirements present
-            if (includeYarnRequirements) {
-                doc.addPage();
-                chartStartY = margin + PDF_CONFIG.headerHeight;
-            }
-
-            // Calculate Layout
-            const availW = availChartW;
-
-            // Heights MUST account for the new 30pt Title Band in drawConfiguredChart
-            const titleBand = 30;
-
-            // Page 1 Height
-            const page1H = pageH - chartStartY - margin - titleBand;
-            // Subsequent Page Height
-            const fullPageH = pageH - margin * 2 - PDF_CONFIG.headerHeight - titleBand;
-
-            // Tiles
-            const cellsPerW = Math.floor(availW / finalCellSize);
-            const cellsPerH_P1 = Math.floor(page1H / finalCellSize);
-            const cellsPerH_Full = Math.floor(fullPageH / finalCellSize);
-
-            let currentY = 0; // Grid row index
-            let pageIndex = 0;
-
-            while (currentY < gridData.height) {
-                const isFirstRowOfTiles = (currentY === 0);
-                // Note: If we Forced Fresh Page, Page 1 behaves like a Full Page conceptually, 
-                // but our variable `page1H` handles the `chartStartY` (which we reset to headerHeight).
-                // So the logic holds.
-
-                const tileRowsH = (currentY === 0) ? cellsPerH_P1 : cellsPerH_Full;
-                const rowsToRender = Math.min(tileRowsH, gridData.height - currentY);
-                if (rowsToRender <= 0) break;
-
-                // Iterate Columns
-                let currentX = 0;
-                while (currentX < gridData.width) {
-                    const colsToRender = Math.min(cellsPerW, gridData.width - currentX);
-
-                    if (currentY > 0 || currentX > 0) {
-                        doc.addPage();
-                    }
-
-                    // Determine Draw Y
-                    // P2.3: drawConfiguredChart adds the band internally. 
-                    // We just pass the Top of Region.
-                    const drawY = (currentY === 0) ? chartStartY : margin + PDF_CONFIG.headerHeight;
-
-                    // Title
-                    const tileLabel = `Chart - Part ${pageIndex + 1}`;
-
-                    // Draw
-                    drawConfiguredChart(
-                        chartOnlyMode,
-                        currentX, currentY,
-                        currentX + colsToRender,
-                        currentY + rowsToRender,
-                        finalCellSize,
-                        tileLabel,
-                        drawY
-                    );
-
-                    currentX += colsToRender;
-                    pageIndex++;
-                }
-
-                currentY += rowsToRender;
-            }
-        }
-
-        if (includeStitchLegend) {
-            drawStitchLegend();
-        }
-
-    } else {
-        // --- PATTERN PACK LAYOUT ---
-        // Cover -> Overview -> Yarn -> Charts -> Legends
-
-        let packCursorY = margin + 20;
-
-        if (!includeCoverPage) {
-            // If no cover page, we are on Page 1. Draw header.
-            packCursorY = drawProjectHeader(margin + 20);
-            hasContent = true;
-        } else {
-            // Fix: Cover Page exists (P1). We MUST add P2 now.
+    // 4. Yarn Requirements / Legends (Non-Chart)
+    if (includeYarnRequirements) {
+        // Space Check
+        const spaceRemaining = pageH - currentY - margin;
+        if (hasContent && spaceRemaining < 200) {
             doc.addPage();
-            packCursorY = margin + 20;
-            hasContent = true;
+            currentY = margin + 20;
+        } else if (hasContent) {
+            currentY += 20;
+        } else {
+            // clean start
+            currentY = margin + 20;
         }
 
-        // 2. Pattern Overview
-        if (includeOverview) {
-            let overviewY = margin + 20;
-
-            if (!includeCoverPage && hasContent) {
-                // No cover page, Header drawn on P1.
-                overviewY = packCursorY + 10;
-            } else if (includeCoverPage && hasContent) {
-                // Cover page exists. Logic above (Line ~1070) ALREADY added a page (P2).
-                // So we are currently at the top of P2.
-                // DO NOT add another page here.
-                overviewY = margin + 20;
-            }
-
-            // P2: Pattern Pack Atlas regions calculation
-            let regions: AtlasRegion[] = [];
-            let labelPrefix = "Part";
-
-            // Priority for Overlay: Color Chart > Stitch Chart
-            // Only if validation passed (e.g. stitches exist)
-            const canDoColor = includeColorChart;
-            const canDoStitch = includeStitchChart && gridData.includeStitches;
-
-            let simAvailH = pageH - margin * 2 - 40; // Full page assumption for Charts (they break page)
-            const simAvailW = pageW - margin * 2 - 40;
-
-            // Beta Stability Rule: Charts start on Fresh Page. 
-            // So we use simAvailH = full page height (minus header).
-            const startOnFresh = true;
-            const simStartY = margin + PDF_CONFIG.headerHeight;
-
-            if (canDoColor) {
-                labelPrefix = "Color";
-                // Simulate Color Chart Layout
-                // Logic: Line 1160+
-                // Calculate Cell Size
-                const cellW = simAvailW / gridData.width;
-                const cellH = simAvailH / gridData.height;
-                let testCellSize = Math.min(cellW, cellH);
-
-                // Atlas Logic Check
-                const minSingle = PDF_CONFIG.minSinglePageCellSize || 12;
-                let isAtlas = false;
-
-                // Fit check logic mirrors Line 1160 Fit-On-Fresh check
-                if (testCellSize < minSingle) {
-                    // Atlas fallback
-                    isAtlas = true;
-                    testCellSize = PDF_CONFIG.minCellSize; // 18
-                }
-
-                if (isAtlas) {
-                    regions = calculateAtlasRegions(
-                        gridData.width,
-                        gridData.height,
-                        simAvailW,
-                        pageH,
-                        margin,
-                        PDF_CONFIG.headerHeight,
-                        testCellSize,
-                        startOnFresh,
-                        simStartY
-                    );
-                }
-
-            } else if (canDoStitch) {
-                labelPrefix = "Stitch";
-                // Simulate Stitch Chart Layout
-                // Logic: Line 1290+
-                const cellW = simAvailW / gridData.width;
-                const cellH = simAvailH / gridData.height;
-                let testCellSize = Math.min(cellW, cellH);
-
-                const minSingle = PDF_CONFIG.minSinglePageCellSize || 12;
-                let isAtlas = false;
-
-                if (testCellSize < minSingle) {
-                    isAtlas = true;
-                    testCellSize = PDF_CONFIG.minCellSize;
-                }
-
-                if (isAtlas) {
-                    regions = calculateAtlasRegions(
-                        gridData.width,
-                        gridData.height,
-                        simAvailW,
-                        pageH,
-                        margin,
-                        PDF_CONFIG.headerHeight,
-                        testCellSize,
-                        startOnFresh,
-                        simStartY
-                    );
-                }
-            }
-
-            drawOverviewPage(overviewY, regions, labelPrefix);
-            hasContent = true;
-
-            // Mark page as used
-            packCursorY = pageH - margin;
-        }
-
-        // 3. Yarn Requirements
-        // 3. Yarn Requirements (Or Materials & Stitch Key for Hybrid)
-        if (includeYarnRequirements) {
-            let yarnY = margin + 20;
-            let shouldAddPage = false;
-
-            // Check for Effective Hybrid Mode in Pattern Pack
-            // Criteria: Include Color Chart AND Symbols Enabled AND Mode is Stitch-Symbol
+        // Logic for Hybrid Legend selection
+        let useHybridLegend = false;
+        if (isChartOnly) {
+            useHybridLegend = (chartOnlyMode === 'hybrid');
+        } else {
+            // Pattern Pack: Hybrid Chart OR (Color Chart + Stitch Symbols)
             const isHybridEffective = includeColorChart &&
                 chartVisual.showCellSymbols &&
                 chartVisual.symbolMode === 'stitch-symbol';
-
-            if (packCursorY < pageH - margin - 100) {
-                // Suggests we have space on current page?
-                // PackCursorY is only set by Header or Overview.
-                // If Overview ran, it's full.
-                // If Header ran (no Overview), we have space.
-                yarnY = packCursorY + 10;
-            } else if (hasContent) {
-                shouldAddPage = true;
-            }
-
-            if (shouldAddPage) {
-                doc.addPage();
-                yarnY = margin + 20;
-            }
-
-            let endY = 0;
-            if (isHybridEffective) {
-                endY = drawHybridLegend(yarnY);
-            } else {
-                endY = drawYarnLegend(yarnY);
-            }
-
-            packCursorY = endY;
-            hasContent = true;
+            useHybridLegend = isHybridEffective || includeHybridChart;
         }
 
-        // 4. Color Charts (Color or Hybrid)
-        if (includeColorChart) {
-            // Check if we can fit at least one row of chart?
-            // Need to estimate cell size.
-            const availW = pageW - margin * 2 - 40;
-            const availH_Full = pageH - margin * 2 - 60;
+        let endY = 0;
+        if (useHybridLegend) {
+            endY = drawHybridLegend(currentY);
+        } else {
+            endY = drawYarnLegend(currentY);
+        }
+        currentY = endY;
+        hasContent = true;
+    }
 
-            // Preliminary calculation of cell size to see if it fits remaining space
-            let predictedCellSize = Math.max(PDF_CONFIG.minCellSize, Math.min(availW / gridData.width, availH_Full / gridData.height));
+    // 5. Instructions (Reserved Slot)
+    // if (instructionsMode !== 'none') { ... }
 
-            // If multi-page atlas needed, we likely want a fresh page to start?
-            // But user says: "if we can fit the Yarn Requirement section and the next chart on the same page we should do so".
-            // So let's check remaining height.
-            const spaceRemaining = pageH - packCursorY - margin;
+    // 6. Charts
+    // Commit 1 Rule: All Charts always start on fresh page.
+    type ChartRenderTask = { mode: 'color' | 'stitch' | 'hybrid'; title: string };
+    const charts: ChartRenderTask[] = [];
 
-            // If we have > 30% of page, try to fit?
-            // Or check if grid height * predictedCellSize fits?
-            const neededH = (gridData.height * predictedCellSize) + 60; // + title/margin
+    if (isChartOnly) {
+        const title = (chartOnlyMode === 'stitch') ? "Stitch Chart" : "Chart";
+        charts.push({ mode: chartOnlyMode, title });
+    } else {
+        if (includeColorChart) charts.push({ mode: 'color', title: "Color Chart" });
+        if (includeStitchChart) charts.push({ mode: 'stitch', title: "Stitch Chart" });
+        if (includeHybridChart) charts.push({ mode: 'hybrid', title: "Hybrid Chart" });
+    }
 
-            if (hasContent && (spaceRemaining < 200 || neededH > spaceRemaining)) {
-                doc.addPage();
-                packCursorY = margin + 20;
-            } else {
-                // Fit on current page
-                packCursorY += 20;
-            }
+    charts.forEach(task => {
+        // Strict Fresh Page
+        if (hasContent) {
+            doc.addPage();
+        }
 
-            // Now run the loop, but constrained by startY?
-            // The Atlas Loop below assumes full page logic for multi-page.
-            // If we fit on one page, great.
-            // If we need multi-page, we should probably start fresh page unless the FIRST part fits?
-            // Let's adapt the atlas loop to use `packCursorY` as startY for the FIRST iteration.
+        const regions = atlasPlan.regions;
+        const cellSize = atlasPlan.cellSize;
+        let lastPageIndex = -1;
 
-            let finalCellSize = Math.max(PDF_CONFIG.minCellSize, Math.min(availW / gridData.width, (pageH - packCursorY - margin) / gridData.height));
-
-            // Fix: P1 Fit-to-Page Logic (Color Chart)
-            const fitCandidate = Math.floor(Math.min(availW / gridData.width, (pageH - packCursorY - margin) / gridData.height));
-            let forceSinglePage = false;
-
-            if (fitCandidate >= PDF_CONFIG.minSinglePageCellSize) {
-                finalCellSize = fitCandidate;
-                forceSinglePage = true;
-            }
-
-            // Recalculate if it falls below min (and not forced)
-            if (!forceSinglePage && finalCellSize < PDF_CONFIG.minCellSize) {
-                // Too small for remaining space. 
-                // If we were trying to fit on current page, give up and add page.
-                // If we already added page, then it's just a multi-page large chart.
-                if (packCursorY > margin + 50) { // If not fresh page
+        regions.forEach((region) => {
+            // Handle Page Breaks within the Atlas
+            if (region.pageIndex > lastPageIndex) {
+                if (lastPageIndex !== -1) {
                     doc.addPage();
-                    packCursorY = margin + 20;
-                    // Recalculate for full page
-                    finalCellSize = Math.max(PDF_CONFIG.minCellSize, Math.min(availW / gridData.width, availH_Full / gridData.height));
-
-                    // Re-check Fit-to-Page on full fresh page
-                    const fitCandidateFresh = Math.floor(Math.min(availW / gridData.width, availH_Full / gridData.height));
-                    if (fitCandidateFresh >= PDF_CONFIG.minSinglePageCellSize) {
-                        finalCellSize = fitCandidateFresh;
-                        forceSinglePage = true;
-                    }
                 }
+                lastPageIndex = region.pageIndex;
             }
 
-            if (finalCellSize < PDF_CONFIG.minCellSize && !forceSinglePage) {
-                finalCellSize = PDF_CONFIG.minCellSize; // enforce min, use Atlas
+            // Title Generation
+            let pageTitle = task.title;
+            if (atlasPlan.isMultiPage) {
+                pageTitle += ` - Part ${region.pageIndex + 1}`;
             }
 
-            const cellsPerW = Math.floor(availW / finalCellSize);
-            const cellsPerH = Math.floor((pageH - margin * 2 - 60) / finalCellSize); // Use full page height for slicing calc
+            // Draw on Fresh Page (Standard Position)
+            const drawY = margin + PDF_CONFIG.headerHeight;
 
-            // First page might have less height if we are appending?
-            // This complicates Atlas significantly. 
-            // Simplified approach: If it fits in one block, use packCursorY.
-            // If it requires splitting, ALWAYS Start fresh page for consistent tiling.
+            drawConfiguredChart(
+                task.mode,
+                region.startCol, region.startRow, region.endCol, region.endRow,
+                cellSize,
+                pageTitle,
+                drawY
+            );
+        });
 
-            let isMultiPage = false;
-            if (!forceSinglePage) {
-                isMultiPage = (gridData.width > cellsPerW || gridData.height > Math.floor((pageH - packCursorY - margin) / finalCellSize));
-            }
+        hasContent = true;
+    });
 
-            if (isMultiPage && packCursorY > margin + 50) {
-                doc.addPage();
-                packCursorY = margin + 20;
-            }
-
-            // Re-calc atlas vars with final decision
-            const availH_Current = pageH - packCursorY - margin;
-            const cellsPerH_Current = Math.floor(availH_Current / finalCellSize);
-            // Note: If multi-page, subsequent pages use full height.
-            // This loop needs to handle variable height? 
-            // V2 Atlas logic usually assumes uniform pages.
-            // A truly robust "Flowing Atlas" is complex. 
-            // I will use "Start new page if MultiPage". 
-            // "Fit on current page if SinglePage".
-
-            // ... (Logic simplified for reliability) ...
-
-            // Re-calculate simply:
-            const fitOnCurrent = !isMultiPage;
-            const startY = packCursorY;
-
-            let pagesX = Math.ceil(gridData.width / cellsPerW);
-            let pagesY = Math.ceil(gridData.height / (fitOnCurrent ? cellsPerH_Current : Math.floor((pageH - margin * 2 - 60) / finalCellSize)));
-
-            // Correction: If we accepted to fit on current, pagesY should be 1.
-            if (fitOnCurrent) pagesY = 1;
-
-            const effectiveMode = (chartVisual.symbolMode === 'stitch-symbol' && chartVisual.showCellSymbols) ? 'hybrid' : 'color';
-
-            for (let py = 0; py < pagesY; py++) {
-                for (let px = 0; px < pagesX; px++) {
-                    const isFirstOfBlock = (px === 0 && py === 0);
-                    if (!isFirstOfBlock) doc.addPage();
-
-                    // If strictly new page needed (not first block OR first block but we forced new page above)
-                    // The above logic handled doc.addPage() for fresh start.
-                    // But if pagesY > 1, subsequent rows need new page.
-
-                    const currentTitleY = (isFirstOfBlock) ? startY + 20 : margin + 40;
-                    // drawConfiguredChart takes yOffset (top of chart area).
-
-                    const thisPageCellsH = (isFirstOfBlock) ? cellsPerH_Current : Math.floor((pageH - margin * 2 - 60) / finalCellSize);
-
-                    const startX_Idx = px * cellsPerW;
-                    const endX_Idx = Math.min(startX_Idx + cellsPerW, gridData.width);
-
-                    // Atlas indexing calc is tricky if pages differ. 
-                    // To simplify: If MultiPage, we forced New Page above, so all pages are uniform height.
-                    // If SinglePage, there is only 1 page.
-                    // So we can assume uniform height *except* if fitOnCurrent=true (which means pagesY=1).
-
-                    // If fitOnCurrent, standard loops work (py=0). 
-                    // If !fitOnCurrent, we forced full page.
-                    // So standard logic applies.
-
-                    const stdCellsPerH = Math.floor((pageH - margin * 2 - 60) / finalCellSize);
-                    const sY = py * stdCellsPerH;
-                    const eY = Math.min(sY + stdCellsPerH, gridData.height);
-                    const sX = px * cellsPerW;
-                    const eX = Math.min(sX + cellsPerW, gridData.width);
-
-                    const title = (pagesX > 1 || pagesY > 1) ? `Color Chart - Page ${py * pagesX + px + 1}` : "Color Chart";
-
-                    // If fitOnCurrent, use startY (packCursorY). Else use margin+40 (fresh page).
-                    const drawY = (fitOnCurrent) ? startY + 20 : margin + 40;
-
-                    drawConfiguredChart(effectiveMode, sX, sY, eX, eY, finalCellSize, title, drawY);
-
-                    if (isFirstOfBlock) {
-                        // Update cursor only for the *last* block rendered?
-                        // If multi-page, this is loop.
-                    }
-                }
-            }
-
-            // Update packCursorY after chart
-            if (fitOnCurrent) {
-                packCursorY = startY + 20 + (gridData.height * finalCellSize) + 20;
-            } else {
-                packCursorY = pageH - margin;
-            }
-            hasContent = true;
-        }
-
-        // 5. Stitch Charts
-        if (includeStitchChart) {
-            // Logic identical to Color Chart copy-paste
-            // Check space for Single Page Fit
-            const availW = pageW - margin * 2 - 40;
-            const availH_Full = pageH - margin * 2 - 60;
-            let finalCellSize = Math.max(PDF_CONFIG.minCellSize, Math.min(availW / gridData.width, availH_Full / gridData.height));
-
-            const spaceRemaining = pageH - packCursorY - margin;
-
-            // Check needed height
-            const neededH = (gridData.height * finalCellSize) + 60;
-
-            if (hasContent && (spaceRemaining < 200 || neededH > spaceRemaining)) {
-                doc.addPage();
-                packCursorY = margin + 20;
-            } else {
-                packCursorY += 20;
-            }
-
-            // Recalc size based on new constraint (packCursorY)
-            let constrainedMaxH = pageH - packCursorY - margin;
-            // But if we are starting fresh page, maxH is full.
-            // If we appended, maxH is smaller.
-
-            let currentSize = Math.max(PDF_CONFIG.minCellSize, Math.min(availW / gridData.width, constrainedMaxH / gridData.height));
-
-            // Fix: P1 Fit-to-Page Logic (Stitch Chart)
-            const fitStitchCandidate = Math.floor(Math.min(availW / gridData.width, constrainedMaxH / gridData.height));
-            let forceSinglePageStitch = false;
-
-            if (fitStitchCandidate >= PDF_CONFIG.minSinglePageCellSize) {
-                currentSize = fitStitchCandidate;
-                forceSinglePageStitch = true;
-            }
-
-            if (!forceSinglePageStitch && currentSize < PDF_CONFIG.minCellSize) {
-                // Too small for remaining space. Force new page if we haven't already.
-                if (packCursorY > margin + 50) {
-                    doc.addPage();
-                    packCursorY = margin + 20;
-                    // Recalc standard full page size
-                    currentSize = Math.max(PDF_CONFIG.minCellSize, Math.min(availW / gridData.width, availH_Full / gridData.height));
-
-                    // Check Fit on Fresh Page
-                    const fitFresh = Math.floor(Math.min(availW / gridData.width, availH_Full / gridData.height));
-                    if (fitFresh >= PDF_CONFIG.minSinglePageCellSize) {
-                        currentSize = fitFresh;
-                        forceSinglePageStitch = true;
-                    }
-                }
-            }
-
-            if (currentSize < PDF_CONFIG.minCellSize && !forceSinglePageStitch) {
-                currentSize = PDF_CONFIG.minCellSize;
-            }
-            finalCellSize = currentSize;
-
-            const cellsPerW = Math.floor(availW / finalCellSize);
-            const stdCellsPerH = Math.floor((pageH - margin * 2 - 60) / finalCellSize);
-
-            let isMultiPage = false;
-            if (!forceSinglePageStitch) {
-                isMultiPage = (gridData.width > cellsPerW || gridData.height > Math.floor((pageH - packCursorY - margin) / finalCellSize));
-            }
-
-            if (isMultiPage && packCursorY > margin + 50) {
-                doc.addPage();
-                packCursorY = margin + 20;
-                // Now it's full page multi-page
-            }
-
-            const fitOnCurrent = !isMultiPage;
-
-            if (fitOnCurrent) {
-                drawConfiguredChart('stitch', 0, 0, gridData.width, gridData.height, finalCellSize, "Stitch Chart", packCursorY + 20);
-                packCursorY = packCursorY + 20 + (gridData.height * finalCellSize) + 20;
-            } else {
-                let pagesX = Math.ceil(gridData.width / cellsPerW);
-                let pagesY = Math.ceil(gridData.height / stdCellsPerH);
-                for (let py = 0; py < pagesY; py++) {
-                    for (let px = 0; px < pagesX; px++) {
-                        if (px > 0 || py > 0) doc.addPage();
-                        const sY = py * stdCellsPerH;
-                        const eY = Math.min(sY + stdCellsPerH, gridData.height);
-                        const sX = px * cellsPerW;
-                        const eX = Math.min(sX + cellsPerW, gridData.width);
-                        const title = `Stitch Chart - Page ${py * pagesX + px + 1}`;
-                        drawConfiguredChart('stitch', sX, sY, eX, eY, finalCellSize, title, margin + 40);
-                    }
-                }
-                packCursorY = pageH - margin;
-            }
-            hasContent = true;
-        }
-
-        // 6. Stitch Legend
-        if (includeStitchLegend) {
-            // Check space
-            const count = new Set(gridData.grid.filter(c => c.stitchId).map(c => c.stitchId)).size;
-            if (count > 0) {
-                const neededH = 50 + (count * 30);
-                const spaceRemaining = pageH - packCursorY - margin;
-                let legendY = packCursorY + 20;
-
-                if (hasContent && neededH > spaceRemaining) {
-                    doc.addPage();
-                    legendY = margin + 40;
-                }
-
-                // Manually call specialized render logic or refactored helper?
-                // Helper was NOT refactored in previous step because I missed it.
-                // I will inline the logic here to avoid signature mismatch risk.
-
-                doc.setFontSize(14);
-                doc.text("Stitch Legend", margin, legendY);
-
-                let currY = legendY + 30;
-                const swatchSize = 20;
-                doc.setFontSize(10);
-
-                doc.setFont("helvetica", "bold");
-                doc.text("Symbol", margin, currY);
-                doc.text("Stitch Name", margin + 60, currY);
-                doc.text("Abbreviation", margin + 250, currY);
-                doc.setFont("helvetica", "normal");
-                currY += 20;
-
-                const usedStitches = new Set<string>();
-                gridData.grid.forEach(cell => { if (cell.stitchId) usedStitches.add(cell.stitchId); });
-
-                usedStitches.forEach(stitchId => {
-                    const stitch = stitchMap.get(stitchId);
-                    if (!stitch) return;
-
-                    if (currY > pageH - margin) {
-                        doc.addPage();
-                        currY = margin + 40;
-                    }
-
-                    doc.rect(margin, currY, swatchSize, swatchSize);
-                    doc.setFontSize(12);
-                    doc.text(stitch.symbol, margin + swatchSize / 2, currY + 14, { align: 'center' });
-                    doc.setFontSize(10);
-                    doc.text(stitch.name, margin + 60, currY + 14);
-                    doc.text(stitch.id.toUpperCase(), margin + 250, currY + 14);
-                    currY += 30;
-                });
-            }
-        }
+    // 7. Stitch Legend (Stable)
+    if (includeStitchLegend) {
+        drawStitchLegend();
     }
 
     if (options.preview) {
