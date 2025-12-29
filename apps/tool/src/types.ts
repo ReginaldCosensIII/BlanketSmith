@@ -122,13 +122,30 @@ export interface ContextMenuItem {
 
 export interface ExportOptions {
   exportType?: ExportType;
+
+  // -- Chart-Only Options --
+  chartOnlyMode?: 'color' | 'stitch' | 'hybrid'; // Explicit mode for chart-only
+  chartMode?: 'color' | 'stitch' | 'hybrid'; // Legacy/Rendering field (passed to renderer)
   forceSinglePage?: boolean;
-  chartMode?: 'color' | 'stitch' | 'hybrid';
+
+  // -- Pattern Pack Options --
   includeColorChart?: boolean;
   includeStitchChart?: boolean;
+  includeHybridChart?: boolean; // New explicit toggle
+
+  // -- Shared / Legacy --
   includeYarnRequirements?: boolean;
   includeStitchLegend?: boolean;
+
+  // -- Overview Logic --
+  /** @deprecated Use overviewMode instead */
   includeOverviewPage?: boolean;
+  overviewMode?: 'auto' | 'always' | 'never';
+
+  // -- Instructions Placeholders --
+  instructionsMode?: 'none' | 'engine';
+  instructionsText?: string;
+
   includeCoverPage?: boolean;
   includeRowInstructions?: boolean;
   includeNotesPage?: boolean;
