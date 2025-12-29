@@ -649,16 +649,36 @@ export const exportPixelGridToPDF = (
                 doc.rect(rX, rY, rW, rH);
 
                 // Draw Page Number (Part 1..N) via pageIndex
-                // Commit 1 Rule: Lock to Reference Chart Page Sequence
                 const label = String(region.pageIndex + 1);
 
-                // Check if box is big enough for text
-                if (rW > 15 && rH > 10) {
-                    doc.setFont("helvetica", "bold");
-                    doc.setFontSize(24);
-                    doc.text(label, rX + rW / 2, rY + rH / 2, { align: 'center', baseline: 'middle' });
-                    doc.setFont("helvetica", "normal");
+                // Commit 1b: Ensure Label Visibility (Adaptive Placement)
+                doc.setFont("helvetica", "bold");
+
+                // Strategy 1: Center if fits
+                // Strategy 2: Scale down if small
+                // Strategy 3: Offset if tiny
+
+                let fontSize = 24;
+                let fitsInside = (rW > 15 && rH > 10);
+
+                if (rW < 20 || rH < 15) {
+                    fontSize = 12; // Smaller font for small boxes
+                    fitsInside = (rW > 8 && rH > 8);
                 }
+
+                doc.setFontSize(fontSize);
+
+                if (fitsInside) {
+                    doc.text(label, rX + rW / 2, rY + rH / 2, { align: 'center', baseline: 'middle' });
+                } else {
+                    // Warning: Region too small, place outside (top-left offset)
+                    // Or just force it. On overview, overlapping adjacent cells is better than missing label.
+                    // Let's force center but with shadow/stroke if meaningful?
+                    // Simple fallback: Force render at center, minimal size 10.
+                    doc.setFontSize(10);
+                    doc.text(label, rX + rW / 2, rY + rH / 2, { align: 'center', baseline: 'middle' });
+                }
+                doc.setFont("helvetica", "normal");
             });
 
             // Reset
@@ -751,10 +771,21 @@ export const exportPixelGridToPDF = (
         const showRulers = cellSize > 5;
         if (showRulers) {
             // Columns
+            // Commit 1b: Unified Column Cadence Policy
+            // Rule: Label every column if space allows (>= 10pt/char), else every 5, else 10.
+            // cellText width approx: fontSize * 0.6. With '200', that's ~3 chars.
+            // Let's use simple logic: if cellSize < 12, step 5. Else step 1.
+            const colStep = (cellSize < 12) ? 5 : 1;
+
             for (let i = 0; i < sliceW; i++) {
                 const gridX = startX + i;
-                if (i % 5 === 0 || isChartOnly)
-                    doc.text(String(gridX + 1), drawX + (i + 0.5) * cellSize, drawY - 5, { align: 'center' });
+                const colNum = gridX + 1;
+
+                // Always show first and multiples of step
+                // Actually, standard is usually "Multiples of X"
+                if (colNum % colStep === 0 || colNum === 1 || colNum === gridData.width) {
+                    doc.text(String(colNum), drawX + (i + 0.5) * cellSize, drawY - 5, { align: 'center' });
+                }
             }
             // Rows
             for (let i = 0; i < sliceH; i++) {
