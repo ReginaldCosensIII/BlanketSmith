@@ -152,26 +152,27 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [exportWebsite, setExportWebsite] = useState<string>('');
     const [exportCopyright, setExportCopyright] = useState<string>('');
     const [exportShowCellSymbols, setExportShowCellSymbols] = useState<boolean>(true);
-    const [includeColorChart, setIncludeColorChart] = useState<boolean>(true);
-    const [includeStitchChart, setIncludeStitchChart] = useState<boolean>(true);
-    const [chartOnlyMode, setChartOnlyMode] = useState<'color' | 'stitch' | 'hybrid'>('color');
-    const [includeYarnRequirements, setIncludeYarnRequirements] = useState<boolean>(true);
-    const [includeOverviewPage, setIncludeOverviewPage] = useState<boolean>(false);
-    const [includeCoverPage, setIncludeCoverPage] = useState<boolean>(false);
-    const [includeStitchLegend, setIncludeStitchLegend] = useState<boolean>(true);
     const [showCellBackgrounds, setShowCellBackgrounds] = useState<boolean>(true);
-    const [symbolMode, setSymbolMode] = useState<'color-index' | 'stitch-symbol' | 'hybrid'>('color-index');
+    const [symbolMode, setSymbolMode] = useState<'color-index' | 'stitch-symbol' | 'hybrid'>('color-index'); // Only used for visual overrides if any
 
-    // Default Layout Options Logic
-    useEffect(() => {
-        if (selectedExportType === 'pattern-pack') {
-            setIncludeYarnRequirements(true);
-            setIncludeStitchLegend(true);
-        } else if (selectedExportType === 'chart-only') {
-            setIncludeYarnRequirements(false);
-            setIncludeStitchLegend(false);
-        }
-    }, [selectedExportType]);
+    // Commit 2: Explicit Isolated State
+    // Chart-Only Defaults
+    const [coMode, setCoMode] = useState<'color' | 'stitch' | 'hybrid'>('color');
+    const [coOverviewMode, setCoOverviewMode] = useState<'auto' | 'always' | 'never'>('auto');
+    const [coIncludeCover, setCoIncludeCover] = useState(false);
+    const [coIncludeYarn, setCoIncludeYarn] = useState(false);
+    const [coIncludeLegend, setCoIncludeLegend] = useState(false);
+
+    // Pattern Pack Defaults
+    const [ppIncludeColor, setPpIncludeColor] = useState(true);
+    const [ppIncludeStitch, setPpIncludeStitch] = useState(true);
+    const [ppIncludeHybrid, setPpIncludeHybrid] = useState(false);
+    const [ppOverviewMode, setPpOverviewMode] = useState<'auto' | 'always' | 'never'>('auto');
+    const [ppIncludeCover, setPpIncludeCover] = useState(true);
+    const [ppIncludeYarn, setPpIncludeYarn] = useState(true);
+    const [ppIncludeLegend, setPpIncludeLegend] = useState(true);
+
+    // Removed: Default Layout Options Effect (caused leakage)
 
     // Hydrate export settings from project
     useEffect(() => {
@@ -184,8 +185,10 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 setExportCopyright(settings.branding.copyrightLine || '');
             }
             if (settings.showCellSymbols !== undefined) setExportShowCellSymbols(settings.showCellSymbols);
-            if (settings.includeColorChart !== undefined) setIncludeColorChart(settings.includeColorChart);
-            if (settings.includeStitchChart !== undefined) setIncludeStitchChart(settings.includeStitchChart);
+            // Hydration logic could be expanded here if we saved per-mode settings,
+            // but for now we rely on defaults or simple mapping.
+            if (settings.includeColorChart !== undefined) setPpIncludeColor(settings.includeColorChart);
+            if (settings.includeStitchChart !== undefined) setPpIncludeStitch(settings.includeStitchChart);
         }
     }, [project?.settings?.export]);
 
@@ -752,40 +755,73 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         const exportType: ExportType = selectedExportType;
 
         // V2 Spec: Explicit Logical Constraints
-        let effectiveSymbolMode = symbolMode;
+        // In V2, we remove symbol drop down from specific views, but if we need to force it:
+        let effectiveSymbolMode = symbolMode; // Default to current visual setting
+
+        // For Chart-Only Stitch/Hybrid, we force stitch symbols
         if (exportType === 'chart-only') {
-            if (chartOnlyMode === 'stitch' || chartOnlyMode === 'hybrid') {
-                effectiveSymbolMode = 'stitch-symbol'; // Locked
+            if (coMode === 'stitch' || coMode === 'hybrid') {
+                effectiveSymbolMode = 'stitch-symbol';
             }
         }
 
-        return {
-            exportType,
-            preview,
-            // Chart-Only uses the explicit mode; Pattern Pack defaults to 'color' (engine handles multi-chart logic)
-            chartMode: exportType === 'chart-only' ? chartOnlyMode : 'color',
-            forceSinglePage: exportType === 'chart-only',
+        if (exportType === 'pattern-pack') {
+            return {
+                exportType,
+                preview,
+                chartMode: 'color', // Ignored by engine generally for pattern pack, but safe default
 
-            // Map inclusions based on new UI sections
-            includeColorChart: exportType === 'pattern-pack' ? includeColorChart : (chartOnlyMode !== 'stitch'),
-            includeStitchChart: exportType === 'pattern-pack' ? includeStitchChart : (chartOnlyMode === 'stitch'),
+                // Pattern Pack Options
+                includeColorChart: ppIncludeColor,
+                includeStitchChart: ppIncludeStitch,
+                includeHybridChart: ppIncludeHybrid,
 
-            includeYarnRequirements: includeYarnRequirements,
-            includeStitchLegend: includeStitchLegend,
-            includeOverviewPage: includeOverviewPage,
-            includeCoverPage: includeCoverPage,
+                includeYarnRequirements: ppIncludeYarn,
+                includeStitchLegend: ppIncludeLegend,
+                includeCoverPage: ppIncludeCover,
+                overviewMode: ppOverviewMode,
 
-            branding: {
-                designerName: exportDesignerName || undefined,
-                website: exportWebsite || undefined,
-                copyrightLine: exportCopyright || undefined,
-            },
-            chartVisual: {
-                showCellSymbols: exportShowCellSymbols,
-                showCellBackgrounds: showCellBackgrounds,
-                symbolMode: effectiveSymbolMode,
-            },
-        };
+                branding: {
+                    designerName: exportDesignerName || undefined,
+                    website: exportWebsite || undefined,
+                    copyrightLine: exportCopyright || undefined,
+                },
+                chartVisual: {
+                    showCellSymbols: exportShowCellSymbols,
+                    showCellBackgrounds: showCellBackgrounds,
+                    symbolMode: effectiveSymbolMode,
+                },
+            };
+        } else {
+            // Chart Only
+            return {
+                exportType,
+                preview,
+                chartMode: coMode,
+                chartOnlyMode: coMode,
+                forceSinglePage: true,
+
+                includeColorChart: coMode === 'color', // Legacy compat
+                includeStitchChart: coMode === 'stitch', // Legacy compat
+                includeHybridChart: coMode === 'hybrid', // Legacy compat
+
+                includeYarnRequirements: coIncludeYarn,
+                includeStitchLegend: coIncludeLegend,
+                includeCoverPage: coIncludeCover,
+                overviewMode: coOverviewMode,
+
+                branding: {
+                    designerName: exportDesignerName || undefined,
+                    website: exportWebsite || undefined,
+                    copyrightLine: exportCopyright || undefined,
+                },
+                chartVisual: {
+                    showCellSymbols: exportShowCellSymbols,
+                    showCellBackgrounds: showCellBackgrounds, // Hybrid/Color use this
+                    symbolMode: effectiveSymbolMode,
+                },
+            };
+        }
     };
 
     const handleConfirmExport = () => {
@@ -1177,8 +1213,8 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                         <input
                                             type="checkbox"
                                             className="mr-3 h-4 w-4 text-indigo-600"
-                                            checked={includeColorChart}
-                                            onChange={(e) => setIncludeColorChart(e.target.checked)}
+                                            checked={ppIncludeColor}
+                                            onChange={(e) => setPpIncludeColor(e.target.checked)}
                                         />
                                         <div>
                                             <span className="font-medium">Include Color Chart</span>
@@ -1189,50 +1225,63 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                         <input
                                             type="checkbox"
                                             className="mr-3 h-4 w-4 text-indigo-600"
-                                            checked={includeStitchChart}
-                                            onChange={(e) => setIncludeStitchChart(e.target.checked)}
+                                            checked={ppIncludeStitch}
+                                            onChange={(e) => setPpIncludeStitch(e.target.checked)}
                                         />
                                         <div>
                                             <span className="font-medium">Include Stitch Chart</span>
-                                            <p className="text-xs text-gray-500">Black & white symbol chart for texture.</p>
+                                            <p className="text-xs text-gray-500">Black & white symbol chart.</p>
+                                        </div>
+                                    </label>
+                                    {/* Commit 2: Added Hybrid Toggle */}
+                                    <label className="flex items-center cursor-pointer text-sm p-2 border rounded hover:bg-gray-50">
+                                        <input
+                                            type="checkbox"
+                                            className="mr-3 h-4 w-4 text-indigo-600"
+                                            checked={ppIncludeHybrid}
+                                            onChange={(e) => setPpIncludeHybrid(e.target.checked)}
+                                        />
+                                        <div>
+                                            <span className="font-medium">Include Hybrid Chart</span>
+                                            <p className="text-xs text-gray-500">Color background + symbols.</p>
                                         </div>
                                     </label>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-1 gap-2">
-                                    <label className={`flex items-center cursor-pointer text-sm p-2 border rounded ${chartOnlyMode === 'color' ? 'border-indigo-500 bg-indigo-50' : 'hover:bg-gray-50'}`}>
+                                    <label className={`flex items-center cursor-pointer text-sm p-2 border rounded ${coMode === 'color' ? 'border-indigo-500 bg-indigo-50' : 'hover:bg-gray-50'}`}>
                                         <input
                                             type="radio"
-                                            name="chartOnlyMode"
+                                            name="coMode"
                                             className="mr-3 h-4 w-4 text-indigo-600"
-                                            checked={chartOnlyMode === 'color'}
-                                            onChange={() => setChartOnlyMode('color')}
+                                            checked={coMode === 'color'}
+                                            onChange={() => setCoMode('color')}
                                         />
                                         <div>
                                             <span className="font-medium">Color Chart</span>
                                             <p className="text-xs text-gray-500">Colored blocks. Best for Mosaic/Intarsia.</p>
                                         </div>
                                     </label>
-                                    <label className={`flex items-center cursor-pointer text-sm p-2 border rounded ${chartOnlyMode === 'stitch' ? 'border-indigo-500 bg-indigo-50' : 'hover:bg-gray-50'}`}>
+                                    <label className={`flex items-center cursor-pointer text-sm p-2 border rounded ${coMode === 'stitch' ? 'border-indigo-500 bg-indigo-50' : 'hover:bg-gray-50'}`}>
                                         <input
                                             type="radio"
-                                            name="chartOnlyMode"
+                                            name="coMode"
                                             className="mr-3 h-4 w-4 text-indigo-600"
-                                            checked={chartOnlyMode === 'stitch'}
-                                            onChange={() => setChartOnlyMode('stitch')}
+                                            checked={coMode === 'stitch'}
+                                            onChange={() => setCoMode('stitch')}
                                         />
                                         <div>
                                             <span className="font-medium">Stitch Chart</span>
                                             <p className="text-xs text-gray-500">Symbols only (B&W). Best for Lace/Texture.</p>
                                         </div>
                                     </label>
-                                    <label className={`flex items-center cursor-pointer text-sm p-2 border rounded ${chartOnlyMode === 'hybrid' ? 'border-indigo-500 bg-indigo-50' : 'hover:bg-gray-50'}`}>
+                                    <label className={`flex items-center cursor-pointer text-sm p-2 border rounded ${coMode === 'hybrid' ? 'border-indigo-500 bg-indigo-50' : 'hover:bg-gray-50'}`}>
                                         <input
                                             type="radio"
-                                            name="chartOnlyMode"
+                                            name="coMode"
                                             className="mr-3 h-4 w-4 text-indigo-600"
-                                            checked={chartOnlyMode === 'hybrid'}
-                                            onChange={() => setChartOnlyMode('hybrid')}
+                                            checked={coMode === 'hybrid'}
+                                            onChange={() => setCoMode('hybrid')}
                                         />
                                         <div>
                                             <span className="font-medium">Hybrid Chart</span>
@@ -1257,27 +1306,12 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                         />
                                         Show symbols in cells
                                     </label>
-                                    {/* Conditional Symbol Style Dropdown */}
-                                    {exportShowCellSymbols && (
-                                        <div className="ml-4">
-                                            {(selectedExportType === 'chart-only' && (chartOnlyMode === 'stitch' || chartOnlyMode === 'hybrid')) ? (
-                                                <span className="text-xs text-gray-400 italic bg-gray-50 px-2 py-1 rounded border">Locked: Stitch Symbols</span>
-                                            ) : (
-                                                <select
-                                                    className="text-xs border rounded px-2 py-1 bg-white"
-                                                    value={symbolMode}
-                                                    onChange={(e) => setSymbolMode(e.target.value as any)}
-                                                >
-                                                    <option value="color-index">Color Numbers</option>
-                                                    <option value="stitch-symbol">Stitch Symbols</option>
-                                                </select>
-                                            )}
-                                        </div>
-                                    )}
+                                    {/* Commit 2: Symbol Dropdown Removed */}
+                                    {/* If strictly required to support legacy, force 'Locked' message, otherwise hide entirely */}
                                 </div>
 
                                 {/* Background toggle only for Color-capable modes */}
-                                {((selectedExportType === 'pattern-pack') || (chartOnlyMode !== 'stitch')) && (
+                                {((selectedExportType === 'pattern-pack') || (coMode !== 'stitch')) && (
                                     <label className="flex items-center cursor-pointer text-sm">
                                         <input
                                             type="checkbox"
@@ -1294,38 +1328,60 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                         {/* SECTION C: LAYOUT OPTIONS */}
                         <div>
                             <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wider">Layout Options</h4>
-                            <div className="grid grid-cols-2 gap-y-2 gap-x-4 pl-1">
+                            <div className="grid grid-cols-2 gap-y-3 gap-x-4 pl-1">
                                 {selectedExportType === 'pattern-pack' ? (
                                     <>
+                                        <div className="col-span-2 flex items-center gap-2 mb-1">
+                                            <span className="text-sm text-gray-700">Pattern Overview:</span>
+                                            <select
+                                                className="text-sm border rounded px-2 py-1 bg-white"
+                                                value={ppOverviewMode}
+                                                onChange={(e) => setPpOverviewMode(e.target.value as any)}
+                                            >
+                                                <option value="auto">Auto (If multi-page)</option>
+                                                <option value="always">Always Include</option>
+                                                <option value="never">Never Include</option>
+                                            </select>
+                                        </div>
+
                                         <label className="flex items-center cursor-pointer text-sm">
-                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={includeCoverPage} onChange={(e) => setIncludeCoverPage(e.target.checked)} />
+                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={ppIncludeCover} onChange={(e) => setPpIncludeCover(e.target.checked)} />
                                             Include Cover Page
                                         </label>
                                         <label className="flex items-center cursor-pointer text-sm">
-                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={includeOverviewPage} onChange={(e) => setIncludeOverviewPage(e.target.checked)} />
-                                            Include Overview
-                                        </label>
-                                        <label className="flex items-center cursor-pointer text-sm">
-                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={includeYarnRequirements} onChange={(e) => setIncludeYarnRequirements(e.target.checked)} />
+                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={ppIncludeYarn} onChange={(e) => setPpIncludeYarn(e.target.checked)} />
                                             Include Yarn Legend
                                         </label>
                                         <label className="flex items-center cursor-pointer text-sm">
-                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={includeStitchLegend} onChange={(e) => setIncludeStitchLegend(e.target.checked)} />
+                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={ppIncludeLegend} onChange={(e) => setPpIncludeLegend(e.target.checked)} />
                                             Include Stitch Key
                                         </label>
                                     </>
                                 ) : (
                                     <>
+                                        <div className="col-span-2 flex items-center gap-2 mb-1">
+                                            <span className="text-sm text-gray-700">Overview:</span>
+                                            <select
+                                                className="text-sm border rounded px-2 py-1 bg-white"
+                                                value={coOverviewMode}
+                                                onChange={(e) => setCoOverviewMode(e.target.value as any)}
+                                            >
+                                                <option value="auto">Auto (If multi-page)</option>
+                                                <option value="always">Always Include</option>
+                                                <option value="never">Never Include</option>
+                                            </select>
+                                        </div>
+
                                         <label className="flex items-center cursor-pointer text-sm">
-                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={includeCoverPage} onChange={(e) => setIncludeCoverPage(e.target.checked)} />
+                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={coIncludeCover} onChange={(e) => setCoIncludeCover(e.target.checked)} />
                                             Include Cover Page
                                         </label>
                                         <label className="flex items-center cursor-pointer text-sm">
-                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={includeYarnRequirements} onChange={(e) => setIncludeYarnRequirements(e.target.checked)} />
+                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={coIncludeYarn} onChange={(e) => setCoIncludeYarn(e.target.checked)} />
                                             Include Yarn Legend
                                         </label>
                                         <label className="flex items-center cursor-pointer text-sm">
-                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={includeStitchLegend} onChange={(e) => setIncludeStitchLegend(e.target.checked)} />
+                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={coIncludeLegend} onChange={(e) => setCoIncludeLegend(e.target.checked)} />
                                             Include Stitch Key
                                         </label>
                                     </>
