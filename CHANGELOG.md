@@ -43,6 +43,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **Pattern Overview**: Restored "Overview Page" with miniature map and red "Page X" atlas overlays for both Chart-Only and Pattern Pack modes.
     - **UX Polish**: Simplified overview overlay labels to large bold numbers; removed blank page glitch in Pattern Pack exports.
     - **Legibility**: Enforced minimum cell sizes (12pt) for single-page fits, falling back to atlas otherwise.
+- **Export Engine V3 Refactor**:
+    - **Architecture**: Unified backend into a single canonical execution flow with shared atlas prediction.
+    - **Explicit Modes**: Introduced explicit settings for Color, Stitch, and Hybrid charts (no more inference).
+    - **Tri-State Overview**: Added Auto/Always/Never control for pattern overviews.
+    - **QA Harness**: Fully standardized test harness with V2 convention scenarios and explicit hybrid verification.
+    - **Documentation**: Updated QA procedures in `docs/qa/Export-engine-v3-qa-report.md`.
 
 ## [v0.1.0-stable-baseline] - 2025-11-25
 
