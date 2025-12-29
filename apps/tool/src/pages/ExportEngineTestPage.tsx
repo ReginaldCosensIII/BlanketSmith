@@ -5,9 +5,6 @@ import { ExportOptions, PixelGridData, YarnColor } from '../types';
 // Dev-only guard
 const IS_DEV = import.meta.env.DEV || process.env.NODE_ENV === 'development';
 
-if (!IS_DEV) {
-    // If somehow reached in prod, render nothing or redirect
-}
 
 // --- 1. CANONICAL DEFAULTS ---
 
@@ -15,11 +12,15 @@ function getDefaultPatternPackOptions(): ExportOptions {
     return {
         exportType: 'pattern-pack',
         includeCoverPage: true,
-        includeOverviewPage: false,
+        overviewMode: 'auto', // V2 Default
         includeYarnRequirements: true,
         includeStitchLegend: true,
+
+        // V2 Explicit Toggles
         includeColorChart: true,
         includeStitchChart: true,
+        includeHybridChart: false,
+
         chartVisual: {
             showCellSymbols: true,
             showCellBackgrounds: true,
@@ -36,10 +37,14 @@ function getDefaultPatternPackOptions(): ExportOptions {
 function getDefaultChartOnlyOptions(): ExportOptions {
     return {
         exportType: 'chart-only',
-        chartMode: 'color',
+        chartOnlyMode: 'color', // V2 Explicit Mode
+        chartMode: 'color', // Legacy compat if needed, but harness should prefer chartOnlyMode
+
+        overviewMode: 'auto', // V2 Default
         includeCoverPage: false,
-        includeYarnRequirements: false, // Default off for chart-only
+        includeYarnRequirements: false,
         includeStitchLegend: false,
+
         chartVisual: {
             showCellSymbols: true,
             showCellBackgrounds: true,
@@ -140,212 +145,174 @@ function buildOptions(baseType: 'pattern-pack' | 'chart-only', overrides: Partia
     };
 }
 
+// --- SCENARIO ID CONVENTION ---
+// v2_{mode}_{desc}_{overviewMode}_{flags}
+// mode: 'pp' (pattern-pack) | 'co' (chart-only)
+// overviewMode: 'ov_auto' | 'ov_always' | 'ov_never'
+// flags: short descriptive tags (e.g. 'cover', 'yarn', 'hybrid', 'large')
+
 const SCENARIOS: Scenario[] = [
-    // --- Standard V2 Scenarios ---
+    // --- V2 BASELINE: PATTERN PACK ---
+
     {
-        id: 'pp_small_default',
-        name: '1. PP Small Default',
-        description: 'Standard Pattern Pack, 20x20 w/ Stitches',
-        expected: 'Cover -> Yarn -> Color Chart -> Stitch Chart -> Stitch Legend. All fit comfortably.',
+        id: 'v2_pp_small_ov_auto_default',
+        name: '1. Pattern Pack: Default (Small)',
+        description: 'Standard PP, 20x20, Overview Auto (Hidden for small).',
+        expected: 'Overview: HIDDEN (Auto & single page).\nCharts: Color, Stitch.\nOrdering: Cover -> Yarn -> Color Chart -> Stitch Chart -> Stitch Legend.\nFresh Page Policy: All charts start on new page.',
         baseType: 'pattern-pack',
         gridConfig: { width: 20, height: 20, includeStitches: true },
         overrides: {}
     },
     {
-        id: 'pp_small_no_cover',
-        name: '2. PP Small No Cover',
-        description: 'Pattern Pack, No Cover',
-        expected: 'Page 1: Header -> Yarn -> Color Chart -> Stitch Chart -> Legend. Compact flow.',
+        id: 'v2_pp_small_ov_auto_no_cover',
+        name: '2. Pattern Pack: No Cover',
+        description: 'Standard PP, No Cover Page.',
+        expected: 'Overview: HIDDEN.\nHeader: Shares page 1 with Yarn/Charts if fits.\nCharts: Color, Stitch.',
         baseType: 'pattern-pack',
         gridConfig: { width: 20, height: 20, includeStitches: true },
         overrides: { includeCoverPage: false }
     },
     {
-        id: 'pp_small_hybrid_color',
-        name: '3. PP Small Hybrid',
-        description: 'Pattern Pack using Hybrid Color Chart',
-        expected: 'Color Chart should have Symbols inside cells. Stitch Chart also present.',
+        id: 'v2_pp_small_ov_auto_hybrid_only',
+        name: '3. Pattern Pack: Charts: Hybrid Only',
+        description: 'Hybrid Chart enabled, others disabled.',
+        expected: 'Overview: HIDDEN.\nCharts: Hybrid ONLY (Color+Symbols).\nFresh Page Policy: Verified.',
         baseType: 'pattern-pack',
         gridConfig: { width: 20, height: 20, includeStitches: true },
         overrides: {
-            chartVisual: { showCellSymbols: true, showCellBackgrounds: true, symbolMode: 'stitch-symbol' }
+            includeColorChart: false,
+            includeStitchChart: false,
+            includeHybridChart: true
         }
     },
     {
-        id: 'co_color_default',
-        name: '4. CO Color Default',
-        description: 'Chart Only, Color Mode',
-        expected: 'Single page (if fits) or multi-page. Just color chart. No Yarn/Legend.',
+        id: 'v2_pp_all_three_charts',
+        name: '4. Pattern Pack: Charts: Color+Stitch+Hybrid',
+        description: 'All 3 chart types enabled.',
+        expected: 'Overview: HIDDEN.\nCharts: Color -> Stitch -> Hybrid.\nFresh Page Policy: Verified (3 separate chart sections).',
+        baseType: 'pattern-pack',
+        gridConfig: { width: 20, height: 20, includeStitches: true },
+        overrides: { includeColorChart: true, includeStitchChart: true, includeHybridChart: true }
+    },
+
+    // --- V2 BASELINE: CHART ONLY ---
+
+    {
+        id: 'v2_co_color_ov_auto_default',
+        name: '5. Chart-Only: Charts: Color',
+        description: 'Color Mode, Defaults.',
+        expected: 'Overview: HIDDEN.\nCharts: Color Chart only.\nSingle Page: Chart fits on one page.',
         baseType: 'chart-only',
         gridConfig: { width: 25, height: 25, patternType: 'stripes' },
-        overrides: { chartMode: 'color' }
+        overrides: { chartOnlyMode: 'color' }
     },
     {
-        id: 'co_color_cover_yarn',
-        name: '5. CO Color + Cover + Yarn',
-        description: 'Chart Only but with extras enabled',
-        expected: 'Cover Page -> Yarn Req -> Color Chart.',
+        id: 'v2_co_color_ov_auto_cover_yarn',
+        name: '6. Chart-Only: Cover + Yarn',
+        description: 'Color Mode with Extras.',
+        expected: 'Cover: Present.\nYarn Req: Present.\nCharts: Color Chart (Starts on fresh page).',
         baseType: 'chart-only',
         gridConfig: { width: 25, height: 25 },
-        overrides: { includeCoverPage: true, includeYarnRequirements: true }
+        overrides: { includeCoverPage: true, includeYarnRequirements: true, chartOnlyMode: 'color' }
     },
     {
-        id: 'co_stitch_default',
-        name: '6. CO Stitch Default',
-        description: 'Chart Only, Stitch Mode',
-        expected: 'Black/White stitch symbols only.',
+        id: 'v2_co_stitch_ov_auto_default',
+        name: '7. Chart-Only: Charts: Stitch',
+        description: 'Stitch Mode.',
+        expected: 'Overview: HIDDEN.\nCharts: Stitch Chart only (B&W Symbols).',
         baseType: 'chart-only',
         gridConfig: { width: 15, height: 15, patternType: 'solid', includeStitches: true },
-        overrides: { chartMode: 'stitch' }
+        overrides: { chartOnlyMode: 'stitch' }
     },
 
-    // --- Edge Cases / New Tests ---
+    // --- OVERVIEW TRI-STATE TESTS ---
 
     {
-        id: 'edge_pp_no_stitches_force_legend',
-        name: '7. Edge: PP No Stitches + Legend ON',
-        description: 'Pattern Pack, Grid has NO stitches, but includeStitchLegend is TRUE',
-        expected: 'Stitch Legend should be OMITTED because no stitches are used.',
+        id: 'v2_co_large_ov_never_atlas',
+        name: '8. Chart-Only: Overview: Never (Large Atlas)',
+        description: 'Large chart (60x60). Overview set to NEVER.',
+        expected: 'Overview: HIDDEN (Explicitly suppressed).\nCharts: Color Atlas (Multiple pages).\nOrdering: Part 1..N consistent.',
+        baseType: 'chart-only',
+        gridConfig: { width: 60, height: 60 },
+        overrides: { overviewMode: 'never', chartOnlyMode: 'color' }
+    },
+    {
+        id: 'v2_co_small_ov_always',
+        name: '9. Chart-Only: Overview: Always (Small Chart)',
+        description: 'Small chart (fits 1 page). Overview set to ALWAYS.',
+        expected: 'Overview: PRESENT (Dimensions/Miniature/Map present).\nCharts: Color Chart (Starts on fresh page).',
+        baseType: 'chart-only',
+        gridConfig: { width: 10, height: 10 },
+        overrides: { overviewMode: 'always', chartOnlyMode: 'color' }
+    },
+    {
+        id: 'v2_pp_large_ov_auto_atlas',
+        name: '10. Pattern Pack: Overview: Auto (Large Atlas)',
+        description: 'Large chart (60x60). Overview set to AUTO.',
+        expected: 'Overview: PRESENT (Triggered by multi-page atlas).\nCharts: Color Atlas.',
+        baseType: 'pattern-pack',
+        gridConfig: { width: 60, height: 60 },
+        overrides: { overviewMode: 'auto', includeCoverPage: true, includeColorChart: true, includeStitchChart: false }
+    },
+    {
+        id: 'v2_pp_large_ov_always_atlas',
+        name: '11. Pattern Pack: Overview: Always (Large Atlas)',
+        description: 'Large chart. Overview ALWAYS.',
+        expected: 'Overview: PRESENT.\nCharts: Color Atlas.',
+        baseType: 'pattern-pack',
+        gridConfig: { width: 60, height: 60 },
+        overrides: { overviewMode: 'always', includeCoverPage: true, includeColorChart: true, includeStitchChart: false }
+    },
+
+    // --- EDGE CASES & FIX REGRESSIONS ---
+
+    {
+        id: 'v2_pp_edge_no_stitches_legend_on',
+        name: '12. Edge: PP No Stitches + Legend ON',
+        description: 'No stitches in grid, but Legend requested.',
+        expected: 'Stitch Legend: OMITTED (Graceful fallback, empty checks).',
         baseType: 'pattern-pack',
         gridConfig: { width: 15, height: 15, includeStitches: false },
         overrides: { includeStitchLegend: true }
     },
     {
-        id: 'edge_pp_stitches_match_legend',
-        name: '8. Edge: PP With Stitches + Legend',
-        description: 'Standard PP with stitches',
-        expected: 'Stitch Legend MUST be present and show symbols for used stitches.',
-        baseType: 'pattern-pack',
-        gridConfig: { width: 15, height: 15, includeStitches: true },
-        overrides: { includeStitchLegend: true }
-    },
-    {
-        id: 'edge_co_tall_flow',
-        name: '9. Edge: CO Tall + Yarn',
-        description: 'Tall chart (20x60) + Yarn Req enabled',
-        expected: 'Yarn Req on P1. Chart might start on P1 or push to P2. Should not clip.',
+        id: 'v2_co_edge_tall_yarn',
+        name: '13. Edge: CO Tall + Yarn',
+        description: 'Tall chart 20x60 + Yarn Req.',
+        expected: 'Yarn: Page 1.\nCharts: Color Atlas (Starts on fresh page/Page 2).',
         baseType: 'chart-only',
         gridConfig: { width: 20, height: 60, patternType: 'stripes' },
-        overrides: { includeYarnRequirements: true, chartMode: 'color' }
+        overrides: { includeYarnRequirements: true, chartOnlyMode: 'color' }
     },
     {
-        id: 'edge_co_hybrid_no_bg',
-        name: '10. Edge: CO Hybrid No Checkers',
-        description: 'Chart Only, Hybrid, Show Backgrounds FALSE',
-        expected: 'Symbols visible, but cell backgrounds should be white/plain.',
+        id: 'v2_co_edge_hybrid_no_bg',
+        name: '14. Edge: CO Hybrid No Checkers',
+        description: 'Hybrid Mode, Backgrounds OFF.',
+        expected: 'Charts: Hybrid.\nVisuals: Symbols visible, White backgrounds.',
         baseType: 'chart-only',
         gridConfig: { width: 20, height: 20, includeStitches: true },
         overrides: {
-            chartMode: 'hybrid',
+            chartOnlyMode: 'hybrid',
             chartVisual: { showCellSymbols: true, showCellBackgrounds: false, symbolMode: 'stitch-symbol' }
         }
     },
     {
-        id: 'edge_pp_color_no_bg',
-        name: '11. Edge: PP Color No BG',
-        description: 'Pattern Pack, Color Chart, No Backgrounds',
-        expected: 'Should look like a grid of empty squares (or numbers if symbol index used).',
-        baseType: 'pattern-pack',
-        gridConfig: { width: 20, height: 20 },
-        overrides: {
-            chartVisual: { showCellSymbols: true, showCellBackgrounds: false, symbolMode: 'color-index' }
-        }
-    },
-
-    {
-        id: 'pp_sm_15_fit',
-        name: '12. Fix: PP Small 15x15 Fit',
-        description: 'Pattern Pack 15x15 Grid. Should prevent Atlas split.',
-        expected: 'MUST render Chart as Single Page (no atlas). Cell Size >= 12.',
+        id: 'v2_pp_fix_sm_15_fit',
+        name: '15. Fix: PP Small 15x15 Fit',
+        description: 'Small grid should not trigger split.',
+        expected: 'Charts: Single Page.\nNo Atlas behaviors.',
         baseType: 'pattern-pack',
         gridConfig: { width: 15, height: 15, includeStitches: true },
         overrides: {}
     },
     {
-        id: 'co_sm_15_fit',
-        name: '13. Fix: CO Small 15x15 Fit',
-        description: 'Chart Only 15x15 Grid. Should prevent Atlas split.',
-        expected: 'MUST render Chart as Single Page (no atlas). Cell Size >= 12.',
-        baseType: 'chart-only',
-        gridConfig: { width: 15, height: 15, includeStitches: true },
-        overrides: {}
-    },
-
-    {
-        id: 'co_lg_60_atlas',
-        name: '14. Fix: CO Large 60x60 Atlas',
-        description: 'Chart Only 60x60 Grid.',
-        expected: 'Should generate multiple pages (Atlas) for Chart Only. Not a tiny single page.',
-        baseType: 'chart-only',
-        gridConfig: { width: 60, height: 60, patternType: 'checker' },
-        overrides: {}
-    },
-    {
-        id: 'co_lg_100x200_atlas',
-        name: '15. Fix: CO Giant 100x200 Atlas',
-        description: 'Chart Only 100x200 Grid.',
-        expected: 'Should generate multiple pages (Atlas).',
+        id: 'v2_co_fix_giant_atlas',
+        name: '16. Fix: CO Giant 100x200',
+        description: 'Stress test large grid.',
+        expected: 'Overview: PRESENT (Auto).\nCharts: Large Atlas (Many pages).\nPerformance check.',
         baseType: 'chart-only',
         gridConfig: { width: 100, height: 200, patternType: 'stripes' },
         overrides: {}
-    },
-
-    {
-        id: 'co_lg_60_atlas_with_overview',
-        name: '16. P2: CO 60x60 Atlas + Overview',
-        description: 'Chart Only 60x60 with Overview enabled.',
-        expected: 'Overview Page shows miniature + red page overlays. Chart Pages follow.',
-        baseType: 'chart-only',
-        gridConfig: { width: 60, height: 60, patternType: 'checker' },
-        overrides: { includeOverviewPage: true, includeCoverPage: false }
-    },
-    {
-        id: 'pp_large_color_atlas_with_overview',
-        name: '17. P2: PP 60x60 Atlas + Overview',
-        description: 'Pattern Pack 60x60 with Overview.',
-        expected: 'Overview Page shows atlas map (red overlays).',
-        baseType: 'pattern-pack',
-        gridConfig: { width: 60, height: 60 },
-        overrides: { includeOverviewPage: true, includeCoverPage: true, includeColorChart: true, includeStitchChart: false }
-    },
-
-    {
-        id: 'co_sm_15_fit_yarn',
-        name: '18. Fix: CO 15x15 Fit + Yarn',
-        description: 'Chart Only 15x15 + Yarn Req. Should fit single page on NEW page.',
-        expected: 'Legend on P1. Page Break. Chart on P2 (New Page).',
-        baseType: 'chart-only',
-        gridConfig: { width: 15, height: 15, includeStitches: true },
-        overrides: { includeYarnRequirements: true }
-    },
-    {
-        id: 'co_lg_60_atlas_yarn',
-        name: '19. Fix: CO 60x60 Atlas + Yarn',
-        description: 'Chart Only 60x60 + Yarn Req.',
-        expected: 'Legend on P1. Chart Atlas starts on P1 or P2. Main point: Header not colliding.',
-        baseType: 'chart-only',
-        gridConfig: { width: 60, height: 60, patternType: 'checker' },
-        overrides: { includeYarnRequirements: true }
-    },
-
-    // --- Stress Tests ---
-    {
-        id: 'stress_pp_large_color',
-        name: '20. Stress: Large Color Atlas',
-        description: '60x60 Color Grid',
-        expected: 'Should generate multiple pages (Atlas) for Color Chart.',
-        baseType: 'pattern-pack',
-        gridConfig: { width: 60, height: 60 },
-        overrides: { includeStitchChart: false }
-    },
-    {
-        id: 'stress_pp_large_stitch',
-        name: '21. Stress: Large Stitch Atlas',
-        description: '60x60 Stitch Grid',
-        expected: 'Should generate multiple pages for Stitch Chart.',
-        baseType: 'pattern-pack',
-        gridConfig: { width: 60, height: 60, includeStitches: true },
-        overrides: { includeColorChart: false, includeStitchChart: true }
     }
 ];
 
