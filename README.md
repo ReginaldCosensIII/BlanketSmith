@@ -1,53 +1,203 @@
 # BlanketSmith
-A pattern design and export tool for professional-grade printable PDF charts.
 
-## What It Is
-BlanketSmith is a specialized design tool for creating pixel-perfect crochet and knitting charts. It features a robust **Export Center** capable of generating both "Chart-Only" PDFs for quick reference and comprehensive "Pattern Pack" PDFs that include cover pages, yarn requirements, and multi-page atlases.
+BlanketSmith is a **professional-grade pattern design and PDF export system** focused on producing **deterministic, predictable, and verifiable chart exports** for complex crochet and knitting patterns.
 
-The system is built on a deterministic V3 Export Engine designed to eliminate ambiguity. It guarantees that charts explicitly follow user preferences for Color, Stitch, or Hybrid modes, and enforces strict pagination rules to ensure professional output every time.
+The project prioritizes **explicit user intent**, **strict layout guarantees**, and a **formal QA process** over ad-hoc layout heuristics. It is designed for large patterns that may span many pages and must remain readable, consistent, and printable.
 
-## Key Features
-*   **Explicit Export Modes**: Choose exactly between Color, Stitch, or Hybrid (Symbols + Background) charts.
-*   **Pattern Pack Control**: Independent toggles for including Color, Stitch, and Hybrid charts in a single PDF.
-*   **Tri-State Overview**: Control the Pattern Overview map with `Auto`, `Always`, or `Never` settings.
-*   **Smart Pagination**: Shared atlas prediction ensures consistent row/column numbering across all chart types.
-*   **Layout Safety**: "Fresh Page Policy" guarantees every chart section starts on a new page to prevent layout collisions.
-*   **QA Harness**: Built-in visual regression harness for verifying export behavior.
+---
+
+## Project Status
+
+* Active development
+* Export Engine **v3** complete and QA-verified
+* Core documentation foundation established
+* Instructions engine, defaults automation, and materials/stitch key redesign planned
+
+---
+
+## What BlanketSmith Does
+
+BlanketSmith provides an interactive **pattern editor** and a robust **Export Center** that generates printable PDF charts.
+
+Users can:
+
+* Design patterns on a pixel grid
+* Define colors and stitch symbols
+* Export charts as PDFs using explicit, predictable rules
+
+The system supports both **quick reference exports** and **full pattern packs** suitable for distribution.
+
+---
+
+## Core Concepts
+
+### Deterministic Export Engine (v3)
+
+The Export Engine is the heart of BlanketSmith. Version 3 establishes a strict, documented contract for PDF generation:
+
+* Explicit chart modes (Color / Stitch / Hybrid)
+* No inferred behavior or hidden heuristics
+* Charts always start on a **fresh page**
+* Single shared atlas planning path
+* Single overview rendering path
+* Fully documented QA expectations
+
+Given identical inputs, the engine always produces identical output.
+
+---
+
+## Export Types
+
+### Chart-Only
+
+Single-purpose PDFs optimized for quick reference.
+
+* Exactly one chart type per export
+* Explicit mode selection:
+
+  * Color
+  * Stitch
+  * Hybrid
+* Optional cover, overview, and materials sections
+
+### Pattern Pack
+
+Comprehensive multi-section PDFs intended for full pattern distribution.
+
+* Independent toggles for:
+
+  * Color Chart
+  * Stitch Chart
+  * Hybrid Chart
+* Optional cover page
+* Materials section
+* Stitch legend
+
+Any combination of chart types is valid.
+
+---
+
+## Pattern Overview (Atlas Map)
+
+For large patterns that span multiple pages, BlanketSmith can generate a **Pattern Overview**:
+
+* A miniature full-pattern map
+* Red overlay boxes indicating chart page regions
+* Regions labeled "Part 1", "Part 2", etc.
+
+Overview behavior is controlled by a **tri-state option**:
+
+* **Auto** — shown only for multi-page charts
+* **Always** — always shown
+* **Never** — suppressed entirely
+
+Placement rules are deterministic and documented.
+
+---
+
+## Fresh Page Policy
+
+One of the core guarantees of Export Engine v3:
+
+> **Every chart always starts on a fresh page.**
+
+This rule applies to:
+
+* Chart-Only exports
+* Pattern Pack exports
+* Color, Stitch, and Hybrid charts
+
+The engine does not attempt to squeeze charts onto header or materials pages.
+
+---
 
 ## Repository Structure
-*   `apps/tool/`: Main application (React/Vite) containing the Editor and Export Engine.
-*   `docs/`: Canonical architectural documentation.
-*   `docs/qa/`: Quality Assurance reports and test procedures.
-*   (Internal) `apps/tool/src/pages/ExportEngineTestPage.tsx`: QA Harness.
+
+```
+apps/
+  tool/                       # BlanketSmith application
+    src/
+      pages/
+        PixelGraphPage.tsx       # Export Center UI
+        ExportEngineTestPage.tsx # QA harness
+      services/
+        exportService.ts         # Export Engine (v3)
+
+docs/
+  ARCHITECTURE.md             # System architecture overview
+  EXPORT_ENGINE.md            # Canonical export rules (v3)
+  QA.md                       # QA harness usage & regression checklist
+  DOCS_POLICY.md              # Documentation standards
+  CONTRIBUTING.md             # Workflow & contribution rules
+  qa/
+    Export-engine-v3-qa-report.md
+```
+
+---
 
 ## Getting Started
-This repository is a monorepo using npm workspaces.
 
-1.  **Install dependencies**:
-    ```bash
-    npm install
-    ```
+BlanketSmith uses npm workspaces.
 
-2.  **Run the Tool (Editor)**:
-    ```bash
-    npm run dev:tool
-    ```
+```bash
+npm install
+npm run dev:tool
+```
 
-3.  **Open App**:
-    Visit `http://localhost:5173` (or the port shown in your terminal).
+The application will be available locally for development and QA testing.
 
-## Export Engine Rules (Beta)
-To ensure reliability, the Export Engine V3 adheres to strict invariants:
-*   **Fresh Pages**: Color, Stitch, and Hybrid charts always start on a new page.
-*   **Explicit Hybrid**: Hybrid charts are never inferred; they must be explicitly enabled.
-*   **Tri-State Overview**: The Overview map respects strict `auto`/`always`/`never` logic.
-*   **Unified Atlas**: A single planner determines page breaks for all chart types.
+---
 
-## Documentation
-For detailed information, please refer to the canonical documentation:
-*   [Documentation Policy](docs/DOCS_POLICY.md)
-*   [Contributing Guidelines](docs/CONTRIBUTING.md)
-*   [Export Engine V3 QA Report](docs/qa/Export-engine-v3-qa-report.md)
+## Quality Assurance
+
+BlanketSmith includes a dedicated **QA Harness** used for visual regression testing of exports.
+
+* Located in `ExportEngineTestPage.tsx`
+* Provides standardized scenarios
+* Each scenario defines explicit expected output
+
+Before export-related changes are merged, QA scenarios must be reviewed.
+
+See:
+
+* `docs/QA.md`
+* `docs/qa/Export-engine-v3-qa-report.md`
+
+---
+
+## Documentation System
+
+Documentation is treated as part of the system contract.
+
+Rules:
+
+* All major behavioral changes must be documented
+* Export behavior is considered API-like and versioned
+* QA artifacts are preserved
+
+Start here:
+
+* `docs/DOCS_POLICY.md`
+* `docs/ARCHITECTURE.md`
+* `docs/EXPORT_ENGINE.md`
+
+---
 
 ## Contributing
-Please read [CONTRIBUTING.md](docs/CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests.
+
+Contributions must follow:
+
+* Explicit commits
+* One conceptual change per commit
+* Manual QA verification
+* Documentation updates where required
+
+See:
+
+* `docs/CONTRIBUTING.md`
+
+---
+
+## License
+
+License information will be added in a future documentation phase.
