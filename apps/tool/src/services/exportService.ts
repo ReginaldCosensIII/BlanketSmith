@@ -19,9 +19,14 @@ const PDF_CONFIG = {
         ruler: 8
     },
     // Commit 1a: Overview Sizing Contract
+    // Updated: Target-fill sizing policy
     overview: {
-        maxHeight: 400, // Max height clamp
-        minHeight: 200, // Min height to fit on current page
+        fillRatio: 0.80,         // Target 80% of available height
+        maxHeight: 550,          // Raised max bound for larger overviews
+        minHeight: 200,          // Min height to fit on current page
+        safetyBuffer: 20,        // Bottom safety margin
+        horizontalMargin: 20,    // Reduced margin for more width (vs standard 30pt)
+        titleSpace: 30           // Space reserved for title (vs 40pt)
     }
 };
 
@@ -606,9 +611,11 @@ export const exportPixelGridToPDF = (
         doc.text("Pattern Overview", margin, titleY);
 
         // V2 MVP: Simplified one-page centered grid
-        const availW = pageW - margin * 2;
+        // Width optimization: Use reduced margins for overview
+        const availW = pageW - PDF_CONFIG.overview.horizontalMargin * 2;
         // Commit 1a: Enforce explicit max height constraint
-        const availH = maxContentHeight - 40; // -40 for title space (approx)
+        // Reduced title space for more vertical room
+        const availH = maxContentHeight - PDF_CONFIG.overview.titleSpace;
 
         const cellW = availW / gridData.width;
         const cellH = availH / gridData.height;
@@ -684,6 +691,17 @@ export const exportPixelGridToPDF = (
             // Reset
             doc.setDrawColor(0);
             doc.setTextColor(0);
+            doc.setLineWidth(1);
+        } else {
+            // Single-page pattern: Draw red border around entire overview
+            doc.setDrawColor(255, 0, 0); // Red
+            doc.setLineWidth(2);
+            const gridW = gridData.width * size;
+            const gridH = gridData.height * size;
+            doc.rect(startX, startY, gridW, gridH);
+
+            // Reset
+            doc.setDrawColor(0);
             doc.setLineWidth(1);
         }
 
@@ -936,7 +954,10 @@ export const exportPixelGridToPDF = (
         if (includeCoverPage) {
             // Already fresh P2. Just draw.
             overviewStartY = margin + 20;
-            // On fresh page, we layout with standard max height
+            // Target-fill: Use 80% of available page height
+            const availableHeight = pageH - overviewStartY - margin - PDF_CONFIG.overview.safetyBuffer;
+            const targetHeight = availableHeight * PDF_CONFIG.overview.fillRatio;
+            allowedHeight = Math.min(targetHeight, PDF_CONFIG.overview.maxHeight);
         } else {
             // No Cover. Header is on P1. Check fit.
             const spaceRemaining = pageH - currentY - margin;
@@ -947,16 +968,15 @@ export const exportPixelGridToPDF = (
                 doc.addPage();
                 overviewStartY = margin + 20;
                 currentY = overviewStartY;
-                // allowedHeight remains default max
+                // Target-fill on fresh page
+                const availableHeight = pageH - overviewStartY - margin - PDF_CONFIG.overview.safetyBuffer;
+                const targetHeight = availableHeight * PDF_CONFIG.overview.fillRatio;
+                allowedHeight = Math.min(targetHeight, PDF_CONFIG.overview.maxHeight);
             } else {
-                // Fit on current page, but clamp to max
-                // Also clamp to remaining space? (If remaining < max, but > min)
-                // Actually, if we are here, spaceRemaining >= minHeight.
-                // We should use min(spaceRemaining, max) to be safe? 
-                // Or just max? If max > spaceRemaining, it might overflow page.
-                // Better to clamp to spaceRemaining to be safe, though visually we prefer regular size.
-                // Let's use standard logic: 
-                allowedHeight = Math.min(spaceRemaining, PDF_CONFIG.overview.maxHeight);
+                // Fit on current page with target-fill sizing
+                const availableHeight = spaceRemaining - PDF_CONFIG.overview.safetyBuffer;
+                const targetHeight = availableHeight * PDF_CONFIG.overview.fillRatio;
+                allowedHeight = Math.min(targetHeight, PDF_CONFIG.overview.maxHeight);
                 overviewStartY = currentY + 20;
             }
         }
