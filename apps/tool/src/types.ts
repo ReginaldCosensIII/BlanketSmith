@@ -135,6 +135,7 @@ export interface ExportOptions {
 
   // -- Shared / Legacy --
   includeYarnRequirements?: boolean;
+  /** @deprecated Obsolete. Stitch key is now automatically included in the Materials & Stitch Key section by the engine. */
   includeStitchLegend?: boolean;
 
   // -- Overview Logic --

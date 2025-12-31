@@ -161,7 +161,6 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [coOverviewMode, setCoOverviewMode] = useState<'auto' | 'always' | 'never'>('auto');
     const [coIncludeCover, setCoIncludeCover] = useState(false);
     const [coIncludeYarn, setCoIncludeYarn] = useState(false);
-    const [coIncludeLegend, setCoIncludeLegend] = useState(false);
 
     // Pattern Pack Defaults
     const [ppIncludeColor, setPpIncludeColor] = useState(true);
@@ -170,7 +169,6 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [ppOverviewMode, setPpOverviewMode] = useState<'auto' | 'always' | 'never'>('auto');
     const [ppIncludeCover, setPpIncludeCover] = useState(true);
     const [ppIncludeYarn, setPpIncludeYarn] = useState(true);
-    const [ppIncludeLegend, setPpIncludeLegend] = useState(true);
 
     // Removed: Default Layout Options Effect (caused leakage)
 
@@ -777,7 +775,6 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 includeHybridChart: ppIncludeHybrid,
 
                 includeYarnRequirements: ppIncludeYarn,
-                includeStitchLegend: ppIncludeLegend,
                 includeCoverPage: ppIncludeCover,
                 overviewMode: ppOverviewMode,
 
@@ -806,7 +803,6 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 includeHybridChart: coMode === 'hybrid', // Legacy compat
 
                 includeYarnRequirements: coIncludeYarn,
-                includeStitchLegend: coIncludeLegend,
                 includeCoverPage: coIncludeCover,
                 overviewMode: coOverviewMode,
 
@@ -1350,11 +1346,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                         </label>
                                         <label className="flex items-center cursor-pointer text-sm">
                                             <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={ppIncludeYarn} onChange={(e) => setPpIncludeYarn(e.target.checked)} />
-                                            Include Yarn Legend
-                                        </label>
-                                        <label className="flex items-center cursor-pointer text-sm">
-                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={ppIncludeLegend} onChange={(e) => setPpIncludeLegend(e.target.checked)} />
-                                            Include Stitch Key
+                                            Include Materials & Stitch Key
                                         </label>
                                     </>
                                 ) : (
@@ -1378,11 +1370,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                         </label>
                                         <label className="flex items-center cursor-pointer text-sm">
                                             <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={coIncludeYarn} onChange={(e) => setCoIncludeYarn(e.target.checked)} />
-                                            Include Yarn Legend
-                                        </label>
-                                        <label className="flex items-center cursor-pointer text-sm">
-                                            <input type="checkbox" className="mr-2 rounded text-indigo-600" checked={coIncludeLegend} onChange={(e) => setCoIncludeLegend(e.target.checked)} />
-                                            Include Stitch Key
+                                            Include Materials & Stitch Key
                                         </label>
                                     </>
                                 )}
