@@ -49,6 +49,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **Tri-State Overview**: Added Auto/Always/Never control for pattern overviews.
     - **QA Harness**: Fully standardized test harness with V2 convention scenarios and explicit hybrid verification.
     - **Documentation**: Updated QA procedures in `docs/qa/Export-engine-v3-qa-report.md`.
+- **Pattern Overview Polish**:
+    - **Target-Fill Sizing**: Overview now uses 80% of available page height with raised max bound (550pt) for better space utilization.
+    - **Width Optimization**: Reduced horizontal margins (20pt vs 30pt) and title space (30pt vs 40pt) for improved width usage on tall patterns.
+    - **Single-Page Border**: Single-page overviews now render a red border when no atlas overlays are present, improving visual consistency.
+    - **V3 Guarantees Preserved**: No changes to core export rules (charts always start fresh page, tri-state overview unchanged).
 
 ## [v0.1.0-stable-baseline] - 2025-11-25
 

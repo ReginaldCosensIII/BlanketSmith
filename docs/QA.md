@@ -50,6 +50,12 @@ Before merging export changes, verify:
 - [ ] All chart sections start on a new page
 - [ ] No charts "squeezed" onto header pages
 
+### Pattern Overview Polish
+- [ ] **Single-Page Border**: Single-page overview (overviewMode=always) shows red border when no atlas overlays present
+- [ ] **Tall Pattern Scaling**: Tall aspect ratio patterns (e.g., 100×200) overview scales up appropriately using target-fill sizing
+- [ ] **Width Utilization**: Overview uses reduced margins (20pt) for better width on width-limited patterns
+- [ ] **No Overlap**: Overview never overlaps header or subsequent sections in shared-page placement
+
 ## QA Artifacts
 For detailed export rules and manual QA procedures, see:
 - [Export Engine V3 QA Report](qa/Export-engine-v3-qa-report.md)
