@@ -56,6 +56,12 @@ Before merging export changes, verify:
 - [ ] **Width Utilization**: Overview uses reduced margins (20pt) for better width on width-limited patterns
 - [ ] **No Overlap**: Overview never overlaps header or subsequent sections in shared-page placement
 
+### Materials & Stitch Key (Unified)
+- [ ] **Naming**: Section is titled "Materials & Stitch Key" (not "Yarn Requirements")
+- [ ] **Stitch Key**: Subsection appears inside Materials if Stitch or Hybrid chart is included
+- [ ] **Symbol Column**: "Sym" column appears in Materials table **ONLY** if Color chart is included
+- [ ] **Hybrid Exclusion**: Hybrid-only exports do **NOT** trigger the Color Symbol column
+
 ## QA Artifacts
 For detailed export rules and manual QA procedures, see:
 - [Export Engine V3 QA Report](qa/Export-engine-v3-qa-report.md)

@@ -56,7 +56,10 @@ PDF sections are rendered in strict order:
 1. **Cover Page** (if enabled)
 2. **Project Header**
 3. **Pattern Overview** (if conditions met)
-4. **Materials Section** (Yarn Requirements, if enabled)
+4. **Materials & Stitch Key**
+    - **Canonical Name**: Formerly "Yarn Requirements", this section is now unified.
+    - **Stitch Key**: Automatically included in this section whenever Stitch or Hybrid charts are present.
+    - **Symbol Column**: A numeric "Sym" column appears in the materials table **ONLY** when a Color chart is included. It is suppressed for Stitch-only and Hybrid-only exports.
 5. **Chart Sections** (Color → Stitch → Hybrid, as enabled)
 6. **Stitch Legend** (if stitches are used and legend is enabled)
 

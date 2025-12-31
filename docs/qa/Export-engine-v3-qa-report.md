@@ -1,105 +1,214 @@
 # Export Engine V3 QA Report
 
-**Version:** 3.0 (Beta)
-**Status:** Active
-**Supersedes:** V2 QA Report
+**Version:** 3.1 (Beta)  
+**Status:** Active  
+**Supersedes:** V2 QA Report  
+
+---
 
 ## 1. Purpose
-Export Engine V3 exists to eliminate ambiguity in the PDF generation process. While V2 relied on heavy inference (guessing "hybrid" mode from symbol settings, deducing atlas needs from side-effects), V3 enforces:
-- **Explicit Modes:** Users select exactly what they want (Color vs. Stitch vs. Hybrid).
-- **Canonical Execution Flow:** A single, ordered execution path for all exports.
-- **Strict Isolation:** Chart-Only settings do not leak into Pattern Pack settings.
+
+Export Engine V3 exists to eliminate ambiguity in the PDF generation process.
+
+While V2 relied on inference (guessing hybrid mode from symbols, deducing atlas needs from layout side-effects), V3 enforces:
+
+- **Explicit Chart Modes** — Color, Stitch, and Hybrid are always user-selected
+- **Canonical Execution Flow** — one deterministic rendering path for all exports
+- **Strict Isolation** — Chart-Only options never leak into Pattern Pack options
+- **Deterministic Output** — identical inputs always produce identical PDFs
+
+This report defines how QA verifies those guarantees.
+
+---
 
 ## 2. Core Architecture (V3)
 
-### Single Canonical Flow
-All exports now follow a strict rendering order. No more jumping between "Chart Mode" and "Pack Mode" logic blocks.
-1. **Cover Page** (if enabled)
+### 2.1 Canonical Execution Flow
+
+All exports follow a single, strict rendering order. There are no conditional branches between “Chart Mode” and “Pack Mode”.
+
+1. **Cover Page** (optional)
 2. **Project Header**
-3. **Materials / Yarn Requirements**
-4. **Project Overview** (The "Map")
-5. **Chart Sections** (Iterative: Color -> Stitch -> Hybrid)
-6. **Stitch Legend**
+3. **Pattern Overview** (tri-state logic)
+4. **Materials & Stitch Key**
+5. **Chart Sections** (iterative, each on a fresh page):
+   - Color Chart (if enabled)
+   - Stitch Chart (if enabled)
+   - Hybrid Chart (if enabled)
 
-### Shared Atlas prediction
-A single `predictAtlasLayout()` helper determines pagination for *all* chart types before any drawing occurs. This ensures consistent row/column numbering across Color, Stitch, and Hybrid charts.
+> There is **no standalone Stitch Legend** in V3.  
+> Stitch definitions are rendered exclusively within **Materials & Stitch Key** when required.
 
-### Explicit Chart Modes
-- **Chart-Only:** Explicitly selected as `Color`, `Stitch`, or `Hybrid` via `chartOnlyMode`.
-- **Pattern Pack:** Explicitly toggled via `includeColorChart`, `includeStitchChart`, and `includeHybridChart`.
+---
 
-### Overview Tri-State
-The "Pattern Overview" map is no longer just on/off. It supports three strict states via `overviewMode`:
-- **Auto:** logic determines if needed (e.g., if chart spreads across multiple pages).
-- **Always:** forces rendering (useful for small projects where a map is desired).
-- **Never:** suppresses rendering (even for giant aliases).
+### 2.2 Shared Atlas Prediction
+
+A single helper, `predictAtlasLayout()`, computes pagination **before any rendering occurs**.
+
+This guarantees:
+- Consistent row/column numbering across Color, Stitch, and Hybrid charts
+- Correct Pattern Overview overlays
+- No duplicate “simulation” logic anywhere in the engine
+
+---
+
+### 2.3 Explicit Chart Modes
+
+- **Chart-Only**
+  - Selected via `chartOnlyMode = 'color' | 'stitch' | 'hybrid'`
+- **Pattern Pack**
+  - Explicit toggles:
+    - `includeColorChart`
+    - `includeStitchChart`
+    - `includeHybridChart`
+
+No chart is ever inferred.
+
+---
+
+### 2.4 Pattern Overview Tri-State
+
+Pattern Overview rendering is governed by `overviewMode`:
+
+- **Auto**
+  - Renders only if the reference chart spans multiple pages
+- **Always**
+  - Forces rendering, even for single-page charts
+- **Never**
+  - Suppresses rendering entirely
+
+---
 
 ## 3. Non-Negotiable Export Rules (Beta)
 
-To guarantee professional output failure is impossible, the following rules are hard-coded:
+These rules are **hard-coded** and must never regress.
 
-1.  **Fresh Page Policy:** Every chart section (Color, Stitch, Hybrid) **ALWAYS** starts on a fresh page.
-    *   *No more "trying to squeeze" charts onto the header page.*
-2.  **Overview Placement:** 
-    *   If Cover Page is present -> Overview is on Page 2 (Fresh).
-    *   If No Cover -> Overview may share Page 1 with header *only if it fits cleanly*.
-3.  **Hybrid Verification:** Hybrid charts are never inferred. They only appear if explicitly requested.
-4.  **One Atlas, One Renderer:** There is only one piece of code that draws grid cells. It is reused for all modes.
+1. **Fresh Page Policy**
+   - Every chart section (Color, Stitch, Hybrid) **always** starts on a fresh page
+   - No attempts are made to “fit” charts below other content
 
-## 4. QA Harness (V3)
+2. **Overview Placement**
+   - With Cover Page → Overview renders on a fresh page
+   - Without Cover Page → Overview may share Page 1 *only if it fits cleanly*
 
-The internal QA tool (`ExportEngineTestPage`) has been updated to V3 standards.
+3. **Hybrid Verification**
+   - Hybrid charts are never inferred
+   - They appear **only** if explicitly enabled
 
-### Scenario Convention
-Scenarios are identified by a strict ID schema: `v2_{mode}_{desc}_{overview}_{flags}`.
-*   `mode`: `pp` (Pattern Pack) or `co` (Chart-Only).
-*   `overview`: `ov_auto`, `ov_always`, or `ov_never`.
+4. **Single Renderer**
+   - One renderer draws all grid cells across all chart modes
 
-### Key Test Capabilities
-- **Tri-State Validation:** Scenarios explicitly test `ov_never` on large charts and `ov_always` on small charts.
-- **Hybrid Isolation:** Scenarios verify that enabling "Hybrid" does not accidentally enable "Color" or "Stitch" charts.
-- **Fresh Page Checks:** "Expected Output" text strictly defines where page breaks must occur.
+---
 
-## 5. Manual QA Checklist
+## 4. Materials & Stitch Key (Unified)
 
-When verifying a release candidate:
+### 4.1 Canonical Behavior
 
-- [ ] **Chart-Only Modes**
-    - [ ] Color Mode -> Only Color Chart.
-    - [ ] Stitch Mode -> Only B&W Symbols.
-    - [ ] Hybrid Mode -> Color Bg + Symbols.
-- [ ] **Pattern Pack Combinations**
-    - [ ] Toggle all 3 ON -> Verify 3 separate sections, each starting on a new page.
-    - [ ] Toggle all OFF -> Verify empty PDF (or graceful fallback).
-- [ ] **Overview Logic**
-    - [ ] `Auto`: Small chart = No Map; Large chart = Map present.
-    - [ ] `Always`: Small chart = Map present.
-    - [ ] `Never`: Large chart = No Map.
-- [ ] **Atlas Overlays**
-    - [ ] Verify red overlay rectangles match the number of chart pages generated.
-    - [ ] Verify labels read "Page X" and match the PDF page numbers.
+The **Materials & Stitch Key** section replaces all legacy “Yarn Requirements” and “Stitch Legend” concepts.
 
-## 6. Explicit Out-Of-Scope Items
+It conditionally includes:
 
-The following features are **NOT** implemented in V3 and should not be reported as bugs:
-- **Instructions Rendering:** The `instructionsMode` is a placeholder. No text instructions are generated.
-- **Smart Auto-Selection:** The engine does not auto-select "Stitch Mode" if you pick a stitch palette. It defaults to Color.
-- **Layout Optimizations:** We do not attempt to "pack" small charts onto the Header page to save paper. We prioritize layout safety (fresh pages).
+- **Materials Table** — always present if the section is enabled
+- **Stitch Key Subsection** — included when:
+  - Chart-Only: Stitch or Hybrid mode
+  - Pattern Pack: Stitch or Hybrid chart enabled
 
-## 7. Post-V3 Polish: Pattern Overview Improvements
+There is no user toggle controlling stitch inclusion — it is engine-determined.
+
+---
+
+### 4.2 Color Symbol Column Rules
+
+The numeric **Symbol (Sym)** column appears **only when a Color Chart is present**.
+
+| Export Type | Charts Included | Symbol Column |
+|------------|-----------------|---------------|
+| Chart-Only | Color           | PRESENT |
+| Chart-Only | Stitch          | ABSENT |
+| Chart-Only | Hybrid          | ABSENT |
+| Pattern Pack | Color          | PRESENT |
+| Pattern Pack | Hybrid only    | ABSENT |
+| Pattern Pack | Stitch only    | ABSENT |
+| Pattern Pack | Color + Hybrid | PRESENT |
+
+Symbols correspond exactly to color indices used in Color charts.
+
+---
+
+## 5. QA Harness (V3)
+
+The internal QA harness (`ExportEngineTestPage`) enforces V3 rules.
+
+### 5.1 Scenario Convention
+
+Scenario IDs follow:
+
+- `mode`: `pp` (Pattern Pack) or `co` (Chart-Only)
+- `overview`: `ov_auto`, `ov_always`, `ov_never`
+
+---
+
+### 5.2 Verified Behaviors
+
+Scenarios explicitly validate:
+
+- Pattern Overview tri-state behavior
+- Symbol column gating rules
+- Stitch Key inclusion logic
+- Hybrid isolation (no accidental chart enablement)
+- Fresh page policy enforcement
+
+---
+
+## 6. Manual QA Checklist
+
+### Chart-Only
+- [ ] Color → Color chart + Materials & Stitch Key with Symbol column
+- [ ] Stitch → Stitch chart + Materials & Stitch Key (no Symbol column)
+- [ ] Hybrid → Hybrid chart + Materials & Stitch Key (no Symbol column)
+
+### Pattern Pack
+- [ ] Color only → Symbol column present
+- [ ] Stitch only → Stitch Key present, no Symbol column
+- [ ] Hybrid only → No Symbol column
+- [ ] All enabled → Three chart sections, each on a fresh page
+
+### Pattern Overview
+- [ ] Auto → appears only for multi-page charts
+- [ ] Always → appears for single-page charts
+- [ ] Never → suppressed even for large patterns
+
+### Overview Overlays
+- [ ] Multi-page → red overlays labeled **“Part 1..N”**
+- [ ] Single-page (Always) → red border around entire overview
+- [ ] No overlap with header or following sections
+
+---
+
+## 7. Explicit Out-of-Scope Items
+
+The following are **not** implemented and are not bugs:
+
+- Instructions rendering (`instructionsMode` is a placeholder)
+- Auto-selecting Stitch mode based on palette
+- Packing charts onto the header page to save space
+
+---
+
+## 8. Post-V3 Polish: Pattern Overview Improvements
 
 **Status:** Merged (2025-12-30)
 
-The Pattern Overview rendering has been enhanced to better utilize available page space while maintaining all V3 guarantees.
+### Enhancements
+1. **Target-Fill Sizing**
+   - Overview fills ~80% of available height
+   - Max height raised to 550pt
+2. **Width Optimization**
+   - Reduced horizontal margins and title spacing
+3. **Single-Page Border**
+   - Red border rendered when no atlas overlays exist
 
-### Changes
-1. **Target-Fill Sizing:** Overview now uses 80% of available page height with a raised max bound (550pt vs 400pt)
-2. **Width Optimization:** Reduced horizontal margins (20pt vs 30pt) and title space (30pt vs 40pt) for better width utilization
-3. **Single-Page Border:** Single-page overviews now render a red border around the entire grid when no atlas overlays are present
-
-### Visual Confirmation
-When testing, verify:
-- **Large Overviews:** Tall patterns (e.g., 100×200) produce visibly larger overview miniatures
-- **Single-Page Border:** Small patterns with `overviewMode: always` show a red border (not overlays)
-- **No Overlap:** Overview never overlaps header or subsequent sections
-- **Multi-Page Unchanged:** Atlas overlays still show "Part 1..N" labels as before
+### Verification
+- Large patterns produce visibly larger overviews
+- Single-page overviews remain readable on white backgrounds
+- Multi-page overlays still render “Part 1..N” correctly

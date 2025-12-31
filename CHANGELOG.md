@@ -54,6 +54,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **Width Optimization**: Reduced horizontal margins (20pt vs 30pt) and title space (30pt vs 40pt) for improved width usage on tall patterns.
     - **Single-Page Border**: Single-page overviews now render a red border when no atlas overlays are present, improving visual consistency.
     - **V3 Guarantees Preserved**: No changes to core export rules (charts always start fresh page, tri-state overview unchanged).
+- **Materials & Stitch Key Unification**:
+    - **UI Alignment**: Renamed all "Yarn Requirements" UI labels to "Materials & Stitch Key" to match canonical section naming.
+    - **Deterministic Stitch Key**: Removed obsolete manual Stitch Key toggle from Export Center; stitch definitions are now automatically included within the Materials section whenever Stitch or Hybrid charts are present.
+    - **Symbol Column Gating**: Restored "Sym" column in the Materials table, but strictly gated to appear ONLY when a Color Chart is included. Hybrid-only exports do not trigger this column.
 
 ## [v0.1.0-stable-baseline] - 2025-11-25
 
