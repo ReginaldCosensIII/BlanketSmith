@@ -398,68 +398,10 @@ export const exportPixelGridToPDF = (
         }
     };
 
-    const drawYarnLegend = (startY: number): number => {
-        let legendY = startY;
-        doc.setFontSize(14);
-        doc.text("Yarn Requirements", margin, legendY);
-        legendY += 20;
-
-        const swatchSize = 15;
-        doc.setFontSize(10);
-
-        const sortedYarns = gridData.palette
-            .sort((a, b) => (yarnUsage.get(b) || 0) - (yarnUsage.get(a) || 0));
-
-        // Header
-        doc.setFont("helvetica", "bold");
-        doc.text("Symbol", margin, legendY);
-        doc.text("Color", margin + 40, legendY);
-        doc.text("Details", margin + 165, legendY);
-        doc.text("Usage", margin + 365, legendY);
-        doc.setFont("helvetica", "normal");
-        legendY += 15;
-
-        sortedYarns.forEach(yarnId => {
-            const yarn = yarnColorMap.get(yarnId);
-            const count = yarnUsage.get(yarnId) || 0;
-            if (!yarn || count === 0) return;
-
-            const yarnPerStitch = projectSettings?.yarnPerStitch || 1;
-            const totalYards = Math.ceil((count * yarnPerStitch) / 36);
-            const skeinsNeeded = Math.ceil(totalYards / (yarn.skeinLength || 295));
-
-            if (legendY > pageH - margin) {
-                doc.addPage();
-                legendY = margin;
-            }
-
-            // Symbol Box
-            doc.setFillColor(yarn.hex);
-            doc.setDrawColor(0);
-            const symbol = colorSymbolMap.get(yarn.id) || "?";
-            doc.rect(margin, legendY, swatchSize, swatchSize);
-            doc.text(symbol, margin + swatchSize / 2, legendY + 11, { align: 'center' });
-
-            // Color Swatch
-            const [r, g, b] = yarn.rgb;
-            doc.setFillColor(r, g, b);
-            doc.rect(margin + 40, legendY, swatchSize, swatchSize, 'F');
-            doc.rect(margin + 40, legendY, swatchSize, swatchSize, 'S');
-
-            // Text Info
-            doc.text(`${yarn.name}`, margin + 65, legendY + 11);
-            doc.setFontSize(8);
-            doc.text(`${yarn.brand} | ${yarn.yarnWeight || 'DK'}`, margin + 165, legendY + 11);
-            doc.setFontSize(10);
-            doc.text(`${count} sts  |  ${totalYards} yds  |  ${skeinsNeeded} skein${skeinsNeeded !== 1 ? 's' : ''}`, margin + 365, legendY + 11);
-
-            legendY += 25;
-        });
-
-        return legendY;
-    };
-
-    const drawHybridLegend = (startY: number): number => {
+    // Unified Materials & Stitch Key Section
+    // Canonical title: "Materials & Stitch Key"
+    // Includes stitch key when: Stitch chart, Hybrid chart, or stitch symbols in use
+    const drawMaterialsAndStitchKey = (startY: number, includeStitchKey: boolean): number => {
         let legendY = startY;
         doc.setFontSize(14);
         doc.text("Materials & Stitch Key", margin, legendY);
@@ -471,16 +413,15 @@ export const exportPixelGridToPDF = (
         const sortedYarns = gridData.palette
             .sort((a, b) => (yarnUsage.get(b) || 0) - (yarnUsage.get(a) || 0));
 
-        // Hybrid Header: No "Symbol" Column. Start with Color Swatch.
+        // Materials Table Header
         doc.setFont("helvetica", "bold");
-        // Layout: Swatch(margin) -> Color Name(margin+20) -> Details(margin+130) -> Usage(margin+330)
         doc.text("Color", margin, legendY);
         doc.text("Details", margin + 130, legendY);
         doc.text("Usage", margin + 330, legendY);
         doc.setFont("helvetica", "normal");
         legendY += 15;
 
-        // 1. Yarn Table
+        // 1. Materials/Yarn Table
         sortedYarns.forEach(yarnId => {
             const yarn = yarnColorMap.get(yarnId);
             const count = yarnUsage.get(yarnId) || 0;
@@ -495,7 +436,7 @@ export const exportPixelGridToPDF = (
                 legendY = margin;
             }
 
-            // Color Swatch (No Symbol)
+            // Color Swatch
             const [r, g, b] = yarn.rgb;
             doc.setFillColor(r, g, b);
             doc.rect(margin, legendY, swatchSize, swatchSize, 'F');
@@ -511,45 +452,44 @@ export const exportPixelGridToPDF = (
             legendY += 25;
         });
 
-        // 2. Integrated Stitch Key (Compact)
-        const usedStitches = new Set<string>();
-        gridData.grid.forEach(cell => {
-            if (cell.stitchId) usedStitches.add(cell.stitchId);
-        });
+        // 2. Stitch Key (when applicable)
+        if (includeStitchKey) {
+            const usedStitches = new Set<string>();
+            gridData.grid.forEach(cell => {
+                if (cell.stitchId) usedStitches.add(cell.stitchId);
+            });
 
-        if (usedStitches.size > 0) {
-            legendY += 10;
-            // Check for space
-            if (legendY > pageH - margin - 50) { // arbitrary buffer
-                doc.addPage();
-                legendY = margin;
-            }
-
-            doc.setFont("helvetica", "bold");
-            doc.text("Stitch Key:", margin, legendY);
-            doc.setFont("helvetica", "normal");
-
-            // Inline/Compact list: "X = Single Crochet, % = Double Crochet"
-            // Or simple vertical list if space allows. Let's do a simple vertical table for clarity.
-            legendY += 15;
-
-            const stitches = Array.from(usedStitches).map(id => stitchMap.get(id)).filter(s => s);
-
-            stitches.forEach(stitch => {
-                if (legendY > pageH - margin) {
+            if (usedStitches.size > 0) {
+                legendY += 10;
+                // Check for space
+                if (legendY > pageH - margin - 50) {
                     doc.addPage();
                     legendY = margin;
                 }
 
-                // Draw Symbol
-                doc.rect(margin, legendY - 10, 15, 15);
-                doc.setFontSize(10);
-                doc.text(stitch.symbol, margin + 7.5, legendY, { align: 'center' });
+                doc.setFont("helvetica", "bold");
+                doc.text("Stitch Key:", margin, legendY);
+                doc.setFont("helvetica", "normal");
+                legendY += 15;
 
-                // Name
-                doc.text(`=  ${stitch.name} (${stitch.id.toUpperCase()})`, margin + 25, legendY);
-                legendY += 20;
-            });
+                const stitches = Array.from(usedStitches).map(id => stitchMap.get(id)).filter(s => s);
+
+                stitches.forEach(stitch => {
+                    if (legendY > pageH - margin) {
+                        doc.addPage();
+                        legendY = margin;
+                    }
+
+                    // Draw Symbol
+                    doc.rect(margin, legendY - 10, 15, 15);
+                    doc.setFontSize(10);
+                    doc.text(stitch.symbol, margin + 7.5, legendY, { align: 'center' });
+
+                    // Name
+                    doc.text(`=  ${stitch.name} (${stitch.id.toUpperCase()})`, margin + 25, legendY);
+                    legendY += 20;
+                });
+            }
         }
 
         return legendY;
@@ -993,7 +933,7 @@ export const exportPixelGridToPDF = (
         currentY = pageH - margin;
     }
 
-    // 4. Yarn Requirements / Legends (Non-Chart)
+    // 4. Materials & Stitch Key (Unified Section)
     if (includeYarnRequirements) {
         // Space Check
         const spaceRemaining = pageH - currentY - margin;
@@ -1007,24 +947,18 @@ export const exportPixelGridToPDF = (
             currentY = margin + 20;
         }
 
-        // Logic for Hybrid Legend selection
-        let useHybridLegend = false;
+        // Determine if stitch key should be included
+        // Include when: Stitch chart, Hybrid chart, or stitch symbols in use
+        let includeStitchKey = false;
         if (isChartOnly) {
-            useHybridLegend = (chartOnlyMode === 'hybrid');
+            // Chart-Only: include stitch key for Stitch or Hybrid modes
+            includeStitchKey = (chartOnlyMode === 'stitch' || chartOnlyMode === 'hybrid');
         } else {
-            // Pattern Pack: Hybrid Chart OR (Color Chart + Stitch Symbols)
-            const isHybridEffective = includeColorChart &&
-                chartVisual.showCellSymbols &&
-                chartVisual.symbolMode === 'stitch-symbol';
-            useHybridLegend = isHybridEffective || includeHybridChart;
+            // Pattern Pack: include stitch key if Stitch chart or Hybrid chart is included
+            includeStitchKey = includeStitchChart || includeHybridChart;
         }
 
-        let endY = 0;
-        if (useHybridLegend) {
-            endY = drawHybridLegend(currentY);
-        } else {
-            endY = drawYarnLegend(currentY);
-        }
+        const endY = drawMaterialsAndStitchKey(currentY, includeStitchKey);
         currentY = endY;
         hasContent = true;
     }
@@ -1086,10 +1020,9 @@ export const exportPixelGridToPDF = (
         hasContent = true;
     });
 
-    // 7. Stitch Legend (Stable)
-    if (includeStitchLegend) {
-        drawStitchLegend();
-    }
+    // 7. Stitch Legend (Removed - now integrated into Materials & Stitch Key section)
+    // The stitch key is now included inline within the Materials & Stitch Key section
+    // when stitch charts (Stitch or Hybrid) are present.
 
     if (options.preview) {
         const pdfBlob = doc.output('bloburl');
