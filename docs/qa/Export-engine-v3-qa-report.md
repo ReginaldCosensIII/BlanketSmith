@@ -85,3 +85,21 @@ The following features are **NOT** implemented in V3 and should not be reported 
 - **Instructions Rendering:** The `instructionsMode` is a placeholder. No text instructions are generated.
 - **Smart Auto-Selection:** The engine does not auto-select "Stitch Mode" if you pick a stitch palette. It defaults to Color.
 - **Layout Optimizations:** We do not attempt to "pack" small charts onto the Header page to save paper. We prioritize layout safety (fresh pages).
+
+## 7. Post-V3 Polish: Pattern Overview Improvements
+
+**Status:** Merged (2025-12-30)
+
+The Pattern Overview rendering has been enhanced to better utilize available page space while maintaining all V3 guarantees.
+
+### Changes
+1. **Target-Fill Sizing:** Overview now uses 80% of available page height with a raised max bound (550pt vs 400pt)
+2. **Width Optimization:** Reduced horizontal margins (20pt vs 30pt) and title space (30pt vs 40pt) for better width utilization
+3. **Single-Page Border:** Single-page overviews now render a red border around the entire grid when no atlas overlays are present
+
+### Visual Confirmation
+When testing, verify:
+- **Large Overviews:** Tall patterns (e.g., 100×200) produce visibly larger overview miniatures
+- **Single-Page Border:** Small patterns with `overviewMode: always` show a red border (not overlays)
+- **No Overlap:** Overview never overlaps header or subsequent sections
+- **Multi-Page Unchanged:** Atlas overlays still show "Part 1..N" labels as before

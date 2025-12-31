@@ -68,6 +68,16 @@ An "atlas" is a multi-page chart where the full pattern is divided into regions.
 ### Overview
 The overview page displays a miniature version of the full pattern with red overlay rectangles indicating atlas regions. Each rectangle is labeled "Part 1", "Part 2", etc., corresponding to the page numbers where those regions appear.
 
+**Sizing Policy:**
+- Overview uses target-fill sizing: 80% of available page height
+- Maximum height: 550pt (raised from original 400pt)
+- Horizontal margins: 20pt (reduced from standard 30pt for better width utilization)
+- Title space: 30pt (reduced from 40pt)
+- Safety buffer: 20pt bottom margin to prevent overlap
+
+**Single-Page Behavior:**
+When a pattern fits on a single page (no atlas regions), the overview renders a red border around the entire miniature grid instead of individual region overlays. This maintains visual consistency and improves legibility.
+
 ## Out of Scope
 
 ### Instructions Rendering
