@@ -401,7 +401,7 @@ export const exportPixelGridToPDF = (
     // Unified Materials & Stitch Key Section
     // Canonical title: "Materials & Stitch Key"
     // Includes stitch key when: Stitch chart, Hybrid chart, or stitch symbols in use
-    const drawMaterialsAndStitchKey = (startY: number, includeStitchKey: boolean): number => {
+    const drawMaterialsAndStitchKey = (startY: number, includeStitchKey: boolean, includeColorSymbols: boolean): number => {
         let legendY = startY;
         doc.setFontSize(14);
         doc.text("Materials & Stitch Key", margin, legendY);
@@ -413,11 +413,20 @@ export const exportPixelGridToPDF = (
         const sortedYarns = gridData.palette
             .sort((a, b) => (yarnUsage.get(b) || 0) - (yarnUsage.get(a) || 0));
 
+        // Layout Offsets
+        const symbolColWidth = includeColorSymbols ? 30 : 0;
+        const colColor = margin + symbolColWidth;
+        const colDetails = margin + symbolColWidth + 130;
+        const colUsage = margin + symbolColWidth + 330;
+
         // Materials Table Header
         doc.setFont("helvetica", "bold");
-        doc.text("Color", margin, legendY);
-        doc.text("Details", margin + 130, legendY);
-        doc.text("Usage", margin + 330, legendY);
+        if (includeColorSymbols) {
+            doc.text("Sym", margin, legendY);
+        }
+        doc.text("Color", colColor, legendY);
+        doc.text("Details", colDetails, legendY);
+        doc.text("Usage", colUsage, legendY);
         doc.setFont("helvetica", "normal");
         legendY += 15;
 
@@ -436,18 +445,24 @@ export const exportPixelGridToPDF = (
                 legendY = margin;
             }
 
+            // Symbol (if enabled)
+            if (includeColorSymbols) {
+                const symbol = colorSymbolMap.get(yarnId) || "?";
+                doc.text(symbol, margin, legendY + 11);
+            }
+
             // Color Swatch
             const [r, g, b] = yarn.rgb;
             doc.setFillColor(r, g, b);
-            doc.rect(margin, legendY, swatchSize, swatchSize, 'F');
-            doc.rect(margin, legendY, swatchSize, swatchSize, 'S'); // Border
+            doc.rect(colColor, legendY, swatchSize, swatchSize, 'F');
+            doc.rect(colColor, legendY, swatchSize, swatchSize, 'S'); // Border
 
             // Text Info
-            doc.text(`${yarn.name}`, margin + 25, legendY + 11);
+            doc.text(`${yarn.name}`, colColor + 25, legendY + 11);
             doc.setFontSize(8);
-            doc.text(`${yarn.brand} | ${yarn.yarnWeight || 'DK'}`, margin + 130, legendY + 11);
+            doc.text(`${yarn.brand} | ${yarn.yarnWeight || 'DK'}`, colDetails, legendY + 11);
             doc.setFontSize(10);
-            doc.text(`${count} sts  |  ${totalYards} yds  |  ${skeinsNeeded} skein${skeinsNeeded !== 1 ? 's' : ''}`, margin + 330, legendY + 11);
+            doc.text(`${count} sts  |  ${totalYards} yds  |  ${skeinsNeeded} skein${skeinsNeeded !== 1 ? 's' : ''}`, colUsage, legendY + 11);
 
             legendY += 25;
         });
@@ -947,18 +962,21 @@ export const exportPixelGridToPDF = (
             currentY = margin + 20;
         }
 
-        // Determine if stitch key should be included
-        // Include when: Stitch chart, Hybrid chart, or stitch symbols in use
+        // Determine if stitch keys / color symbols should be included
         let includeStitchKey = false;
+        let includeColorSymbols = false;
+
         if (isChartOnly) {
-            // Chart-Only: include stitch key for Stitch or Hybrid modes
+            // Chart-Only
             includeStitchKey = (chartOnlyMode === 'stitch' || chartOnlyMode === 'hybrid');
+            includeColorSymbols = (chartOnlyMode === 'color');
         } else {
-            // Pattern Pack: include stitch key if Stitch chart or Hybrid chart is included
+            // Pattern Pack
             includeStitchKey = includeStitchChart || includeHybridChart;
+            includeColorSymbols = includeColorChart;
         }
 
-        const endY = drawMaterialsAndStitchKey(currentY, includeStitchKey);
+        const endY = drawMaterialsAndStitchKey(currentY, includeStitchKey, includeColorSymbols);
         currentY = endY;
         hasContent = true;
     }
