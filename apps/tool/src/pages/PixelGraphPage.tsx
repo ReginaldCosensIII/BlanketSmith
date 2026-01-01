@@ -3,6 +3,7 @@ import { PixelGridData, YarnColor, CellData, Symmetry, ContextMenuItem, ExportTy
 import { useProject } from '../context/ProjectContext';
 import { PixelGridEditor } from '../components/PixelGridEditor';
 import { exportPixelGridToPDF, exportPixelGridToImage } from '../services/exportService';
+import { getDefaultChartOnlyExportOptionsV3, getDefaultPatternPackExportOptionsV3 } from '../services/exportDefaultsV3';
 import { processImageToGrid, findClosestYarnColor } from '../services/projectService';
 import { Button, Icon, ContextMenu, Modal } from '../components/ui/SharedComponents';
 import { PIXEL_FONT } from '../constants';
@@ -156,19 +157,21 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [symbolMode, setSymbolMode] = useState<'color-index' | 'stitch-symbol' | 'hybrid'>('color-index'); // Only used for visual overrides if any
 
     // Commit 2: Explicit Isolated State
-    // Chart-Only Defaults
-    const [coMode, setCoMode] = useState<'color' | 'stitch' | 'hybrid'>('color');
-    const [coOverviewMode, setCoOverviewMode] = useState<'auto' | 'always' | 'never'>('auto');
-    const [coIncludeCover, setCoIncludeCover] = useState(false);
-    const [coIncludeYarn, setCoIncludeYarn] = useState(false);
+    // Chart-Only Defaults (V3)
+    const [coDefaults] = useState(() => getDefaultChartOnlyExportOptionsV3());
+    const [coMode, setCoMode] = useState<'color' | 'stitch' | 'hybrid'>(coDefaults.chartOnlyMode || 'color');
+    const [coOverviewMode, setCoOverviewMode] = useState<'auto' | 'always' | 'never'>(coDefaults.overviewMode || 'auto');
+    const [coIncludeCover, setCoIncludeCover] = useState(coDefaults.includeCoverPage || false);
+    const [coIncludeYarn, setCoIncludeYarn] = useState(coDefaults.includeYarnRequirements || false);
 
-    // Pattern Pack Defaults
-    const [ppIncludeColor, setPpIncludeColor] = useState(true);
-    const [ppIncludeStitch, setPpIncludeStitch] = useState(true);
-    const [ppIncludeHybrid, setPpIncludeHybrid] = useState(false);
-    const [ppOverviewMode, setPpOverviewMode] = useState<'auto' | 'always' | 'never'>('auto');
-    const [ppIncludeCover, setPpIncludeCover] = useState(true);
-    const [ppIncludeYarn, setPpIncludeYarn] = useState(true);
+    // Pattern Pack Defaults (V3)
+    const [ppDefaults] = useState(() => getDefaultPatternPackExportOptionsV3());
+    const [ppIncludeColor, setPpIncludeColor] = useState(ppDefaults.includeColorChart || false);
+    const [ppIncludeStitch, setPpIncludeStitch] = useState(ppDefaults.includeStitchChart || false);
+    const [ppIncludeHybrid, setPpIncludeHybrid] = useState(ppDefaults.includeHybridChart || false);
+    const [ppOverviewMode, setPpOverviewMode] = useState<'auto' | 'always' | 'never'>(ppDefaults.overviewMode || 'auto');
+    const [ppIncludeCover, setPpIncludeCover] = useState(ppDefaults.includeCoverPage || false);
+    const [ppIncludeYarn, setPpIncludeYarn] = useState(ppDefaults.includeYarnRequirements || false);
 
     // Removed: Default Layout Options Effect (caused leakage)
 
