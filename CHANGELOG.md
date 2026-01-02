@@ -58,6 +58,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **UI Alignment**: Renamed all "Yarn Requirements" UI labels to "Materials & Stitch Key" to match canonical section naming.
     - **Deterministic Stitch Key**: Removed obsolete manual Stitch Key toggle from Export Center; stitch definitions are now automatically included within the Materials section whenever Stitch or Hybrid charts are present.
     - **Symbol Column Gating**: Restored "Sym" column in the Materials table, but strictly gated to appear ONLY when a Color Chart is included. Hybrid-only exports do not trigger this column.
+- **Smart Defaults V3 & UI Polish**:
+    - **Canonical Defaults**: Established `exportDefaultsV3.ts` as the single source of truth for all export options, ensuring consistency between the UI and QA harness.
+    - **UI Policies**: Implemented "Restore Defaults" with intelligent logic (Chart-Only preserves mode; Pattern Pack resets to full capabilities).
+    - **Guardrails**: Added "Blank Chart Guard" to disable export when no visual elements are selected, and "Stitch Lock" to enforce standard stitch visuals.
+    - **State Persistence**: Chart-Only visual settings are now preserved when temporarily switching to Stitch mode.
+    - **QA Alignment**: Refactored `ExportEngineTestPage` to consume canonical defaults, removing legacy overrides.
+    - **Policy Documentation**: Added `docs/EXPORT_CENTER_DEFAULTS.md` defining all V3 policies.
 
 ## [v0.1.0-stable-baseline] - 2025-11-25
 
