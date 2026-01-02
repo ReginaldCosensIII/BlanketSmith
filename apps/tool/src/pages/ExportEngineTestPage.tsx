@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { exportPixelGridToPDF } from '../services/exportService';
 import { ExportOptions, PixelGridData, YarnColor } from '../types';
+import { getDefaultChartOnlyExportOptionsV3, getDefaultPatternPackExportOptionsV3 } from '../services/exportDefaultsV3';
 
 // Dev-only guard
 const IS_DEV = import.meta.env.DEV || process.env.NODE_ENV === 'development';
@@ -8,55 +9,50 @@ const IS_DEV = import.meta.env.DEV || process.env.NODE_ENV === 'development';
 
 // --- 1. CANONICAL DEFAULTS ---
 
-function getDefaultPatternPackOptions(): ExportOptions {
+function buildPP(overrides: Partial<ExportOptions> = {}): ExportOptions {
+    const d = getDefaultPatternPackExportOptionsV3();
     return {
-        exportType: 'pattern-pack',
-        includeCoverPage: true,
-        overviewMode: 'auto', // V2 Default
-        includeYarnRequirements: true,
-        includeStitchLegend: true,
-
-        // V2 Explicit Toggles
-        includeColorChart: true,
-        includeStitchChart: true,
-        includeHybridChart: false,
-
-        chartVisual: {
-            showCellSymbols: true,
-            showCellBackgrounds: true,
-            symbolMode: 'color-index'
-        },
+        ...d,
+        ...overrides,
         branding: {
             designerName: 'QA Tester',
             website: 'www.qa-harness.com',
-            copyrightLine: '© 2025 QA Harness'
+            copyrightLine: '© 2025 QA Harness',
+            ...(overrides.branding || {})
+        },
+        chartVisual: {
+            ...d.chartVisual,
+            ...(overrides.chartVisual || {})
         }
     };
 }
 
-function getDefaultChartOnlyOptions(): ExportOptions {
+function buildCO(overrides: Partial<ExportOptions> = {}): ExportOptions {
+    const d = getDefaultChartOnlyExportOptionsV3();
     return {
-        exportType: 'chart-only',
-        chartOnlyMode: 'color', // V2 Explicit Mode
-        chartMode: 'color', // Legacy compat if needed, but harness should prefer chartOnlyMode
-
-        overviewMode: 'auto', // V2 Default
-        includeCoverPage: false,
-        includeYarnRequirements: false,
-        includeStitchLegend: false,
-
-        chartVisual: {
-            showCellSymbols: true,
-            showCellBackgrounds: true,
-            symbolMode: 'color-index'
-        },
+        ...d,
+        ...overrides,
         branding: {
             designerName: 'QA Tester',
             website: 'www.qa-harness.com',
-            copyrightLine: '© 2025 QA Harness'
+            copyrightLine: '© 2025 QA Harness',
+            ...(overrides.branding || {})
+        },
+        chartVisual: {
+            ...d.chartVisual,
+            ...(overrides.chartVisual || {})
         }
     };
 }
+
+/**
+ * NOTE ON UI POLICIES:
+ * This harness tests the RAW export engine capability.
+ * The following UI-layer policies are NOT enforced here but should be verified manually:
+ * 1. Blank Chart Guard: The UI prevents passing showCellSymbols=false AND showCellBackgrounds=false.
+ *    The engine will produce a blank chart if forced (this is valid engine behavior).
+ * 2. Stitch Lock: The UI forces stitch charts to { symbols: true, bg: false }.
+ */
 
 
 // --- 2. MOCK DATA HELPERS ---
@@ -127,22 +123,9 @@ interface Scenario {
 }
 
 // Helper to deep merge options
+// Helper to delegate to specific builders
 function buildOptions(baseType: 'pattern-pack' | 'chart-only', overrides: Partial<ExportOptions> = {}): ExportOptions {
-    const defaults = baseType === 'pattern-pack' ? getDefaultPatternPackOptions() : getDefaultChartOnlyOptions();
-
-    return {
-        ...defaults,
-        ...overrides,
-        // Deep merge sub-objects if present in overrides
-        chartVisual: {
-            ...defaults.chartVisual,
-            ...(overrides.chartVisual || {})
-        },
-        branding: {
-            ...defaults.branding,
-            ...(overrides.branding || {})
-        }
-    };
+    return baseType === 'pattern-pack' ? buildPP(overrides) : buildCO(overrides);
 }
 
 // --- SCENARIO ID CONVENTION ---
@@ -161,62 +144,110 @@ const SCENARIOS: Scenario[] = [
         expected: 'Overview: HIDDEN.\nCharts: Color, Stitch.\nOrdering: Cover -> Materials & Stitch Key -> Color -> Stitch.\nMaterials: Symbol Col [PRESENT] (Color Chart), Stitch Key [PRESENT] (Stitch Chart).',
         baseType: 'pattern-pack',
         gridConfig: { width: 20, height: 20, includeStitches: true },
-        overrides: {}
+        overrides: buildPP({
+            // includeStitchLegend removed (deprecated)
+        })
     },
     {
-        id: 'v2_pp_small_ov_auto_no_cover',
-        name: '2. Pattern Pack: No Cover',
-        description: 'Standard PP, No Cover Page.',
-        expected: 'Overview: HIDDEN.\nHeader: Shares page 1 with Materials/Charts if fits.\nCharts: Color, Stitch.',
+        id: 'v2_pp_large_ov_auto_atlas',
+        name: '2. Pattern Pack: Large Atlas (Auto)',
+        description: 'Large PP, 150x150, Overview Auto (Shown due to atlas).',
+        expected: 'Overview: SHOWN (p3).\nMaterials: Symbol Col [PRESENT], Stitch Key [PRESENT].',
         baseType: 'pattern-pack',
-        gridConfig: { width: 20, height: 20, includeStitches: true },
-        overrides: { includeCoverPage: false }
+        gridConfig: { width: 150, height: 150, includeStitches: true },
+        overrides: buildPP({
+            // Defaults handles logic
+        })
     },
-    {
-        id: 'v2_pp_small_ov_auto_hybrid_only',
-        name: '3. Pattern Pack: Charts: Hybrid Only',
-        description: 'Hybrid Chart enabled, others disabled.',
-        expected: 'Overview: HIDDEN.\nCharts: Hybrid ONLY.\nMaterials: Symbol Col [ABSENT] (No Color Chart), Stitch Key [PRESENT] (Hybrid).',
-        baseType: 'pattern-pack',
-        gridConfig: { width: 20, height: 20, includeStitches: true },
-        overrides: {
-            includeColorChart: false,
-            includeStitchChart: false,
-            includeHybridChart: true
-        }
-    },
-    {
-        id: 'v2_pp_all_three_charts',
-        name: '4. Pattern Pack: Charts: Color+Stitch+Hybrid',
-        description: 'All 3 chart types enabled.',
-        expected: 'Overview: HIDDEN.\nCharts: Color -> Stitch -> Hybrid.\nMaterials: Symbol Col [PRESENT] (Color Included), Stitch Key [PRESENT].',
-        baseType: 'pattern-pack',
-        gridConfig: { width: 20, height: 20, includeStitches: true },
-        overrides: { includeColorChart: true, includeStitchChart: true, includeHybridChart: true }
-    },
-
-    // --- NEW: COMPONENT ISOLATION TESTS ---
     {
         id: 'v2_pp_color_only',
-        name: '4b. Pattern Pack: Color Only',
-        description: 'Color Chart only.',
-        expected: 'Materials: Symbol Col [PRESENT] (Color Chart), Stitch Key [ABSENT] (No stitches).\nCharts: Color.',
+        name: '3. Pattern Pack: Color Only',
+        description: 'PP with only Color chart enabled.',
+        expected: 'Charts: Color ONLY.\nMaterials: Symbol Col [PRESENT], Stitch Key [ABSENT].',
         baseType: 'pattern-pack',
-        gridConfig: { width: 20, height: 20, includeStitches: true },
-        overrides: { includeColorChart: true, includeStitchChart: false, includeHybridChart: false }
+        gridConfig: { width: 50, height: 50, includeStitches: true },
+        overrides: buildPP({
+            includeStitchChart: false,
+            includeHybridChart: false
+        })
     },
     {
         id: 'v2_pp_stitch_only',
-        name: '4c. Pattern Pack: Stitch Only',
-        description: 'Stitch Chart only.',
-        expected: 'Materials: Symbol Col [ABSENT] (No Color Chart), Stitch Key [PRESENT] (Stitch Chart).\nCharts: Stitch.',
+        name: '4. Pattern Pack: Stitch Only',
+        description: 'PP with only Stitch chart enabled.',
+        expected: 'Charts: Stitch ONLY.\nMaterials: Symbol Col [ABSENT], Stitch Key [PRESENT].',
         baseType: 'pattern-pack',
-        gridConfig: { width: 20, height: 20, includeStitches: true },
-        overrides: { includeColorChart: false, includeStitchChart: true, includeHybridChart: false }
+        gridConfig: { width: 50, height: 50, includeStitches: true },
+        overrides: buildPP({
+            includeColorChart: false,
+            includeHybridChart: false
+        })
     },
 
     // --- V2 BASELINE: CHART ONLY ---
 
+    {
+        id: 'v2_co_color_ov_auto_cover_yarn',
+        name: '5. Chart-Only: Color (Cover+Mat)',
+        description: 'Color Chart Only, +Cover, +Materials.',
+        expected: 'Cover: YES.\nMaterials: YES (Symbol Col [PRESENT]).\nChart: Color [Single Page].',
+        baseType: 'chart-only',
+        gridConfig: { width: 40, height: 40, includeStitches: true },
+        overrides: buildCO({
+            chartOnlyMode: 'color',
+            includeCoverPage: true,
+            includeYarnRequirements: true
+        })
+    },
+    {
+        id: 'v2_co_stitch_materials',
+        name: '6. Chart-Only: Stitch (+Mat)',
+        description: 'Stitch Chart Only, +Materials.',
+        expected: 'Cover: NO.\nMaterials: YES (Stitch Key [PRESENT], Symbol Col [ABSENT]).\nChart: Stitch [Single Page].',
+        baseType: 'chart-only',
+        gridConfig: { width: 40, height: 40, includeStitches: true },
+        overrides: buildCO({
+            chartOnlyMode: 'stitch',
+            includeYarnRequirements: true
+        })
+    },
+    {
+        id: 'v2_co_hybrid_simple',
+        name: '7. Chart-Only: Hybrid',
+        description: 'Hybrid Chart Only.',
+        expected: 'Materials: NO.\nChart: Hybrid [Single Page].',
+        baseType: 'chart-only',
+        gridConfig: { width: 40, height: 40, includeStitches: true },
+        overrides: buildCO({
+            chartOnlyMode: 'hybrid',
+            includeYarnRequirements: false
+        })
+    },
+
+    // --- NEW: TRI-STATE OVERVIEW TESTS ---
+
+    {
+        id: 'v2_pp_small_ov_always',
+        name: '8. Overview ALWAYS (Small)',
+        description: 'Small PP, Overview Force Always.',
+        expected: 'Overview: SHOWN (p3) with Red Border (Single Page Style).',
+        baseType: 'pattern-pack',
+        gridConfig: { width: 20, height: 20, includeStitches: true },
+        overrides: buildPP({
+            overviewMode: 'always'
+        })
+    },
+    {
+        id: 'v2_pp_large_ov_never',
+        name: '9. Overview NEVER (Large)',
+        description: 'Large PP, Overview Force Never.',
+        expected: 'Overview: HIDDEN despite multi-page atlas.',
+        baseType: 'pattern-pack',
+        gridConfig: { width: 100, height: 100, includeStitches: true },
+        overrides: buildPP({
+            overviewMode: 'never'
+        })
+    },
     {
         id: 'v2_co_color_ov_auto_default',
         name: '5. Chart-Only: Charts: Color',
@@ -287,13 +318,13 @@ const SCENARIOS: Scenario[] = [
     // --- EDGE CASES & FIX REGRESSIONS ---
 
     {
-        id: 'v2_pp_edge_no_stitches_legend_on',
-        name: '12. Edge: PP No Stitches + Legend ON',
-        description: 'No stitches in grid, but Legend requested.',
-        expected: 'Stitch Key: OMITTED (Graceful fallback, empty checks).',
+        id: 'v2_pp_edge_no_stitches_forced_chart',
+        name: '12. Edge: PP No Stitches + Stitch Chart ON',
+        description: 'No stitches in grid, but Stitch Chart requested.',
+        expected: 'Stitch Key: OMITTED (Graceful fallback, no used stitches).',
         baseType: 'pattern-pack',
         gridConfig: { width: 15, height: 15, includeStitches: false },
-        overrides: { includeStitchLegend: true }
+        overrides: buildPP({ includeStitchChart: true })
     },
     {
         id: 'v2_co_edge_tall_yarn',
@@ -302,7 +333,10 @@ const SCENARIOS: Scenario[] = [
         expected: 'Materials: Page 1.\nCharts: Color Atlas (Starts on fresh page/Page 2).',
         baseType: 'chart-only',
         gridConfig: { width: 20, height: 60, patternType: 'stripes' },
-        overrides: { includeYarnRequirements: true, chartOnlyMode: 'color' }
+        overrides: buildCO({
+            chartOnlyMode: 'color',
+            includeYarnRequirements: true
+        })
     },
     {
         id: 'v2_co_edge_hybrid_no_bg',
@@ -311,11 +345,11 @@ const SCENARIOS: Scenario[] = [
         expected: 'Materials: Symbol Col [ABSENT] (Hybrid Mode), Stitch Key [PRESENT].\nCharts: Hybrid.',
         baseType: 'chart-only',
         gridConfig: { width: 20, height: 20, includeStitches: true },
-        overrides: {
+        overrides: buildCO({
             chartOnlyMode: 'hybrid',
             includeYarnRequirements: true,
             chartVisual: { showCellSymbols: true, showCellBackgrounds: false, symbolMode: 'stitch-symbol' }
-        }
+        })
     },
     {
         id: 'v2_pp_fix_sm_15_fit',
@@ -324,7 +358,7 @@ const SCENARIOS: Scenario[] = [
         expected: 'Charts: Single Page.\nNo Atlas behaviors.',
         baseType: 'pattern-pack',
         gridConfig: { width: 15, height: 15, includeStitches: true },
-        overrides: {}
+        overrides: buildPP({})
     },
     {
         id: 'v2_co_fix_giant_atlas',
@@ -333,7 +367,7 @@ const SCENARIOS: Scenario[] = [
         expected: 'Overview: PRESENT (Auto).\nCharts: Large Atlas (Many pages).\nPerformance check.',
         baseType: 'chart-only',
         gridConfig: { width: 100, height: 200, patternType: 'stripes' },
-        overrides: {}
+        overrides: buildCO({})
     }
 ];
 

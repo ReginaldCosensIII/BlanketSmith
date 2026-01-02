@@ -3,6 +3,7 @@ import { PixelGridData, YarnColor, CellData, Symmetry, ContextMenuItem, ExportTy
 import { useProject } from '../context/ProjectContext';
 import { PixelGridEditor } from '../components/PixelGridEditor';
 import { exportPixelGridToPDF, exportPixelGridToImage } from '../services/exportService';
+import { getDefaultChartOnlyExportOptionsV3, getDefaultPatternPackExportOptionsV3 } from '../services/exportDefaultsV3';
 import { processImageToGrid, findClosestYarnColor } from '../services/projectService';
 import { Button, Icon, ContextMenu, Modal } from '../components/ui/SharedComponents';
 import { PIXEL_FONT } from '../constants';
@@ -156,19 +157,21 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [symbolMode, setSymbolMode] = useState<'color-index' | 'stitch-symbol' | 'hybrid'>('color-index'); // Only used for visual overrides if any
 
     // Commit 2: Explicit Isolated State
-    // Chart-Only Defaults
-    const [coMode, setCoMode] = useState<'color' | 'stitch' | 'hybrid'>('color');
-    const [coOverviewMode, setCoOverviewMode] = useState<'auto' | 'always' | 'never'>('auto');
-    const [coIncludeCover, setCoIncludeCover] = useState(false);
-    const [coIncludeYarn, setCoIncludeYarn] = useState(false);
+    // Chart-Only Defaults (V3)
+    const [coDefaults] = useState(() => getDefaultChartOnlyExportOptionsV3());
+    const [coMode, setCoMode] = useState<'color' | 'stitch' | 'hybrid'>(coDefaults.chartOnlyMode || 'color');
+    const [coOverviewMode, setCoOverviewMode] = useState<'auto' | 'always' | 'never'>(coDefaults.overviewMode || 'auto');
+    const [coIncludeCover, setCoIncludeCover] = useState(coDefaults.includeCoverPage || false);
+    const [coIncludeYarn, setCoIncludeYarn] = useState(coDefaults.includeYarnRequirements || false);
 
-    // Pattern Pack Defaults
-    const [ppIncludeColor, setPpIncludeColor] = useState(true);
-    const [ppIncludeStitch, setPpIncludeStitch] = useState(true);
-    const [ppIncludeHybrid, setPpIncludeHybrid] = useState(false);
-    const [ppOverviewMode, setPpOverviewMode] = useState<'auto' | 'always' | 'never'>('auto');
-    const [ppIncludeCover, setPpIncludeCover] = useState(true);
-    const [ppIncludeYarn, setPpIncludeYarn] = useState(true);
+    // Pattern Pack Defaults (V3)
+    const [ppDefaults] = useState(() => getDefaultPatternPackExportOptionsV3());
+    const [ppIncludeColor, setPpIncludeColor] = useState(ppDefaults.includeColorChart || false);
+    const [ppIncludeStitch, setPpIncludeStitch] = useState(ppDefaults.includeStitchChart || false);
+    const [ppIncludeHybrid, setPpIncludeHybrid] = useState(ppDefaults.includeHybridChart || false);
+    const [ppOverviewMode, setPpOverviewMode] = useState<'auto' | 'always' | 'never'>(ppDefaults.overviewMode || 'auto');
+    const [ppIncludeCover, setPpIncludeCover] = useState(ppDefaults.includeCoverPage || false);
+    const [ppIncludeYarn, setPpIncludeYarn] = useState(ppDefaults.includeYarnRequirements || false);
 
     // Removed: Default Layout Options Effect (caused leakage)
 
@@ -219,6 +222,12 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const { rotateSubGrid, flipSubGrid } = useCanvasLogic(projectData?.width || 0, projectData?.height || 0, symmetry);
     const projectStateRef = useRef(state);
     useEffect(() => { projectStateRef.current = state; }, [state]);
+
+    // Commit 5: State Persistence for Visuals
+    // Track previous coMode to detect transitions
+    const prevCoModeRef = useRef<typeof coMode>(coMode);
+    // Store non-stitch visual settings to restore them when leaving stitch mode
+    const lastNonStitchVisualRef = useRef<{ showSymbols: boolean; showBackgrounds: boolean } | null>(null);
 
     // --- TOOL CHANGE HANDLER (Transition Logic) ---
     const handleToolChange = (newTool: Tool) => {
@@ -798,13 +807,15 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 chartOnlyMode: coMode,
                 forceSinglePage: true,
 
-                includeColorChart: coMode === 'color', // Legacy compat
-                includeStitchChart: coMode === 'stitch', // Legacy compat
-                includeHybridChart: coMode === 'hybrid', // Legacy compat
-
-                includeYarnRequirements: coIncludeYarn,
+                // Chart-Only Options
                 includeCoverPage: coIncludeCover,
+                includeYarnRequirements: coIncludeYarn,
                 overviewMode: coOverviewMode,
+
+                // Inherit pattern pack options for unused fields or explicit overrides if needed
+                includeColorChart: coMode === 'color',
+                includeStitchChart: coMode === 'stitch' || coMode === 'hybrid',
+                includeHybridChart: coMode === 'hybrid',
 
                 branding: {
                     designerName: exportDesignerName || undefined,
@@ -813,12 +824,44 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 },
                 chartVisual: {
                     showCellSymbols: exportShowCellSymbols,
-                    showCellBackgrounds: showCellBackgrounds, // Hybrid/Color use this
+                    showCellBackgrounds: showCellBackgrounds,
                     symbolMode: effectiveSymbolMode,
                 },
             };
         }
     };
+
+    // Commit 3: Restore Defaults Helpers
+    const applyChartOnlyDefaults = () => {
+        const d = getDefaultChartOnlyExportOptionsV3();
+        // Commit 4a: Do NOT reset coMode (preserve user selection)
+
+        if (d.overviewMode) setCoOverviewMode(d.overviewMode);
+        setCoIncludeCover(d.includeCoverPage || false);
+        setCoIncludeYarn(d.includeYarnRequirements || false);
+
+        // Commit 4: Mode-aware visual defaults (uses CURRENT coMode)
+        if (coMode === 'stitch') {
+            setExportShowCellSymbols(true);
+            setShowCellBackgrounds(false);
+        } else {
+            setExportShowCellSymbols(d.chartVisual?.showCellSymbols ?? false);
+            setShowCellBackgrounds(d.chartVisual?.showCellBackgrounds ?? true);
+        }
+    };
+
+    const applyPatternPackDefaults = () => {
+        const d = getDefaultPatternPackExportOptionsV3();
+        // Commit 4a: Pattern Pack defaults to ALL charts enabled
+        setPpIncludeColor(true);
+        setPpIncludeStitch(true);
+        setPpIncludeHybrid(true);
+
+        if (d.overviewMode) setPpOverviewMode(d.overviewMode);
+        setPpIncludeCover(d.includeCoverPage || false);
+        setPpIncludeYarn(d.includeYarnRequirements || false);
+    };
+
 
     const handleConfirmExport = () => {
         if (!projectData) return;
@@ -1081,6 +1124,55 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         }
     }, [isPreviewFullScreen, previewGrid]);
 
+    // Commit 5: Transition-Aware Stitch Mode Visual Lock
+    useEffect(() => {
+        if (selectedExportType !== 'chart-only') {
+            // Reset refs if we leave chart-only mode entirely, ensuring fresh state next time
+            prevCoModeRef.current = coMode;
+            // Optional: lastNonStitchVisualRef.current = null; // We could clear it or keep it. Keeping it might be nice.
+            return;
+        }
+
+        const prevMode = prevCoModeRef.current;
+        const currentMode = coMode;
+
+        // Transition INTO Stitch Mode
+        if (currentMode === 'stitch' && prevMode !== 'stitch') {
+            // Snapshot current visuals before locking
+            // Only snapshot if we have valid non-locked values (i.e., not coming from some other weird state)
+            lastNonStitchVisualRef.current = {
+                showSymbols: exportShowCellSymbols,
+                showBackgrounds: showCellBackgrounds
+            };
+
+            // Enforce Lock
+            setExportShowCellSymbols(true);
+            setShowCellBackgrounds(false);
+        }
+        // Transition OUT OF Stitch Mode
+        else if (currentMode !== 'stitch' && prevMode === 'stitch') {
+            if (lastNonStitchVisualRef.current) {
+                // Restore from snapshot
+                setExportShowCellSymbols(lastNonStitchVisualRef.current.showSymbols);
+                setShowCellBackgrounds(lastNonStitchVisualRef.current.showBackgrounds);
+            } else {
+                // Fallback to defaults if no snapshot (shouldn't happen in normal flow but safe)
+                const d = getDefaultChartOnlyExportOptionsV3();
+                setExportShowCellSymbols(d.chartVisual?.showCellSymbols ?? false);
+                setShowCellBackgrounds(d.chartVisual?.showCellBackgrounds ?? true);
+            }
+        }
+        // Edge case: Initial load into Stitch mode (no transition)
+        // Ensure lock is enforced if we land directly on stitch (e.g. from defaults)
+        else if (currentMode === 'stitch' && (!exportShowCellSymbols || showCellBackgrounds)) {
+            setExportShowCellSymbols(true);
+            setShowCellBackgrounds(false);
+        }
+
+        // Update Ref
+        prevCoModeRef.current = currentMode;
+    }, [selectedExportType, coMode, exportShowCellSymbols, showCellBackgrounds]);
+
 
     const handleImportConfirm = () => {
         if (previewGrid) {
@@ -1158,10 +1250,10 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             <span>You can preview your PDF before downloading.</span>
                         </div>
                         <div className="flex gap-2">
-                            <Button variant="secondary" onClick={handlePreviewExport} disabled={!projectData}>
+                            <Button variant="secondary" onClick={handlePreviewExport} disabled={!projectData || (selectedExportType === 'chart-only' && coMode !== 'stitch' && !exportShowCellSymbols && !showCellBackgrounds)}>
                                 <Icon name="eye" className="w-4 h-4 mr-1" /> Preview PDF
                             </Button>
-                            <Button variant="primary" onClick={handleConfirmExport} disabled={!projectData}>
+                            <Button variant="primary" onClick={handleConfirmExport} disabled={!projectData || (selectedExportType === 'chart-only' && coMode !== 'stitch' && !exportShowCellSymbols && !showCellBackgrounds)}>
                                 <Icon name="download" className="w-4 h-4 mr-1" /> Export PDF
                             </Button>
                         </div>
@@ -1196,6 +1288,18 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             <span className="text-xs text-gray-600">
                                 Single diagram focus. Ideal for working copies or quick prints.
                             </span>
+                        </button>
+                    </div>
+
+                    {/* Restore Defaults Button Area */}
+                    <div className="flex justify-end -mt-2 mb-4">
+                        <button
+                            onClick={selectedExportType === 'pattern-pack' ? applyPatternPackDefaults : applyChartOnlyDefaults}
+                            className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center font-medium"
+                            title={`Reset ${selectedExportType === 'pattern-pack' ? 'Pattern Pack' : 'Chart-Only'} options to V3 defaults`}
+                        >
+                            <Icon name="redo" className="w-3 h-3 mr-1 transform rotate-180 scale-x-[-1]" />
+                            Restore {selectedExportType === 'pattern-pack' ? 'Pattern Pack' : 'Chart-Only'} Defaults
                         </button>
                     </div>
 
@@ -1288,38 +1392,49 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             )}
                         </div>
 
-                        {/* SECTION B: CELL APPEARANCE */}
-                        <div>
-                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wider">Cell Appearance</h4>
-                            <div className="space-y-3 pl-1">
-                                <div className="flex items-center justify-between">
-                                    <label className="flex items-center cursor-pointer text-sm">
-                                        <input
-                                            type="checkbox"
-                                            className="mr-2 rounded text-indigo-600"
-                                            checked={exportShowCellSymbols}
-                                            onChange={(e) => setExportShowCellSymbols(e.target.checked)}
-                                        />
-                                        Show symbols in cells
-                                    </label>
-                                    {/* Commit 2: Symbol Dropdown Removed */}
-                                    {/* If strictly required to support legacy, force 'Locked' message, otherwise hide entirely */}
-                                </div>
+                        {/* SECTION B: CELL APPEARANCE (Chart-Only) */}
+                        {selectedExportType === 'chart-only' && (
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wider">Cell Appearance</h4>
+                                <div className="space-y-3 pl-1">
+                                    {coMode === 'stitch' ? (
+                                        <div className="text-sm text-gray-500 italic p-2 bg-gray-50 border rounded">
+                                            Cell appearance is locked for Stitch charts.
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="flex items-center justify-between">
+                                                <label className="flex items-center cursor-pointer text-sm">
+                                                    <input
+                                                        type="checkbox"
+                                                        className="mr-2 rounded text-indigo-600"
+                                                        checked={exportShowCellSymbols}
+                                                        onChange={(e) => setExportShowCellSymbols(e.target.checked)}
+                                                    />
+                                                    Show symbols in cells
+                                                </label>
+                                            </div>
 
-                                {/* Background toggle only for Color-capable modes */}
-                                {((selectedExportType === 'pattern-pack') || (coMode !== 'stitch')) && (
-                                    <label className="flex items-center cursor-pointer text-sm">
-                                        <input
-                                            type="checkbox"
-                                            className="mr-2 rounded text-indigo-600"
-                                            checked={showCellBackgrounds}
-                                            onChange={(e) => setShowCellBackgrounds(e.target.checked)}
-                                        />
-                                        Show background colors
-                                    </label>
-                                )}
+                                            <label className="flex items-center cursor-pointer text-sm">
+                                                <input
+                                                    type="checkbox"
+                                                    className="mr-2 rounded text-indigo-600"
+                                                    checked={showCellBackgrounds}
+                                                    onChange={(e) => setShowCellBackgrounds(e.target.checked)}
+                                                />
+                                                Show background colors
+                                            </label>
+
+                                            {!exportShowCellSymbols && !showCellBackgrounds && (
+                                                <div className="text-xs text-red-600 font-medium">
+                                                    Select symbols or background colors to avoid a blank chart.
+                                                </div>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
                         {/* SECTION C: LAYOUT OPTIONS */}
                         <div>
