@@ -129,6 +129,110 @@ export const exportPixelGridToImage = (projectName: string, gridData: PixelGridD
     link.click();
 };
 
+// --- INSTRUCTIONS (DISCIPLINE-NEUTRAL) ---
+
+interface InstructionBlock {
+    type: 'heading' | 'paragraph' | 'list-ul' | 'list-ol';
+    content: string[]; // Lines or items
+}
+
+interface InstructionDoc {
+    title?: string;
+    blocks: InstructionBlock[];
+}
+
+const PLACEHOLDER_INSTRUCTIONS: InstructionDoc = {
+    title: 'Pattern Instructions',
+    blocks: [
+        { type: 'heading', content: ['General Notes'] },
+        { type: 'paragraph', content: ['Follow the chart from bottom to top, right to left. Ensure you maintain consistent tension throughout the project.'] },
+        { type: 'heading', content: ['Finishing'] },
+        { type: 'list-ul', content: ['Weave in all ends.', 'Block to final measurements.', 'Add border if desired.'] }
+    ]
+};
+
+// Internal Helper for Instructions
+const drawInstructionsSection = (
+    doc: any, // PDF Instance
+    currentY: number,
+    pageH: number,
+    margin: number,
+    layout: any, // RenderLayout
+    instructionDoc: InstructionDoc = PLACEHOLDER_INSTRUCTIONS
+): number => {
+    let y = currentY;
+    const lineHeight = 12;
+    const headingHeight = 18;
+    const listIndent = 10;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const contentWidth = pageWidth - margin * 2;
+
+    // Helper to verify space
+    const ensureSpace = (height: number) => {
+        if (y + height > pageH - margin) {
+            doc.addPage();
+            y = margin + 20; // Fresh page top
+        }
+    };
+
+    // Render Title
+    ensureSpace(30);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text(instructionDoc.title || 'Instructions', margin, y + 6);
+    y += 24;
+
+    // Render Blocks
+    instructionDoc.blocks.forEach((block: InstructionBlock) => {
+        doc.setFontSize(10);
+
+        if (block.type === 'heading') {
+            ensureSpace(headingHeight + 4);
+            doc.setFont('helvetica', 'bold');
+            y += 4;
+            block.content.forEach((line: string) => {
+                doc.text(line, margin, y + 10);
+                y += headingHeight;
+            });
+            y += 2; // Spacing after heading
+        }
+        else if (block.type === 'paragraph') {
+            doc.setFont('helvetica', 'normal');
+            block.content.forEach((text: string) => {
+                // Determine width
+                const lines = doc.splitTextToSize(text, contentWidth);
+                const blockHeight = lines.length * lineHeight;
+
+                ensureSpace(blockHeight + 6);
+                doc.text(lines, margin, y + 10);
+                y += blockHeight + 6;
+            });
+        }
+        else if (block.type === 'list-ul' || block.type === 'list-ol') {
+            doc.setFont('helvetica', 'normal');
+            block.content.forEach((item: string, index: number) => {
+                const listWidth = contentWidth - listIndent;
+                const lines = doc.splitTextToSize(item, listWidth);
+                const blockHeight = lines.length * lineHeight;
+
+                ensureSpace(blockHeight + 2);
+
+                // Bullet/Number
+                const prefix = block.type === 'list-ol' ? `${index + 1}.` : '•';
+                doc.text(prefix, margin, y + 10);
+
+                // Text
+                doc.text(lines, margin + listIndent, y + 10);
+                y += blockHeight + 2;
+            });
+            y += 4; // Spacing after list
+        }
+    });
+
+    // Pad end of section
+    return y + 20;
+};
+
 export const exportPixelGridToPDF = (
     projectName: string,
     gridData: PixelGridData,
@@ -868,7 +972,6 @@ export const exportPixelGridToPDF = (
         doc.setTextColor(0);
     };
 
-    // --- MAIN EXECUTION LOGIC (Canonical Flow) ---
 
     // 0. Pre-Calculation: Used Colors & Atlas Plan
     const usedColorsSet = new Set<string>();
@@ -981,8 +1084,61 @@ export const exportPixelGridToPDF = (
         hasContent = true;
     }
 
-    // 5. Instructions (Reserved Slot)
-    // if (instructionsMode !== 'none') { ... }
+    // 5. Instructions (Pattern Pack Only)
+    // Engine-side Check: Explicitly check for 'includeInstructions' flag (temporary cast)
+    const includeInstructions = (options as any).includeInstructions === true;
+
+    if (includeInstructions && isPatternPack) {
+        // PLACEMENT RULE: Never share page with Overview.
+        // Logic: If overview was shown, we must ensure we aren't following it on the same page.
+        // However, we don't track the exact page index of overview easily here since drawMaterials intervened.
+        // BUT: drawMaterials adds pages if needed.
+        // Safety Check: If showOverview is True, and we are NOT on a fresh page (currentY > margin+20),
+        // we might risk being on the same page if Materials was short.
+        // Actually, the rule is "Instructions must never share a page with Pattern Overview".
+        // If Overview is "Auto" (multi-page) or "Always" (single page), it occupies space.
+
+        // Strategy:
+        // 1. If Overview was shown, did it force a Page Break?
+        //    - Multi-page forces breaks.
+        //    - Single-page might share Page 1 with Header.
+        // 2. Materials follows Overview. Materials might share Page 1.
+        // 3. If Instructions follows Materials, it might share Page 1.
+        // -> Violation if Overview is on Page 1.
+
+        // ROBUST FIX:
+        // If (showOverview) and (currentY != margin + 20), FORCE NEW PAGE.
+        // This ensures Instructions starts fresh if there is ANY predecessor on the current usage chain,
+        // which effectively separates it from Overview (and Materials, if they shared).
+        // Exception: If currentY implies a fresh page already, we are good.
+
+        // Wait, if Overview=Never, we CAN share page with Header/Materials.
+        // So this logic only applies if showOverview is TRUE.
+
+        if (showOverview) {
+            // If we have content on this page (which we do if Materials ran), force break.
+            // Even if Materials ended exactly at bottom, addPage is safe.
+            // Only skip if we are somehow at top of page (unlikely if Overview+Materials ran).
+            if (currentY > margin + 30) {
+                doc.addPage();
+                currentY = margin + 20;
+            }
+        } else {
+            // Overview NOT shown. We can fit if space permits.
+            // Check space for Title (30) + minimal content (50)
+            const spaceRemaining = pageH - currentY - margin;
+            if (spaceRemaining < 100) {
+                doc.addPage();
+                currentY = margin + 20;
+            } else {
+                currentY += 20; // Gap
+            }
+        }
+
+        const docPayload = (options as any).instructionDoc;
+        currentY = drawInstructionsSection(doc, currentY, pageH, margin, atlasPlan, docPayload);
+        hasContent = true;
+    }
 
     // 6. Charts
     // Commit 1 Rule: All Charts always start on fresh page.
