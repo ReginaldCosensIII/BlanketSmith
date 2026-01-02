@@ -120,6 +120,16 @@ export interface ContextMenuItem {
   disabled?: boolean;
 }
 
+export interface InstructionBlock {
+  type: 'heading' | 'paragraph' | 'list-ul' | 'list-ol';
+  content: string[];
+}
+
+export interface InstructionDoc {
+  title?: string;
+  blocks: InstructionBlock[];
+}
+
 export interface ExportOptions {
   exportType?: ExportType;
 
@@ -143,7 +153,11 @@ export interface ExportOptions {
   includeOverviewPage?: boolean;
   overviewMode?: 'auto' | 'always' | 'never';
 
-  // -- Instructions Placeholders --
+  // -- Instructions (Pattern Pack) --
+  includeInstructions?: boolean;
+  instructionsDoc?: InstructionDoc | null;
+
+  // -- Instructions Placeholders (Legacy/Reserved) --
   instructionsMode?: 'none' | 'engine';
   instructionsText?: string;
 

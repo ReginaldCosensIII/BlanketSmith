@@ -1,9 +1,20 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, ChangeEvent } from 'react';
-import { PixelGridData, YarnColor, CellData, Symmetry, ContextMenuItem, ExportType, ExportOptions } from '../types';
+import { PixelGridData, YarnColor, CellData, Symmetry, ContextMenuItem, ExportType, ExportOptions, InstructionDoc } from '../types';
 import { useProject } from '../context/ProjectContext';
 import { PixelGridEditor } from '../components/PixelGridEditor';
 import { exportPixelGridToPDF, exportPixelGridToImage } from '../services/exportService';
 import { getDefaultChartOnlyExportOptionsV3, getDefaultPatternPackExportOptionsV3 } from '../services/exportDefaultsV3';
+
+// Placeholder Instructions for V3 Stub
+const PLACEHOLDER_INSTRUCTIONS: InstructionDoc = {
+    title: 'Pattern Instructions',
+    blocks: [
+        { type: 'heading', content: ['General Notes'] },
+        { type: 'paragraph', content: ['Follow the chart from bottom to top, right to left. Ensure you maintain consistent tension throughout the project.'] },
+        { type: 'heading', content: ['Finishing'] },
+        { type: 'list-ul', content: ['Weave in all ends.', 'Block to final measurements.', 'Add border if desired.'] }
+    ]
+};
 import { processImageToGrid, findClosestYarnColor } from '../services/projectService';
 import { Button, Icon, ContextMenu, Modal } from '../components/ui/SharedComponents';
 import { PIXEL_FONT } from '../constants';
@@ -172,6 +183,10 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [ppOverviewMode, setPpOverviewMode] = useState<'auto' | 'always' | 'never'>(ppDefaults.overviewMode || 'auto');
     const [ppIncludeCover, setPpIncludeCover] = useState(ppDefaults.includeCoverPage || false);
     const [ppIncludeYarn, setPpIncludeYarn] = useState(ppDefaults.includeYarnRequirements || false);
+
+    // Instructions (Pattern Pack)
+    const [ppIncludeInstructions, setPpIncludeInstructions] = useState(ppDefaults.includeInstructions || false);
+    const [ppInstructionsDoc, setPpInstructionsDoc] = useState<InstructionDoc | null>(ppDefaults.instructionsDoc || null);
 
     // Removed: Default Layout Options Effect (caused leakage)
 
@@ -787,6 +802,10 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 includeCoverPage: ppIncludeCover,
                 overviewMode: ppOverviewMode,
 
+                // Instructions
+                includeInstructions: ppIncludeInstructions,
+                instructionsDoc: ppIncludeInstructions ? (ppInstructionsDoc || PLACEHOLDER_INSTRUCTIONS) : null,
+
                 branding: {
                     designerName: exportDesignerName || undefined,
                     website: exportWebsite || undefined,
@@ -860,6 +879,10 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         if (d.overviewMode) setPpOverviewMode(d.overviewMode);
         setPpIncludeCover(d.includeCoverPage || false);
         setPpIncludeYarn(d.includeYarnRequirements || false);
+
+        // Reset Instructions
+        setPpIncludeInstructions(d.includeInstructions || false);
+        setPpInstructionsDoc(d.instructionsDoc || null);
     };
 
 
@@ -1492,6 +1515,41 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             </div>
                         </div>
 
+                        {/* SECTION E: INSTRUCTIONS (Pattern Pack Only) */}
+                        {selectedExportType === 'pattern-pack' && (
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wider">Instructions</h4>
+                                <div className="pl-1">
+                                    <label className="flex items-center cursor-pointer text-sm mb-2">
+                                        <input
+                                            type="checkbox"
+                                            className="mr-2 rounded text-indigo-600"
+                                            checked={ppIncludeInstructions}
+                                            onChange={(e) => setPpIncludeInstructions(e.target.checked)}
+                                        />
+                                        <div>
+                                            <span className="font-medium">Include Instructions</span>
+                                            <p className="text-xs text-gray-500">Adds a printable Instructions section before charts. Never shares pages with the Overview or charts.</p>
+                                        </div>
+                                    </label>
+
+                                    {ppIncludeInstructions && (
+                                        <div className="ml-6 p-3 bg-gray-50 border border-gray-200 rounded text-sm text-gray-600">
+                                            <p className="mb-2 italic">Instructions editing will be added next. For now, exports use a placeholder doc.</p>
+                                            <Button
+                                                variant="secondary"
+                                                onClick={() => alert("Rich Text Editor coming in next update!")}
+                                                className="w-full justify-center text-xs"
+                                            >
+                                                <Icon name="edit" className="w-3 h-3 mr-1" />
+                                                Edit Instructions...
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {/* SECTION D: BRANDING */}
                         <div>
                             <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wider">Branding</h4>
@@ -1520,9 +1578,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             </div>
                         </div>
                     </div>
-
                 </div>
-
             </Modal>
 
             {/* Generate Pattern Modal */}

@@ -1089,50 +1089,21 @@ export const exportPixelGridToPDF = (
     const includeInstructions = (options as any).includeInstructions === true;
 
     if (includeInstructions && isPatternPack) {
-        // PLACEMENT RULE: Never share page with Overview.
-        // Logic: If overview was shown, we must ensure we aren't following it on the same page.
-        // However, we don't track the exact page index of overview easily here since drawMaterials intervened.
-        // BUT: drawMaterials adds pages if needed.
-        // Safety Check: If showOverview is True, and we are NOT on a fresh page (currentY > margin+20),
-        // we might risk being on the same page if Materials was short.
-        // Actually, the rule is "Instructions must never share a page with Pattern Overview".
-        // If Overview is "Auto" (multi-page) or "Always" (single page), it occupies space.
+        // ORPHAN GUARD & PLACEMENT LOGIC
+        // Rule: Instructions follow Materials (potentially on same page).
+        // Rule: Must have enough space for Header + some content to start.
+        // We do NOT unconditionally break for Overview anymore. 
+        // If Overview forced a new page, Materials started on that new page.
+        // If Materials was short, we share. If long, we wrap.
+        const MIN_INSTRUCTIONS_START_SPACE_PT = 140;
+        const spaceRemaining = pageH - currentY - margin;
 
-        // Strategy:
-        // 1. If Overview was shown, did it force a Page Break?
-        //    - Multi-page forces breaks.
-        //    - Single-page might share Page 1 with Header.
-        // 2. Materials follows Overview. Materials might share Page 1.
-        // 3. If Instructions follows Materials, it might share Page 1.
-        // -> Violation if Overview is on Page 1.
-
-        // ROBUST FIX:
-        // If (showOverview) and (currentY != margin + 20), FORCE NEW PAGE.
-        // This ensures Instructions starts fresh if there is ANY predecessor on the current usage chain,
-        // which effectively separates it from Overview (and Materials, if they shared).
-        // Exception: If currentY implies a fresh page already, we are good.
-
-        // Wait, if Overview=Never, we CAN share page with Header/Materials.
-        // So this logic only applies if showOverview is TRUE.
-
-        if (showOverview) {
-            // If we have content on this page (which we do if Materials ran), force break.
-            // Even if Materials ended exactly at bottom, addPage is safe.
-            // Only skip if we are somehow at top of page (unlikely if Overview+Materials ran).
-            if (currentY > margin + 30) {
-                doc.addPage();
-                currentY = margin + 20;
-            }
+        if (spaceRemaining < MIN_INSTRUCTIONS_START_SPACE_PT) {
+            doc.addPage();
+            currentY = margin + 20;
         } else {
-            // Overview NOT shown. We can fit if space permits.
-            // Check space for Title (30) + minimal content (50)
-            const spaceRemaining = pageH - currentY - margin;
-            if (spaceRemaining < 100) {
-                doc.addPage();
-                currentY = margin + 20;
-            } else {
-                currentY += 20; // Gap
-            }
+            // Standard Gap
+            currentY += 20;
         }
 
         const docPayload = (options as any).instructionDoc;
