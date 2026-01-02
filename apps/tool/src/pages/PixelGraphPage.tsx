@@ -223,6 +223,12 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const projectStateRef = useRef(state);
     useEffect(() => { projectStateRef.current = state; }, [state]);
 
+    // Commit 5: State Persistence for Visuals
+    // Track previous coMode to detect transitions
+    const prevCoModeRef = useRef<typeof coMode>(coMode);
+    // Store non-stitch visual settings to restore them when leaving stitch mode
+    const lastNonStitchVisualRef = useRef<{ showSymbols: boolean; showBackgrounds: boolean } | null>(null);
+
     // --- TOOL CHANGE HANDLER (Transition Logic) ---
     const handleToolChange = (newTool: Tool) => {
         if (floatingSelection) {
@@ -1118,13 +1124,54 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         }
     }, [isPreviewFullScreen, previewGrid]);
 
-    // Commit 4: Enforce Stitch Mode Visual Lock
+    // Commit 5: Transition-Aware Stitch Mode Visual Lock
     useEffect(() => {
-        if (selectedExportType === 'chart-only' && coMode === 'stitch') {
+        if (selectedExportType !== 'chart-only') {
+            // Reset refs if we leave chart-only mode entirely, ensuring fresh state next time
+            prevCoModeRef.current = coMode;
+            // Optional: lastNonStitchVisualRef.current = null; // We could clear it or keep it. Keeping it might be nice.
+            return;
+        }
+
+        const prevMode = prevCoModeRef.current;
+        const currentMode = coMode;
+
+        // Transition INTO Stitch Mode
+        if (currentMode === 'stitch' && prevMode !== 'stitch') {
+            // Snapshot current visuals before locking
+            // Only snapshot if we have valid non-locked values (i.e., not coming from some other weird state)
+            lastNonStitchVisualRef.current = {
+                showSymbols: exportShowCellSymbols,
+                showBackgrounds: showCellBackgrounds
+            };
+
+            // Enforce Lock
             setExportShowCellSymbols(true);
             setShowCellBackgrounds(false);
         }
-    }, [selectedExportType, coMode]);
+        // Transition OUT OF Stitch Mode
+        else if (currentMode !== 'stitch' && prevMode === 'stitch') {
+            if (lastNonStitchVisualRef.current) {
+                // Restore from snapshot
+                setExportShowCellSymbols(lastNonStitchVisualRef.current.showSymbols);
+                setShowCellBackgrounds(lastNonStitchVisualRef.current.showBackgrounds);
+            } else {
+                // Fallback to defaults if no snapshot (shouldn't happen in normal flow but safe)
+                const d = getDefaultChartOnlyExportOptionsV3();
+                setExportShowCellSymbols(d.chartVisual?.showCellSymbols ?? false);
+                setShowCellBackgrounds(d.chartVisual?.showCellBackgrounds ?? true);
+            }
+        }
+        // Edge case: Initial load into Stitch mode (no transition)
+        // Ensure lock is enforced if we land directly on stitch (e.g. from defaults)
+        else if (currentMode === 'stitch' && (!exportShowCellSymbols || showCellBackgrounds)) {
+            setExportShowCellSymbols(true);
+            setShowCellBackgrounds(false);
+        }
+
+        // Update Ref
+        prevCoModeRef.current = currentMode;
+    }, [selectedExportType, coMode, exportShowCellSymbols, showCellBackgrounds]);
 
 
     const handleImportConfirm = () => {
