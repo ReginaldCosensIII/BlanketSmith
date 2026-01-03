@@ -1075,8 +1075,8 @@ export const exportPixelGridToPDF = (
     }
 
     // 5. Instructions (Pattern Pack Only)
-    // Engine-side Check: Explicitly check for 'includeInstructions' flag (temporary cast)
-    const includeInstructions = (options as any).includeInstructions === true;
+    // Engine-side Check: Explicitly check for 'includeInstructions' flag
+    const includeInstructions = options.includeInstructions === true;
 
     if (includeInstructions && isPatternPack) {
         // ORPHAN GUARD & PLACEMENT LOGIC
