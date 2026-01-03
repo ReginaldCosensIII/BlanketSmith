@@ -5,18 +5,9 @@ import { PixelGridEditor } from '../components/PixelGridEditor';
 import { exportPixelGridToPDF, exportPixelGridToImage } from '../services/exportService';
 import { getDefaultChartOnlyExportOptionsV3, getDefaultPatternPackExportOptionsV3 } from '../services/exportDefaultsV3';
 
-// Placeholder Instructions for V3 Stub
-const PLACEHOLDER_INSTRUCTIONS: InstructionDoc = {
-    title: 'Pattern Instructions',
-    blocks: [
-        { type: 'heading', content: ['General Notes'] },
-        { type: 'paragraph', content: ['Follow the chart from bottom to top, right to left. Ensure you maintain consistent tension throughout the project.'] },
-        { type: 'heading', content: ['Finishing'] },
-        { type: 'list-ul', content: ['Weave in all ends.', 'Block to final measurements.', 'Add border if desired.'] }
-    ]
-};
 import { processImageToGrid, findClosestYarnColor } from '../services/projectService';
 import { Button, Icon, ContextMenu, Modal } from '../components/ui/SharedComponents';
+import { InstructionsEditorModal } from '../components/InstructionsEditorModal';
 import { PIXEL_FONT } from '../constants';
 import { useCanvasLogic } from '../hooks/useCanvasLogic';
 import { useFloatingSelection } from '../context/FloatingSelectionContext';
@@ -152,6 +143,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number } | null>(null);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+    const [isInstructionsModalOpen, setIsInstructionsModalOpen] = useState(false);
     const [importFile, setImportFile] = useState<File | null>(null);
     const [previewGrid, setPreviewGrid] = useState<PixelGridData | null>(null);
     const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
@@ -186,7 +178,6 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
     // Instructions (Pattern Pack)
     const [ppIncludeInstructions, setPpIncludeInstructions] = useState(ppDefaults.includeInstructions || false);
-    const [ppInstructionsDoc, setPpInstructionsDoc] = useState<InstructionDoc | null>(ppDefaults.instructionsDoc || null);
 
     // Removed: Default Layout Options Effect (caused leakage)
 
@@ -804,7 +795,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
                 // Instructions
                 includeInstructions: ppIncludeInstructions,
-                instructionsDoc: ppIncludeInstructions ? (ppInstructionsDoc || PLACEHOLDER_INSTRUCTIONS) : null,
+                instructionDoc: ppIncludeInstructions ? (project?.instructionDoc || null) : null,
 
                 branding: {
                     designerName: exportDesignerName || undefined,
@@ -882,7 +873,6 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
         // Reset Instructions
         setPpIncludeInstructions(d.includeInstructions || false);
-        setPpInstructionsDoc(d.instructionsDoc || null);
     };
 
 
@@ -1535,10 +1525,10 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
                                     {ppIncludeInstructions && (
                                         <div className="ml-6 p-3 bg-gray-50 border border-gray-200 rounded text-sm text-gray-600">
-                                            <p className="mb-2 italic">Instructions editing will be added next. For now, exports use a placeholder doc.</p>
+                                            <p className="mb-2 italic">Customize the instructions that appear in your Pattern Pack.</p>
                                             <Button
                                                 variant="secondary"
-                                                onClick={() => alert("Rich Text Editor coming in next update!")}
+                                                onClick={() => setIsInstructionsModalOpen(true)}
                                                 className="w-full justify-center text-xs"
                                             >
                                                 <Icon name="edit" className="w-3 h-3 mr-1" />
@@ -1580,6 +1570,14 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                     </div>
                 </div>
             </Modal>
+
+            {/* Instructions Editor Modal */}
+            <InstructionsEditorModal
+                isOpen={isInstructionsModalOpen}
+                onClose={() => setIsInstructionsModalOpen(false)}
+                doc={project?.instructionDoc}
+                onSave={(doc) => dispatch({ type: 'UPDATE_INSTRUCTION_DOC', payload: doc })}
+            />
 
             {/* Generate Pattern Modal */}
             < Modal isOpen={isGenerateModalOpen} onClose={() => setIsGenerateModalOpen(false)} title="Generate Pattern from Image" >
@@ -1935,6 +1933,11 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                     <div>
                         <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Generate Pattern</h4>
                         <Button onClick={() => setIsGenerateModalOpen(true)} className="w-full justify-center"><Icon name="upload" className="w-4 h-4 mr-2" /> Generate Pattern</Button>
+                    </div>
+
+                    <div>
+                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Instructions</h4>
+                        <Button onClick={() => setIsInstructionsModalOpen(true)} className="w-full justify-center"><Icon name="edit" className="w-4 h-4 mr-2" /> Edit Instructions</Button>
                     </div>
 
                     <div>

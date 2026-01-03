@@ -35,6 +35,11 @@ const projectReducer = (state: ProjectState, action: ProjectAction): ProjectStat
       const updatedProject = { ...state.project, yarnPalette: action.payload };
       return { ...state, project: updatedProject };
     }
+    case 'UPDATE_INSTRUCTION_DOC': {
+      if (!state.project) return state;
+      const updatedProject = { ...state.project, instructionDoc: action.payload };
+      return { ...state, project: updatedProject };
+    }
     case 'UNDO': {
       if (state.historyIndex > 0) {
         const newIndex = state.historyIndex - 1;

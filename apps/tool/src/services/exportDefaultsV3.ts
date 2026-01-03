@@ -24,7 +24,7 @@ export const getDefaultChartOnlyExportOptionsV3 = (): ExportOptions => {
         // Instructions
         instructionsMode: 'none',
         includeInstructions: false,
-        instructionsDoc: null,
+        instructionDoc: null,
 
         // Visuals
         chartVisual: {
@@ -59,7 +59,7 @@ export const getDefaultPatternPackExportOptionsV3 = (): ExportOptions => {
         // Instructions
         instructionsMode: 'none',
         includeInstructions: false,
-        instructionsDoc: null,
+        instructionDoc: null,
 
         // Visuals
         chartVisual: {

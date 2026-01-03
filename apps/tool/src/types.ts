@@ -65,6 +65,7 @@ export interface Project<T> {
   };
   data: T;
   yarnPalette: YarnColor[];
+  instructionDoc?: InstructionDoc;
 }
 
 export type AnyProject = Project<PixelGridData | C2CData | StripesData | GrannySquareData>;
@@ -82,6 +83,7 @@ export type ProjectAction =
   | { type: 'UPDATE_PROJECT_NAME'; payload: string }
   | { type: 'UPDATE_PROJECT_SETTINGS'; payload: Record<string, any> }
   | { type: 'SET_PALETTE'; payload: YarnColor[] }
+  | { type: 'UPDATE_INSTRUCTION_DOC'; payload: InstructionDoc }
   | { type: 'UNDO' }
   | { type: 'REDO' };
 
@@ -155,7 +157,7 @@ export interface ExportOptions {
 
   // -- Instructions (Pattern Pack) --
   includeInstructions?: boolean;
-  instructionsDoc?: InstructionDoc | null;
+  instructionDoc?: InstructionDoc | null;
 
   // -- Instructions Placeholders (Legacy/Reserved) --
   instructionsMode?: 'none' | 'engine';
