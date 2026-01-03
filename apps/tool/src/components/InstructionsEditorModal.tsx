@@ -1,19 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Icon } from './ui/SharedComponents';
-import { InstructionDoc, InstructionBlock } from '../types';
+import { AnyProject, InstructionDoc, InstructionBlock } from '../types';
+import { generateCrochetInstructionDoc } from '../services/instructions/generator';
 
 interface InstructionsEditorModalProps {
     isOpen: boolean;
     onClose: () => void;
     doc: InstructionDoc | null | undefined;
     onSave: (doc: InstructionDoc) => void;
+    project: AnyProject | null; // Needed for generator
 }
 
 export const InstructionsEditorModal: React.FC<InstructionsEditorModalProps> = ({
     isOpen,
     onClose,
     doc,
-    onSave
+    onSave,
+    project
 }) => {
     const [title, setTitle] = useState('');
     const [blocks, setBlocks] = useState<InstructionBlock[]>([]);
@@ -44,6 +47,21 @@ export const InstructionsEditorModal: React.FC<InstructionsEditorModalProps> = (
             blocks: cleanBlocks
         });
         onClose();
+    };
+
+    const handleGenerate = () => {
+        if (!project) return;
+
+        const hasContent = blocks.some(b => b.content.some(l => l.trim() !== ''));
+        if (hasContent) {
+            if (!window.confirm("This will overwrite your current instructions. Are you sure?")) {
+                return;
+            }
+        }
+
+        const generated = generateCrochetInstructionDoc(project);
+        setTitle(generated.title || 'Pattern Instructions');
+        setBlocks(generated.blocks);
     };
 
     const addBlock = (type: InstructionBlock['type']) => {
@@ -88,18 +106,30 @@ export const InstructionsEditorModal: React.FC<InstructionsEditorModalProps> = (
             }
         >
             <div className="space-y-6 pb-20">
-                {/* Document Title */}
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Document Title
-                    </label>
-                    <input
-                        type="text"
-                        className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
-                        placeholder="e.g., My Pattern Instructions"
-                    />
+                {/* Header Controls */}
+                <div className="flex justify-between items-end border-b pb-4">
+                    <div className="flex-1 mr-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Document Title
+                        </label>
+                        <input
+                            type="text"
+                            className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder="e.g., My Pattern Instructions"
+                        />
+                    </div>
+                    {/* Generate Action */}
+                    <button
+                        onClick={handleGenerate}
+                        disabled={!project}
+                        className="flex items-center gap-1 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-md hover:bg-indigo-100 transition-colors border border-indigo-200 text-sm font-medium h-[42px]"
+                        title="Generate instructions based on project data"
+                    >
+                        <Icon name="zap" className="w-4 h-4" />
+                        Generate (v1)
+                    </button>
                 </div>
 
                 {/* Blocks List */}

@@ -1577,6 +1577,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 onClose={() => setIsInstructionsModalOpen(false)}
                 doc={project?.instructionDoc}
                 onSave={(doc) => dispatch({ type: 'UPDATE_INSTRUCTION_DOC', payload: doc })}
+                project={project}
             />
 
             {/* Generate Pattern Modal */}
