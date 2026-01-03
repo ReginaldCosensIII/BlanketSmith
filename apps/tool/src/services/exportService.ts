@@ -141,16 +141,6 @@ interface InstructionDoc {
     blocks: InstructionBlock[];
 }
 
-const PLACEHOLDER_INSTRUCTIONS: InstructionDoc = {
-    title: 'Pattern Instructions',
-    blocks: [
-        { type: 'heading', content: ['General Notes'] },
-        { type: 'paragraph', content: ['Follow the chart from bottom to top, right to left. Ensure you maintain consistent tension throughout the project.'] },
-        { type: 'heading', content: ['Finishing'] },
-        { type: 'list-ul', content: ['Weave in all ends.', 'Block to final measurements.', 'Add border if desired.'] }
-    ]
-};
-
 // Internal Helper for Instructions
 const drawInstructionsSection = (
     doc: any, // PDF Instance
@@ -158,7 +148,7 @@ const drawInstructionsSection = (
     pageH: number,
     margin: number,
     layout: any, // RenderLayout
-    instructionDoc: InstructionDoc = PLACEHOLDER_INSTRUCTIONS
+    instructionDoc: InstructionDoc
 ): number => {
     let y = currentY;
     const lineHeight = 12;
@@ -1106,8 +1096,16 @@ export const exportPixelGridToPDF = (
             currentY += 20;
         }
 
-        const docPayload = (options as any).instructionDoc;
-        currentY = drawInstructionsSection(doc, currentY, pageH, margin, atlasPlan, docPayload);
+        const rawDoc = options.instructionDoc;
+        // Fallback Logic: Ensure we have a valid doc with blocks
+        const effectiveDoc = (rawDoc && rawDoc.blocks && rawDoc.blocks.length > 0)
+            ? rawDoc
+            : {
+                title: 'Instructions',
+                blocks: [{ type: 'paragraph', content: ['No instructions provided.'] }]
+            } as InstructionDoc;
+
+        currentY = drawInstructionsSection(doc, currentY, pageH, margin, atlasPlan, effectiveDoc);
         hasContent = true;
     }
 
