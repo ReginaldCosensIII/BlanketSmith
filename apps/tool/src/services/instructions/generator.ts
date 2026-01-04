@@ -19,11 +19,24 @@ export const generateCrochetInstructionDoc = (project: AnyProject): InstructionD
         content: ['Materials & Tools']
     });
 
-    const paletteCount = project.yarnPalette.length;
+    // Calculate actual usage for Yarn count
+    const usedColorIds = new Set<string>();
+    const projectData = project.data as any; // Cast generic data safely
+
+    if (projectData && Array.isArray(projectData.grid)) {
+        projectData.grid.forEach((cell: any) => {
+            if (cell.colorId) { // Check for truthy colorId (excludes null/undefined)
+                usedColorIds.add(cell.colorId);
+            }
+        });
+    }
+
+    const colorCount = usedColorIds.size;
+
     blocks.push({
         type: 'list-ul',
         content: [
-            `Yarn: ${paletteCount} color${paletteCount !== 1 ? 's' : ''} (see Materials Key for details)`,
+            `Yarn: ${colorCount} color${colorCount !== 1 ? 's' : ''} (see Materials Key for details)`,
             'Hook: Recommended size for yarn weight',
             'Scissors',
             'Tapestry Needle'
@@ -37,9 +50,8 @@ export const generateCrochetInstructionDoc = (project: AnyProject): InstructionD
     let usedStitchIds = new Set<string>();
 
     // Type Guard for PixelGridData (has 'grid' array)
-    const data = project.data as any; // Cast generic data to access potential properties safely
-    if (data && Array.isArray(data.grid)) {
-        const grid = data.grid;
+    if (projectData && Array.isArray(projectData.grid)) {
+        const grid = projectData.grid;
         grid.forEach((cell: any) => {
             if (cell.stitchId) {
                 usedStitchIds.add(cell.stitchId);
