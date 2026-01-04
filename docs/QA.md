@@ -62,6 +62,13 @@ Before merging export changes, verify:
 - [ ] **Symbol Column**: "Sym" column appears in Materials table **ONLY** if Color chart is included
 - [ ] **Hybrid Exclusion**: Hybrid-only exports do **NOT** trigger the Color Symbol column
 
+### Instructions (Pattern Pack)
+- [ ] **Inclusion**: Instructions appear when enabled, disappear when disabled.
+- [ ] **Placement**: Appears after "Materials & Stitch Key", before Charts.
+- [ ] **Orphan Guard**: Starts on same page as Materials if space allows (>140pt), otherwise fresh page.
+- [ ] **Chart Isolation**: Charts ALWAYS start on a fresh page after Instructions.
+- [ ] **No Overview Overlap**: Instructions never share a page with Pattern Overview.
+
 ## QA Artifacts
 For detailed export rules and manual QA procedures, see:
 - [Export Engine V3 QA Report](qa/Export-engine-v3-qa-report.md)

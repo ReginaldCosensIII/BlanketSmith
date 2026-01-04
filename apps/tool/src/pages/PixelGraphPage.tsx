@@ -1,11 +1,13 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, ChangeEvent } from 'react';
-import { PixelGridData, YarnColor, CellData, Symmetry, ContextMenuItem, ExportType, ExportOptions } from '../types';
+import { PixelGridData, YarnColor, CellData, Symmetry, ContextMenuItem, ExportType, ExportOptions, InstructionDoc } from '../types';
 import { useProject } from '../context/ProjectContext';
 import { PixelGridEditor } from '../components/PixelGridEditor';
 import { exportPixelGridToPDF, exportPixelGridToImage } from '../services/exportService';
 import { getDefaultChartOnlyExportOptionsV3, getDefaultPatternPackExportOptionsV3 } from '../services/exportDefaultsV3';
+
 import { processImageToGrid, findClosestYarnColor } from '../services/projectService';
 import { Button, Icon, ContextMenu, Modal } from '../components/ui/SharedComponents';
+import { InstructionsEditorModal } from '../components/InstructionsEditorModal';
 import { PIXEL_FONT } from '../constants';
 import { useCanvasLogic } from '../hooks/useCanvasLogic';
 import { useFloatingSelection } from '../context/FloatingSelectionContext';
@@ -141,6 +143,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number } | null>(null);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);
+    const [isInstructionsModalOpen, setIsInstructionsModalOpen] = useState(false);
     const [importFile, setImportFile] = useState<File | null>(null);
     const [previewGrid, setPreviewGrid] = useState<PixelGridData | null>(null);
     const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
@@ -172,6 +175,9 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [ppOverviewMode, setPpOverviewMode] = useState<'auto' | 'always' | 'never'>(ppDefaults.overviewMode || 'auto');
     const [ppIncludeCover, setPpIncludeCover] = useState(ppDefaults.includeCoverPage || false);
     const [ppIncludeYarn, setPpIncludeYarn] = useState(ppDefaults.includeYarnRequirements || false);
+
+    // Instructions (Pattern Pack)
+    const [ppIncludeInstructions, setPpIncludeInstructions] = useState(ppDefaults.includeInstructions || false);
 
     // Removed: Default Layout Options Effect (caused leakage)
 
@@ -787,6 +793,10 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 includeCoverPage: ppIncludeCover,
                 overviewMode: ppOverviewMode,
 
+                // Instructions
+                includeInstructions: ppIncludeInstructions,
+                instructionDoc: ppIncludeInstructions ? (project?.instructionDoc || null) : null,
+
                 branding: {
                     designerName: exportDesignerName || undefined,
                     website: exportWebsite || undefined,
@@ -860,6 +870,9 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         if (d.overviewMode) setPpOverviewMode(d.overviewMode);
         setPpIncludeCover(d.includeCoverPage || false);
         setPpIncludeYarn(d.includeYarnRequirements || false);
+
+        // Reset Instructions
+        setPpIncludeInstructions(d.includeInstructions || false);
     };
 
 
@@ -1492,6 +1505,41 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             </div>
                         </div>
 
+                        {/* SECTION E: INSTRUCTIONS (Pattern Pack Only) */}
+                        {selectedExportType === 'pattern-pack' && (
+                            <div>
+                                <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wider">Instructions</h4>
+                                <div className="pl-1">
+                                    <label className="flex items-center cursor-pointer text-sm mb-2">
+                                        <input
+                                            type="checkbox"
+                                            className="mr-2 rounded text-indigo-600"
+                                            checked={ppIncludeInstructions}
+                                            onChange={(e) => setPpIncludeInstructions(e.target.checked)}
+                                        />
+                                        <div>
+                                            <span className="font-medium">Include Instructions</span>
+                                            <p className="text-xs text-gray-500">Adds a printable Instructions section before charts. Never shares pages with the Overview or charts.</p>
+                                        </div>
+                                    </label>
+
+                                    {ppIncludeInstructions && (
+                                        <div className="ml-6 p-3 bg-gray-50 border border-gray-200 rounded text-sm text-gray-600">
+                                            <p className="mb-2 italic">Customize the instructions that appear in your Pattern Pack.</p>
+                                            <Button
+                                                variant="secondary"
+                                                onClick={() => setIsInstructionsModalOpen(true)}
+                                                className="w-full justify-center text-xs"
+                                            >
+                                                <Icon name="edit" className="w-3 h-3 mr-1" />
+                                                Edit Instructions...
+                                            </Button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
                         {/* SECTION D: BRANDING */}
                         <div>
                             <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wider">Branding</h4>
@@ -1520,10 +1568,17 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             </div>
                         </div>
                     </div>
-
                 </div>
-
             </Modal>
+
+            {/* Instructions Editor Modal */}
+            <InstructionsEditorModal
+                isOpen={isInstructionsModalOpen}
+                onClose={() => setIsInstructionsModalOpen(false)}
+                doc={project?.instructionDoc}
+                onSave={(doc) => dispatch({ type: 'UPDATE_INSTRUCTION_DOC', payload: doc })}
+                project={project}
+            />
 
             {/* Generate Pattern Modal */}
             < Modal isOpen={isGenerateModalOpen} onClose={() => setIsGenerateModalOpen(false)} title="Generate Pattern from Image" >
@@ -1879,6 +1934,11 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                     <div>
                         <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Generate Pattern</h4>
                         <Button onClick={() => setIsGenerateModalOpen(true)} className="w-full justify-center"><Icon name="upload" className="w-4 h-4 mr-2" /> Generate Pattern</Button>
+                    </div>
+
+                    <div>
+                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Instructions</h4>
+                        <Button onClick={() => setIsInstructionsModalOpen(true)} className="w-full justify-center"><Icon name="edit" className="w-4 h-4 mr-2" /> Edit Instructions</Button>
                     </div>
 
                     <div>

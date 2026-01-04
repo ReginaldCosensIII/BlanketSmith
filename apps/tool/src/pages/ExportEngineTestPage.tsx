@@ -134,6 +134,16 @@ function buildOptions(baseType: 'pattern-pack' | 'chart-only', overrides: Partia
 // overviewMode: 'ov_auto' | 'ov_always' | 'ov_never'
 // flags: short descriptive tags (e.g. 'cover', 'yarn', 'hybrid', 'large')
 
+// Mock Instructions for testing
+const MOCK_INSTRUCTION_DOC = {
+    title: 'Test Instructions',
+    blocks: [
+        { type: 'heading', content: ['Introduction'] },
+        { type: 'paragraph', content: ['These are test instructions to verify export placement.'] },
+        { type: 'list-ul', content: ['Item 1', 'Item 2'] }
+    ]
+} as any;
+
 const SCENARIOS: Scenario[] = [
     // --- V2 BASELINE: PATTERN PACK ---
 
@@ -368,6 +378,46 @@ const SCENARIOS: Scenario[] = [
         baseType: 'chart-only',
         gridConfig: { width: 100, height: 200, patternType: 'stripes' },
         overrides: buildCO({})
+    },
+
+    // --- INSTRUCTIONS ---
+
+    {
+        id: 'v2_pp_instructions_ON',
+        name: '17. Instructions: Enabled',
+        description: 'Instructions ENABLED. Should appear after Materials.',
+        expected: 'Instructions: PRESENT (After Materials).\nPlacement: If space >140pt, shares page. Else fresh page.',
+        baseType: 'pattern-pack',
+        gridConfig: { width: 20, height: 20, patternType: 'checker', includeStitches: true },
+        overrides: buildPP({
+            includeInstructions: true,
+            instructionDoc: MOCK_INSTRUCTION_DOC
+        })
+    },
+    {
+        id: 'v2_pp_instructions_OFF',
+        name: '18. Instructions: Disabled',
+        description: 'Instructions DISABLED.',
+        expected: 'Instructions: ABSENT.',
+        baseType: 'pattern-pack',
+        gridConfig: { width: 20, height: 20, patternType: 'checker', includeStitches: true },
+        overrides: buildPP({
+            includeInstructions: false,
+            instructionDoc: MOCK_INSTRUCTION_DOC
+        })
+    },
+    {
+        id: 'v2_pp_instructions_orphan_guard',
+        name: '19. Instructions: Orphan Guard',
+        description: 'Instructions placement check with tight space.',
+        expected: 'Instructions: Page 2 (Fresh page due to lack of space on Page 1).',
+        baseType: 'pattern-pack',
+        gridConfig: { width: 20, height: 20, patternType: 'checker', includeStitches: true },
+        overrides: buildPP({
+            includeInstructions: true,
+            includeCoverPage: false, // Force Header to start on P1 to crowd Materials
+            instructionDoc: MOCK_INSTRUCTION_DOC
+        })
     }
 ];
 

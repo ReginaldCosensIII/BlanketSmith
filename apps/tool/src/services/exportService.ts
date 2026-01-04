@@ -129,6 +129,100 @@ export const exportPixelGridToImage = (projectName: string, gridData: PixelGridD
     link.click();
 };
 
+// --- INSTRUCTIONS (DISCIPLINE-NEUTRAL) ---
+
+interface InstructionBlock {
+    type: 'heading' | 'paragraph' | 'list-ul' | 'list-ol';
+    content: string[]; // Lines or items
+}
+
+interface InstructionDoc {
+    title?: string;
+    blocks: InstructionBlock[];
+}
+
+// Internal Helper for Instructions
+const drawInstructionsSection = (
+    doc: any, // PDF Instance
+    currentY: number,
+    pageH: number,
+    margin: number,
+    layout: any, // RenderLayout
+    instructionDoc: InstructionDoc
+): number => {
+    let y = currentY;
+    const lineHeight = 12;
+    const headingHeight = 18;
+    const listIndent = 10;
+    const pageWidth = doc.internal.pageSize.getWidth();
+    const contentWidth = pageWidth - margin * 2;
+
+    // Helper to verify space
+    const ensureSpace = (height: number) => {
+        if (y + height > pageH - margin) {
+            doc.addPage();
+            y = margin + 20; // Fresh page top
+        }
+    };
+
+    // Render Title
+    ensureSpace(30);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text(instructionDoc.title || 'Instructions', margin, y + 6);
+    y += 24;
+
+    // Render Blocks
+    instructionDoc.blocks.forEach((block: InstructionBlock) => {
+        doc.setFontSize(10);
+
+        if (block.type === 'heading') {
+            ensureSpace(headingHeight + 4);
+            doc.setFont('helvetica', 'bold');
+            y += 4;
+            block.content.forEach((line: string) => {
+                doc.text(line, margin, y + 10);
+                y += headingHeight;
+            });
+            y += 2; // Spacing after heading
+        }
+        else if (block.type === 'paragraph') {
+            doc.setFont('helvetica', 'normal');
+            block.content.forEach((text: string) => {
+                // Determine width
+                const lines = doc.splitTextToSize(text, contentWidth);
+                const blockHeight = lines.length * lineHeight;
+
+                ensureSpace(blockHeight + 6);
+                doc.text(lines, margin, y + 10);
+                y += blockHeight + 6;
+            });
+        }
+        else if (block.type === 'list-ul' || block.type === 'list-ol') {
+            doc.setFont('helvetica', 'normal');
+            block.content.forEach((item: string, index: number) => {
+                const listWidth = contentWidth - listIndent;
+                const lines = doc.splitTextToSize(item, listWidth);
+                const blockHeight = lines.length * lineHeight;
+
+                ensureSpace(blockHeight + 2);
+
+                // Bullet/Number
+                const prefix = block.type === 'list-ol' ? `${index + 1}.` : '•';
+                doc.text(prefix, margin, y + 10);
+
+                // Text
+                doc.text(lines, margin + listIndent, y + 10);
+                y += blockHeight + 2;
+            });
+            y += 4; // Spacing after list
+        }
+    });
+
+    // Pad end of section
+    return y + 20;
+};
+
 export const exportPixelGridToPDF = (
     projectName: string,
     gridData: PixelGridData,
@@ -868,7 +962,6 @@ export const exportPixelGridToPDF = (
         doc.setTextColor(0);
     };
 
-    // --- MAIN EXECUTION LOGIC (Canonical Flow) ---
 
     // 0. Pre-Calculation: Used Colors & Atlas Plan
     const usedColorsSet = new Set<string>();
@@ -981,8 +1074,40 @@ export const exportPixelGridToPDF = (
         hasContent = true;
     }
 
-    // 5. Instructions (Reserved Slot)
-    // if (instructionsMode !== 'none') { ... }
+    // 5. Instructions (Pattern Pack Only)
+    // Engine-side Check: Explicitly check for 'includeInstructions' flag
+    const includeInstructions = options.includeInstructions === true;
+
+    if (includeInstructions && isPatternPack) {
+        // ORPHAN GUARD & PLACEMENT LOGIC
+        // Rule: Instructions follow Materials (potentially on same page).
+        // Rule: Must have enough space for Header + some content to start.
+        // We do NOT unconditionally break for Overview anymore. 
+        // If Overview forced a new page, Materials started on that new page.
+        // If Materials was short, we share. If long, we wrap.
+        const MIN_INSTRUCTIONS_START_SPACE_PT = 140;
+        const spaceRemaining = pageH - currentY - margin;
+
+        if (spaceRemaining < MIN_INSTRUCTIONS_START_SPACE_PT) {
+            doc.addPage();
+            currentY = margin + 20;
+        } else {
+            // Standard Gap
+            currentY += 20;
+        }
+
+        const rawDoc = options.instructionDoc;
+        // Fallback Logic: Ensure we have a valid doc with blocks
+        const effectiveDoc = (rawDoc && rawDoc.blocks && rawDoc.blocks.length > 0)
+            ? rawDoc
+            : {
+                title: 'Instructions',
+                blocks: [{ type: 'paragraph', content: ['No instructions provided.'] }]
+            } as InstructionDoc;
+
+        currentY = drawInstructionsSection(doc, currentY, pageH, margin, atlasPlan, effectiveDoc);
+        hasContent = true;
+    }
 
     // 6. Charts
     // Commit 1 Rule: All Charts always start on fresh page.

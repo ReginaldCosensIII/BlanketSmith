@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - **PDF Export System**: Complete overhaul of the PDF export functionality.
+- **Instructions System**: Added first-class support for generic pattern instructions.
+    - **Visual Editor**: Block-based editor for creating custom pattern notes and instructions.
+    - **Auto-Generator (v1)**: Deterministic generation of Materials and Stitch Keys from project data.
+    - **PDF Integration**: Instructions render seamlessly in Pattern Packs with smart pagination logic.
 - **Export Center**: New modal for managing exports with "Pattern Pack" and "Chart Only" presets.
 - **Pattern Pack**: Multi-page PDF generation including cover page, yarn requirements, color charts, stitch charts, and stitch legend.
 - **Chart Only**: Single-page optimized export for quick printing.
