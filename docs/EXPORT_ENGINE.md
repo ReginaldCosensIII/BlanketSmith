@@ -60,8 +60,12 @@ PDF sections are rendered in strict order:
     - **Canonical Name**: Formerly "Yarn Requirements", this section is now unified.
     - **Stitch Key**: Automatically included in this section whenever Stitch or Hybrid charts are present.
     - **Symbol Column**: A numeric "Sym" column appears in the materials table **ONLY** when a Color chart is included. It is suppressed for Stitch-only and Hybrid-only exports.
-5. **Chart Sections** (Color → Stitch → Hybrid, as enabled)
-6. **Stitch Legend** (if stitches are used and legend is enabled)
+5. **Instructions** (if enabled)
+    - **Placement**: Starts immediately after Materials if space permits (>140pt), otherwise forces a page break.
+    - **Pagination**: May span multiple pages.
+    - **Chart Isolation**: The end of the instructions section ALWAYS forces a page break before charts begin.
+6. **Chart Sections** (Color → Stitch → Hybrid, as enabled)
+7. **Stitch Legend** (if stitches are used and legend is enabled)
 
 ## Atlas + Overview Semantics
 
@@ -83,8 +87,7 @@ When a pattern fits on a single page (no atlas regions), the overview renders a 
 
 ## Out of Scope
 
-### Instructions Rendering
-The `instructionsMode` option is a placeholder. No text-based instructions are currently rendered in PDFs.
+
 
 ### Defaults Automation
 The system does not auto-select export options based on project characteristics. All choices must be made explicitly by the user.
