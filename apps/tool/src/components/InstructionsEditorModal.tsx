@@ -114,7 +114,7 @@ export const InstructionsEditorModal: React.FC<InstructionsEditorModalProps> = (
                         </label>
                         <input
                             type="text"
-                            className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            className="w-full px-3 py-2 border-none shadow-none rounded-md focus:ring-2 focus:ring-brand-cyan outline-none transition-all"
                             value={title}
                             onChange={(e) => setTitle(e.target.value)}
                             placeholder="e.g., My Pattern Instructions"
@@ -223,7 +223,7 @@ const BlockEditor: React.FC<{
                 {block.type === 'heading' ? (
                     <input
                         type="text"
-                        className="w-full font-bold text-lg border-b border-gray-200 focus:border-blue-500 outline-none pb-1"
+                        className="plain-input w-full font-bold text-lg border-none outline-none pb-1 shadow-none"
                         value={textValue}
                         onChange={handleChange}
                         placeholder={getHelperText()}
@@ -231,7 +231,7 @@ const BlockEditor: React.FC<{
                     />
                 ) : (
                     <textarea
-                        className="w-full min-h-[80px] text-sm resize-y outline-none block"
+                        className="plain-input w-full min-h-[80px] text-sm resize-y outline-none block border-none shadow-none p-0"
                         value={textValue}
                         onChange={handleChange}
                         placeholder={getHelperText()}

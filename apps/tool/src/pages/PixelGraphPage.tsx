@@ -1231,7 +1231,12 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
     const hasSizeChanged = projectData.width !== newWidth || projectData.height !== newHeight;
     const ToolButton = ({ tool, label, icon }: { tool: Tool, label: string, icon?: string }) => (
-        <Button variant={activeTool === tool ? 'primary' : 'secondary'} onClick={() => handleToolChange(tool)} className="text-xs justify-center flex-col h-14" title={label}>
+        <Button
+            variant={activeTool === tool ? 'primary' : 'secondary'}
+            onClick={() => handleToolChange(tool)}
+            className={`text-xs justify-center flex-col h-14 ${activeTool === tool ? 'ring-2 ring-brand-purple ring-offset-1' : ''}`}
+            title={label}
+        >
             {icon && <Icon name={icon} className="w-5 h-5 mb-1" />}
             <span>{label}</span>
         </Button>
@@ -1826,7 +1831,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             <button
                                 onClick={(e) => handlePaletteClick(null, e)}
                                 onContextMenu={(e) => handlePaletteClick(null, e)}
-                                className={`w-8 h-8 rounded border-2 relative ${primaryColorId === null ? 'border-black z-10' : 'border-gray-200'} ${secondaryColorId === null ? 'ring-2 ring-red-500 ring-offset-1' : ''}`}
+                                className={`w-8 h-8 rounded border-2 relative ${primaryColorId === null ? 'ring-2 ring-brand-midBlue ring-offset-1 z-10' : 'border-gray-200'} ${secondaryColorId === null ? 'ring-2 ring-brand-purple ring-offset-1' : ''}`}
                                 title="Eraser (Left: Primary, Right: Secondary)"
                             >
                                 <div className="absolute inset-0 bg-white opacity-50" style={{ backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)', backgroundSize: '8px 8px' }}></div>
@@ -1837,7 +1842,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                     key={yarn.id}
                                     onClick={(e) => handlePaletteClick(yarn.id, e)}
                                     onContextMenu={(e) => handlePaletteClick(yarn.id, e)}
-                                    className={`w-8 h-8 rounded border-2 ${primaryColorId === yarn.id ? 'border-black z-10' : 'border-gray-200'} ${secondaryColorId === yarn.id ? 'ring-2 ring-red-500 ring-offset-1' : ''}`}
+                                    className={`w-8 h-8 rounded border-2 ${primaryColorId === yarn.id ? 'ring-2 ring-brand-midBlue ring-offset-1 z-10' : 'border-gray-200'} ${secondaryColorId === yarn.id ? 'ring-2 ring-brand-purple ring-offset-1' : ''}`}
                                     style={{ backgroundColor: yarn.hex }}
                                     title={`${yarn.name} (${yarn.brand})`}
                                 />
@@ -1916,8 +1921,20 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                     <div>
                         <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Symmetry</h4>
                         <div className="flex gap-2">
-                            <Button variant={symmetry.vertical ? 'primary' : 'secondary'} onClick={() => toggleSymmetry('vertical')} className="flex-1 justify-center"><Icon name="symmetry-vertical" className="w-4 h-4 mr-2" /> Vert</Button>
-                            <Button variant={symmetry.horizontal ? 'primary' : 'secondary'} onClick={() => toggleSymmetry('horizontal')} className="flex-1 justify-center"><Icon name="symmetry-horizontal" className="w-4 h-4 mr-2" /> Horiz</Button>
+                            <Button
+                                variant={symmetry.vertical ? 'primary' : 'secondary'}
+                                onClick={() => toggleSymmetry('vertical')}
+                                className={`flex-1 justify-center ${symmetry.vertical ? 'ring-2 ring-brand-purple ring-offset-1' : ''}`}
+                            >
+                                <Icon name="symmetry-vertical" className="w-4 h-4 mr-2" /> Vert
+                            </Button>
+                            <Button
+                                variant={symmetry.horizontal ? 'primary' : 'secondary'}
+                                onClick={() => toggleSymmetry('horizontal')}
+                                className={`flex-1 justify-center ${symmetry.horizontal ? 'ring-2 ring-brand-purple ring-offset-1' : ''}`}
+                            >
+                                <Icon name="symmetry-horizontal" className="w-4 h-4 mr-2" /> Horiz
+                            </Button>
                         </div>
                     </div>
 
@@ -1944,7 +1961,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                     <div>
                         <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Export</h4>
                         <Button
-                            variant="secondary"
+                            variant="primary"
                             onClick={() => setIsExportModalOpen(true)}
                             className="w-full justify-center mb-2"
                         >
@@ -1958,7 +1975,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
                 </div>
                 <div className="p-4 border-t bg-gray-50">
-                    <Button variant="secondary" onClick={openSettingsModal} className="w-full justify-center"><Icon name="settings" className="w-4 h-4 mr-2" /> Settings</Button>
+                    <Button variant="primary" onClick={openSettingsModal} className="w-full justify-center"><Icon name="settings" className="w-4 h-4 mr-2" /> Settings</Button>
                 </div>
             </aside>
 
@@ -2120,9 +2137,27 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             <Modal isOpen={isColorPickerOpen} onClose={() => setIsColorPickerOpen(false)} title="Add Custom Color">
                 <div className="space-y-4">
                     <div className="flex gap-2 mb-4">
-                        <Button variant={pickerMode === 'HEX' ? 'primary' : 'secondary'} onClick={() => setPickerMode('HEX')} className="flex-1 justify-center">HEX</Button>
-                        <Button variant={pickerMode === 'RGB' ? 'primary' : 'secondary'} onClick={() => setPickerMode('RGB')} className="flex-1 justify-center">RGB</Button>
-                        <Button variant={pickerMode === 'HSL' ? 'primary' : 'secondary'} onClick={() => setPickerMode('HSL')} className="flex-1 justify-center">HSL</Button>
+                        <Button
+                            variant={pickerMode === 'HEX' ? 'primary' : 'secondary'}
+                            onClick={() => setPickerMode('HEX')}
+                            className={`flex-1 justify-center ${pickerMode === 'HEX' ? 'ring-2 ring-brand-purple ring-offset-1' : ''}`}
+                        >
+                            HEX
+                        </Button>
+                        <Button
+                            variant={pickerMode === 'RGB' ? 'primary' : 'secondary'}
+                            onClick={() => setPickerMode('RGB')}
+                            className={`flex-1 justify-center ${pickerMode === 'RGB' ? 'ring-2 ring-brand-purple ring-offset-1' : ''}`}
+                        >
+                            RGB
+                        </Button>
+                        <Button
+                            variant={pickerMode === 'HSL' ? 'primary' : 'secondary'}
+                            onClick={() => setPickerMode('HSL')}
+                            className={`flex-1 justify-center ${pickerMode === 'HSL' ? 'ring-2 ring-brand-purple ring-offset-1' : ''}`}
+                        >
+                            HSL
+                        </Button>
                     </div>
 
                     <div className="flex gap-4">

@@ -1,0 +1,47 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        font-family: 'Inter', sans-serif;
+        @apply text-gray-800;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-family: 'Poppins', sans-serif;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="password"],
+    select,
+    textarea {
+        @apply bg-white border-2 border-gray-300 text-gray-700 font-sans rounded-md shadow-sm outline-none transition-colors duration-200;
+        @apply focus:border-brand-cyan focus:ring-2 focus:ring-brand-cyan focus:ring-opacity-50;
+    }
+
+    input[type="range"] {
+        @apply accent-brand-midBlue hover:accent-brand-purple cursor-pointer transition-colors duration-200;
+    }
+}
+
+@layer utilities {
+    .plain-input {
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .plain-input:focus {
+        border: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+        --tw-ring-shadow: none !important;
+    }
+}
