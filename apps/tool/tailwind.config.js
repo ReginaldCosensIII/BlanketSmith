@@ -10,11 +10,13 @@ export default {
                 brand: {
                     purple: '#7C2AE8',
                     midBlue: '#374FD9',
+                    midBlueDark: '#2F42C7',
+                    midBlueLight: '#7B8EF5',
                     cyan: '#0EC8FC',
                 }
             },
             backgroundImage: {
-                'brand-gradient': 'linear-gradient(135deg, #7C2AE8, #374FD9, #0EC8FC)',
+                'brand-gradient': 'linear-gradient(135deg, #7C2AE8 0%, #374FD9 75%, #0EC8FC 100%)',
             },
             fontFamily: {
                 sans: ['Inter', 'sans-serif'],

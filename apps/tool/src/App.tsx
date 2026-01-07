@@ -35,6 +35,33 @@ const App: React.FC = () => {
     useEffect(() => { localStorage.setItem('app_isSidebarVisible', String(isSidebarVisible)); }, [isSidebarVisible]);
     useEffect(() => { localStorage.setItem('app_isLeftHanded', String(isLeftHanded)); }, [isLeftHanded]);
 
+    // Update slider fill for cross-browser support (required for WebKit/Chromium)
+    useEffect(() => {
+        const updateSlider = (slider: HTMLInputElement) => {
+            const percent = ((+slider.value - +slider.min) / (+slider.max - +slider.min)) * 100;
+            slider.style.setProperty('--slider-fill', `${percent}%`);
+        };
+
+        const handleInput = (e: Event) => updateSlider(e.target as HTMLInputElement);
+
+        const observer = new MutationObserver(() => {
+            document.querySelectorAll<HTMLInputElement>('input[type="range"]').forEach(slider => {
+                updateSlider(slider);
+                slider.removeEventListener('input', handleInput);
+                slider.addEventListener('input', handleInput);
+            });
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+
+        return () => {
+            observer.disconnect();
+            document.querySelectorAll('input[type="range"]').forEach(s =>
+                s.removeEventListener('input', handleInput)
+            );
+        };
+    }, []);
+
     return (
         <ProjectProvider>
             <FloatingSelectionProvider>
