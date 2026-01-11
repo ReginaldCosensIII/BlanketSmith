@@ -35,7 +35,7 @@ const App: React.FC = () => {
     useEffect(() => { localStorage.setItem('app_isSidebarVisible', String(isSidebarVisible)); }, [isSidebarVisible]);
     useEffect(() => { localStorage.setItem('app_isLeftHanded', String(isLeftHanded)); }, [isLeftHanded]);
 
-    // Update slider fill for cross-browser support (required for WebKit/Chromium)
+    // Update slider fill for cross-browser support (Required for custom gray track + blue fill)
     useEffect(() => {
         const updateSlider = (slider: HTMLInputElement) => {
             const percent = ((+slider.value - +slider.min) / (+slider.max - +slider.min)) * 100;
@@ -61,6 +61,8 @@ const App: React.FC = () => {
             );
         };
     }, []);
+
+
 
     return (
         <ProjectProvider>

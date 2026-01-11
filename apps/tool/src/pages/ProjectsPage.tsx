@@ -139,8 +139,12 @@ export const ProjectsPage: React.FC = () => {
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-800">My Projects</h2>
                 <div className="flex items-center gap-2">
-                    <Button variant="secondary" onClick={() => importFileRef.current?.click()}>Import Project</Button>
-                    <Button onClick={openModal}>Create New Project</Button>
+                    <Button variant="secondary" onClick={() => importFileRef.current?.click()}>
+                        <Icon name="import" size="sm" className="mr-2" /> Import Project
+                    </Button>
+                    <Button onClick={openModal}>
+                        <Icon name="create-project" size="sm" className="mr-2" /> Create New Project
+                    </Button>
                 </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -156,7 +160,7 @@ export const ProjectsPage: React.FC = () => {
                         </div>
                         <div className="p-2 border-t bg-gray-50 flex gap-2">
                             <Button variant="secondary" className="flex-1 text-xs justify-center" onClick={() => handleLoadProject(p)}>Open</Button>
-                            <Button variant="secondary" className="p-2" onClick={(e) => handleExportProject(e, p)} title="Export Project JSON"> <Icon name="download" className="w-4 h-4" /> </Button>
+                            <Button variant="secondary" className="p-2" onClick={(e) => handleExportProject(e, p)} title="Export Project JSON"> <Icon name="export-json" className="w-4 h-4" /> </Button>
                             <Button variant="danger" className="p-2" onClick={(e) => handleDeleteProject(e, p.id)} title="Delete Project"> <Icon name="trash" className="w-4 h-4" /> </Button>
                         </div>
                     </div>

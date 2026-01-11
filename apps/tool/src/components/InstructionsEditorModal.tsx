@@ -127,7 +127,7 @@ export const InstructionsEditorModal: React.FC<InstructionsEditorModalProps> = (
                         className="flex items-center gap-1 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-md hover:bg-indigo-100 transition-colors border border-indigo-200 text-sm font-medium h-[42px]"
                         title="Generate instructions based on project data"
                     >
-                        <Icon name="zap" className="w-4 h-4" />
+                        <Icon name="zap" size="sm" />
                         Generate (v1)
                     </button>
                 </div>
@@ -160,10 +160,10 @@ export const InstructionsEditorModal: React.FC<InstructionsEditorModalProps> = (
                         Add New ...
                     </label>
                     <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                        <AddBlockButton icon="type" label="Heading" onClick={() => addBlock('heading')} />
-                        <AddBlockButton icon="align-left" label="Paragraph" onClick={() => addBlock('paragraph')} />
-                        <AddBlockButton icon="list" label="List (•)" onClick={() => addBlock('list-ul')} />
-                        <AddBlockButton icon="list-ol" label="List (1.)" onClick={() => addBlock('list-ol')} />
+                        <AddBlockButton icon="add-heading" label="Heading" onClick={() => addBlock('heading')} />
+                        <AddBlockButton icon="add-paragraph" label="Paragraph" onClick={() => addBlock('paragraph')} />
+                        <AddBlockButton icon="add-bullet-list" label="List (•)" onClick={() => addBlock('list-ul')} />
+                        <AddBlockButton icon="add-number-list" label="List (1.)" onClick={() => addBlock('list-ol')} />
                     </div>
                 </div>
             </div>
@@ -214,7 +214,7 @@ const BlockEditor: React.FC<{
                     <IconButton icon="arrow-up" onClick={() => onMove('up')} disabled={isFirst} title="Move Up" />
                     <IconButton icon="arrow-down" onClick={() => onMove('down')} disabled={isLast} title="Move Down" />
                     <div className="w-px h-3 bg-gray-300 mx-1" />
-                    <IconButton icon="trash-2" onClick={onDelete} className="text-red-500 hover:bg-red-50" title="Delete Block" />
+                    <IconButton icon="delete-block" onClick={onDelete} className="text-red-500 hover:bg-red-50" title="Delete Block" />
                 </div>
             </div>
 
@@ -248,7 +248,7 @@ const AddBlockButton: React.FC<{ icon: string, label: string, onClick: () => voi
         onClick={onClick}
         className="flex flex-col items-center justify-center p-3 border rounded hover:bg-gray-50 hover:border-blue-300 transition-colors text-gray-600 hover:text-blue-600"
     >
-        <Icon name={icon as any} className="w-5 h-5 mb-1" />
+        <Icon name={icon as any} size="md" className="mb-1" />
         <span className="text-xs font-medium">{label}</span>
     </button>
 );
@@ -262,7 +262,7 @@ const IconButton: React.FC<{ icon: string, onClick: () => void, disabled?: boole
         title={title}
         className={`p-1 rounded hover:bg-gray-200 transition-colors ${disabled ? 'opacity-30 cursor-not-allowed' : ''} ${className}`}
     >
-        <Icon name={icon as any} className="w-4 h-4" />
+        <Icon name={icon as any} size="sm" />
     </button>
 );
 

@@ -11,6 +11,7 @@
         "build": "npm run build -w @blanketsmith/tool && npm run build -w @blanketsmith/web"
     },
     "dependencies": {
+        "boxicons": "^2.1.4",
         "react": "^18.2.0",
         "react-dom": "^18.2.0"
     }

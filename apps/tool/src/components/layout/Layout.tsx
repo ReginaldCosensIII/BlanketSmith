@@ -68,14 +68,14 @@ export const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () =
 
 const NavItem: React.FC<{ to: string; icon: string; label: string }> = ({ to, icon, label }) => (
     <NavLink to={to} className={({ isActive }) => `flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-blue-100 hover:bg-white/10'}`}>
-        <Icon name={icon} className="w-6 h-6 mb-1" />
+        <Icon name={icon} size="xl" className="mb-1" />
         <span className="text-xs font-medium">{label}</span>
     </NavLink>
 );
 
 export const Sidebar: React.FC = () => (
     <aside className="bg-brand-midBlue p-2 flex flex-col gap-2 h-full overflow-y-auto">
-        <NavItem to="/" icon="grid" label="Pixel" />
+        <NavItem to="/" icon="pixel-mode" label="Pixel" />
         <NavItem to="/c2c" icon="c2c" label="C2C" />
         <NavItem to="/stripes" icon="stripes" label="Stripes" />
         <NavItem to="/granny" icon="granny" label="Granny" />
