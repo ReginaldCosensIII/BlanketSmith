@@ -6,6 +6,25 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+### Added
+- **Icon System**: Created `SharedComponents.tsx` with a lightweight, zero-dependency SVG `Icon` component.
+- **Branding**: Implemented `Horizontal-Lockup-No-Slogan.svg` in `Layout.tsx` for consistent header branding.
+- **Pattern Book**: Renamed "Projects" to "Pattern Book" across the application (Files, Routes, and UI).
+
+### Changed
+- **Migration**: Removed `boxicons` dependency completely.
+- **Styling**: Updated all buttons to use `rounded-xl` (12px) border radius.
+- **Sizing**: Standardized icon sizes:
+    - General icons: 20px (`md`)
+    - Modal icons: 24px (`lg`)
+    - Toolbar icons: 20px/24px
+- **Refactor**: Renamed `ProjectsPage.tsx` to `PatternBookPage.tsx`.
+
+### Fixed
+- **Performance**: Removed external font/CSS requests for icons.
+- **Consistency**: Fixed various icon sizing inconsistencies in modals and toolbars.
+
 - Pre-launch: Blocked search engine indexing via robots.txt and global noindex.
 
 ### Added

@@ -50,10 +50,7 @@ const ICON_SIZES: Record<string, number> = {
 
 // --- PLACEHOLDER ---
 // A simple generic icon (circle with a dot) to represent missing icons during migration.
-const PLACEHOLDER_PATH = [
-  "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z",
-  "M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6z"
-];
+const PLACEHOLDER_PATH = ["M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z", "M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6z"];
 
 const ZAP_ICON_PATH = ["M16.41 10.41a.998.998 0 0 0 0-1.82l-4.15-1.84-1.84-4.15a.99.99 0 0 0-.91-.59c-.4-.03-.75.22-.92.58L6.74 6.6 2.56 8.61c-.35.17-.57.53-.57.92s.24.74.59.9l4.15 1.84 1.84 4.15a.998.998 0 0 0 1.82 0l1.84-4.15 4.15-1.84Zm-5.82.68L9.5 13.53l-1.09-2.44a.98.98 0 0 0-.51-.51L5.37 9.46l2.55-1.23c.21-.1.38-.27.47-.48l1.08-2.33 1.1 2.48c.1.23.28.41.51.51l2.44 1.09-2.44 1.09c-.23.1-.41.28-.51.51ZM21.6 16.39l-2.77-1.23-1.23-2.77a.68.68 0 0 0-.6-.4c-.27-.02-.5.15-.61.39l-1.23 2.67-2.78 1.34c-.23.11-.38.35-.38.61s.16.49.4.6l2.77 1.23 1.23 2.77a.663.663 0 0 0 1.22 0l1.23-2.77 2.77-1.23c.24-.11.4-.35.4-.61s-.16-.5-.4-.61ZM7.76 18.63l-1.66-.74-.74-1.66a.41.41 0 0 0-.36-.24c-.16-.01-.3.09-.37.23l-.74 1.6-1.67.8c-.14.07-.23.21-.23.37s.1.3.24.36l1.66.74.74 1.66a.404.404 0 0 0 .74 0l.74-1.66 1.66-.74a.404.404 0 0 0 0-.74Z"];
 
@@ -87,7 +84,7 @@ const PALETTE_ICON_PATH = ["M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-
 
 const GRID_ICON_PATH = ["M2 16.5h5V21H2zM17 16.5h5V21h-5zM9.5 16.5h5V21h-5zM2 9.75h5v4.5H2zM17 9.75h5v4.5h-5zM9.5 9.75h5v4.5h-5zM2 3h5v4.5H2zM17 3h5v4.5h-5zM9.5 3h5v4.5h-5z"];
 
-const MANAGE_STITCHES_ICON_PATH = ["M5 22h14c1.103 0 2-.897 2-2V5c0-1.103-.897-2-2-2h-2a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1H5c-1.103 0-2 .897-2 2v15c0 1.103.897 2 2 2zM5 5h2v2h10V5h2v15H5V5z", "m11 13.586-1.793-1.793-1.414 1.414L11 16.414l5.207-5.207-1.414-1.414z"];
+const MANAGE_STITCHES_ICON_PATH = ["m4 8.09-1.29-1.3-1.42 1.42L4 10.91l4.71-4.7-1.42-1.42zm0 8-1.29-1.3-1.42 1.42L4 18.91l4.71-4.7-1.42-1.42zM10 15h12v2H10zm0-8h12v2H10z"];
 
 const CLOSE_ICON_PATH = ["m16.192 6.344-4.243 4.242-4.242-4.242-1.414 1.414L10.535 12l-4.242 4.242 1.414 1.414 4.242-4.242 4.243 4.242 1.414-1.414L13.364 12l4.242-4.242z"];
 
@@ -132,6 +129,8 @@ const CREATE_NEW_ICON_PATH = ["M13 10h-2v3H8v2h3v3h2v-3h3v-2h-3z", "m19.94 7.68-
 const DOWNLOAD_PDF_ICON_PATH = ["M8.267 14.68c-.184 0-.308.018-.372.036v1.178c.076.018.171.023.302.023.479 0 .774-.242.774-.651 0-.366-.254-.586-.704-.586zm3.487.012c-.2 0-.33.018-.407.036v2.61c.077.018.201.018.313.018.817.006 1.349-.444 1.349-1.396.006-.83-.479-1.268-1.255-1.268z", "M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM9.498 16.19c-.309.29-.765.42-1.296.42a2.23 2.23 0 0 1-.308-.018v1.426H7v-3.936A7.558 7.558 0 0 1 8.219 14c.557 0 .953.106 1.22.319.254.202.426.533.426.923-.001.392-.131.723-.367.948zm3.807 1.355c-.42.349-1.059.515-1.84.515-.468 0-.799-.03-1.024-.06v-3.917A7.947 7.947 0 0 1 11.66 14c.757 0 1.249.136 1.633.426.415.308.675.799.675 1.504 0 .763-.279 1.29-.663 1.615zM17 14.77h-1.532v.911H16.9v.734h-1.432v1.604h-.906V14.03H17v.74zM14 9h-1V4l5 5h-4z"];
 
 const EYE_ICON_PATH = ["M12 9a3 3 0 1 0 0 6 3 3 0 1 0 0-6", "M12 19c7.63 0 9.93-6.62 9.95-6.68.07-.21.07-.43 0-.63-.02-.07-2.32-6.68-9.95-6.68s-9.93 6.61-9.95 6.67c-.07.21-.07.43 0 .63.02.07 2.32 6.68 9.95 6.68Zm0-12c5.35 0 7.42 3.85 7.93 5-.5 1.16-2.58 5-7.93 5s-7.42-3.84-7.93-5c.5-1.16 2.58-5 7.93-5"];
+
+const TRANSPARENCY_ICON_PATH = ["M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8 0-2.02.75-3.87 1.98-5.31l11.33 11.33C15.87 19.25 14.02 20 12 20zm6.02-2.69L6.69 5.98C8.13 4.75 9.98 4 12 4c4.41 0 8 3.59 8 8 0 2.02-.75 3.87-1.98 5.31z"];
 
 const HELP_ICON_PATH = ["M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10 10-4.49 10-10S17.51 2 12 2m0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8", "M11 16h2v2h-2zm2.27-9.75c-2.08-.75-4.47.35-5.21 2.41l1.88.68c.18-.5.56-.9 1.07-1.13s1.08-.26 1.58-.08a2.01 2.01 0 0 1 1.32 1.86c0 1.04-1.66 1.86-2.24 2.07-.4.14-.67.52-.67.94v1h2v-.34c1.04-.51 2.91-1.69 2.91-3.68a4.015 4.015 0 0 0-2.64-3.73"];
 
@@ -187,11 +186,11 @@ const BULLET_LIST_ICON_PATH = ["M8 11h13v2H8zM8 6h13v2H8zM8 16h13v2H8zM3 5.5h3v3
 
 const NUMBER_LIST_ICON_PATH = ["M3 16h2v.5H3v1h2v.5H3v1h3v-4H3zM4 6h1v3h1V5H4zM3 11h2v.5H3V14h3v-1H4v-.5h2V10H3zM8 11h13v2H8zM8 6h13v2H8zM8 16h13v2H8z"];
 
-const TRANSPARENCY_ICON_PATH = ["M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8 0-2.02.75-3.87 1.98-5.31l11.33 11.33C15.87 19.25 14.02 20 12 20zm6.02-2.69L6.69 5.98C8.13 4.75 9.98 4 12 4c4.41 0 8 3.59 8 8 0 2.02-.75 3.87-1.98 5.31z"];
-
 const LOCKED_ICON_PATH = ["M6 22h12c1.1 0 2-.9 2-2v-9c0-1.1-.9-2-2-2h-1V7c0-2.76-2.24-5-5-5S7 4.24 7 7v2H6c-1.1 0-2 .9-2 2v9c0 1.1.9 2 2 2M9 7c0-1.65 1.35-3 3-3s3 1.35 3 3v2H9zm-3 4h12v9h-5v-2.28c.59-.35 1-.99 1-1.72 0-1.1-.9-2-2-2s-2 .9-2 2a2 2 0 0 0 1 1.72V20H6z"];
 
 const UNLOCKED_ICON_PATH = ["M6 22h12c1.1 0 2-.9 2-2v-9c0-1.1-.9-2-2-2H9V7c0-1.65 1.35-3 3-3s3 1.35 3 3h2c0-2.76-2.24-5-5-5S7 4.24 7 7v2H6c-1.1 0-2 .9-2 2v9c0 1.1.9 2 2 2m0-11h12v9h-5v-2.28c.59-.35 1-.99 1-1.72 0-1.1-.9-2-2-2s-2 .9-2 2a2 2 0 0 0 1 1.72V20H6z"];
+
+const BOOK_ICON_PATH = ["M8 6h9v2H8z", "M20 2H6C4.35 2 3 3.35 3 5v14c0 1.65 1.35 3 3 3h15v-2H6c-.55 0-1-.45-1-1s.45-1 1-1h14c.55 0 1-.45 1-1V3c0-.55-.45-1-1-1m-6 14H6c-.35 0-.69.07-1 .18V5c0-.55.45-1 1-1h13v12z"];
 
 /**
  * CENTRAL ICON REGISTRY
@@ -228,7 +227,6 @@ const ICON_MAP: Record<string, IconDef> = {
   'add-paragraph': { paths: PARAGRAPH_ICON_PATH },
   'add-bullet-list': { paths: BULLET_LIST_ICON_PATH },
   'add-number-list': { paths: NUMBER_LIST_ICON_PATH },
-  'transparency-color': { paths: TRANSPARENCY_ICON_PATH },
 
   // --- Selection Tools ---
   'copy': { paths: COPY_ICON_PATH },
@@ -238,6 +236,7 @@ const ICON_MAP: Record<string, IconDef> = {
   'selection-flip-vertical': { paths: FLIP_VERTICAL_ICON_PATH },
   'rotate-right': { paths: ROTATE_ICON_PATH },
   'clear-selection': { paths: TRASH_ICON_PATH },
+  'transparency-color': { paths: TRANSPARENCY_ICON_PATH },
 
   // --- Actions & Operations ---
   'undo': { paths: UNDO_ICON_PATH, stroke: "currentColor" },
@@ -271,6 +270,9 @@ const ICON_MAP: Record<string, IconDef> = {
   'folder-open': { paths: FOLDER_OPEN_ICON_PATH },
   'maximize': { paths: MAXIMIZE_ICON_PATH },
   'zap': { paths: ZAP_ICON_PATH }, // Generate/Flash
+  'lock': { paths: LOCKED_ICON_PATH },
+  'unlock': { paths: UNLOCKED_ICON_PATH },
+  'pattern-book': { paths: BOOK_ICON_PATH },
 
   // --- Symmetry / Arrows ---
   'symmetry-vertical': { paths: VERTICAL_SYMMETRY_ICON_PATH },
@@ -358,7 +360,7 @@ export const Icon: React.FC<IconProps> = ({
 };
 
 export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: 'primary' | 'secondary' | 'danger' | 'active' }> = ({ children, className, variant = 'primary', ...props }) => {
-  const baseClasses = 'px-4 py-2 rounded-md font-semibold text-sm transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm';
+  const baseClasses = 'px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-200 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm';
   const variantClasses = {
     primary: 'bg-brand-gradient text-white font-heading font-semibold hover:contrast-125 focus:ring-2 focus:ring-brand-purple focus:ring-offset-2',
     secondary: 'bg-[#E5E7EB] text-gray-800 font-sans font-medium hover:bg-gray-300 hover:text-gray-900 focus:ring-2 focus:ring-brand-purple focus:ring-offset-2',

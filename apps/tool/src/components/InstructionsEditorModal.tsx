@@ -127,7 +127,7 @@ export const InstructionsEditorModal: React.FC<InstructionsEditorModalProps> = (
                         className="flex items-center gap-1 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-md hover:bg-indigo-100 transition-colors border border-indigo-200 text-sm font-medium h-[42px]"
                         title="Generate instructions based on project data"
                     >
-                        <Icon name="zap" size="sm" />
+                        <Icon name="zap" size="md" />
                         Generate (v1)
                     </button>
                 </div>
@@ -248,7 +248,7 @@ const AddBlockButton: React.FC<{ icon: string, label: string, onClick: () => voi
         onClick={onClick}
         className="flex flex-col items-center justify-center p-3 border rounded hover:bg-gray-50 hover:border-blue-300 transition-colors text-gray-600 hover:text-blue-600"
     >
-        <Icon name={icon as any} size="md" className="mb-1" />
+        <Icon name={icon as any} size="lg" className="mb-1" />
         <span className="text-xs font-medium">{label}</span>
     </button>
 );
@@ -262,7 +262,7 @@ const IconButton: React.FC<{ icon: string, onClick: () => void, disabled?: boole
         title={title}
         className={`p-1 rounded hover:bg-gray-200 transition-colors ${disabled ? 'opacity-30 cursor-not-allowed' : ''} ${className}`}
     >
-        <Icon name={icon as any} size="sm" />
+        <Icon name={icon as any} size="md" />
     </button>
 );
 

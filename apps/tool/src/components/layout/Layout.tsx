@@ -30,9 +30,8 @@ export const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () =
     return (
         <header className="bg-white shadow-md p-2 flex justify-between items-center z-20">
             <div className="relative" ref={dropdownRef}>
-                <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-brand-midBlue focus:ring-offset-2 rounded-lg p-1">
-                    <img src="/branding/logos/Badge-Master.svg" alt="BlanketSmith" className="w-10 h-10" />
-                    <h1 className="text-xl font-bold font-heading text-gray-800 hidden sm:block">BlanketSmith</h1>
+                <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex items-center h-14 overflow-visible focus:outline-none focus:ring-2 focus:ring-brand-midBlue focus:ring-offset-2 rounded-xl p-0">
+                    <img src="/branding/logos/Horizontal-Lockup-No-Slogan.svg" alt="BlanketSmith" className="h-20 w-auto max-w-none" />
                 </button>
                 {isDropdownOpen && (
                     <div className="absolute top-full mt-2 w-64 bg-white rounded-md shadow-lg border z-30 p-2 space-y-1">
@@ -59,8 +58,8 @@ export const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () =
             </div>
             {state.project && <div className="text-gray-600 font-semibold">{state.project.name}</div>}
             <div className="flex items-center gap-2">
-                {state.project && <Button variant="secondary" onClick={saveCurrentProject}><Icon name="save" className="w-4 h-4" /> Save</Button>}
-                <Button variant="primary" onClick={() => navigate('/projects')}>My Projects</Button>
+                {state.project && <Button variant="secondary" onClick={saveCurrentProject}><Icon name="save" size="md" /> Save</Button>}
+                <Button variant="primary" onClick={() => navigate('/projects')}><Icon name="pattern-book" size="md" /> My Pattern Book</Button>
             </div>
         </header>
     );
@@ -112,13 +111,13 @@ export const Footer: React.FC<{ zoom: number, onZoomChange: (newZoom: number) =>
     return (
         <footer className="bg-gray-100 p-2 flex justify-between items-center z-20 border-t">
             <div className="flex gap-2">
-                <Button variant="secondary" onClick={handleUndo} disabled={!canUndo && !hasFloatingSelection}><Icon name="undo" className="w-4 h-4" /> Undo</Button>
-                <Button variant="secondary" onClick={handleRedo} disabled={!canRedo && !hasFloatingSelection}><Icon name="redo" className="w-4 h-4" /> Redo</Button>
+                <Button variant="secondary" onClick={handleUndo} disabled={!canUndo && !hasFloatingSelection}><Icon name="undo" size="md" /> Undo</Button>
+                <Button variant="secondary" onClick={handleRedo} disabled={!canRedo && !hasFloatingSelection}><Icon name="redo" size="md" /> Redo</Button>
             </div>
             <div className="flex items-center gap-2">
-                <Button variant="secondary" onClick={handleZoomOut} className="p-2"><Icon name="zoom-out" className="w-4 h-4" /></Button>
+                <Button variant="secondary" onClick={handleZoomOut} className="p-2"><Icon name="zoom-out" size="md" /></Button>
                 <input type="range" min={MIN_ZOOM * 100} max={MAX_ZOOM * 100} value={zoom * 100} onChange={handleSliderChange} className="w-24 md:w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
-                <Button variant="secondary" onClick={handleZoomIn} className="p-2"><Icon name="zoom-in" className="w-4 h-4" /></Button>
+                <Button variant="secondary" onClick={handleZoomIn} className="p-2"><Icon name="zoom-in" size="md" /></Button>
                 <span className="text-sm font-mono text-gray-600 w-16 text-center">{Math.round(zoom * 100)}%</span>
             </div>
         </footer>

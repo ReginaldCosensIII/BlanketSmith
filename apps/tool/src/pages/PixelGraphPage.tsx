@@ -1269,10 +1269,10 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                         </div>
                         <div className="flex gap-2">
                             <Button variant="secondary" onClick={handlePreviewExport} disabled={!projectData || (selectedExportType === 'chart-only' && coMode !== 'stitch' && !exportShowCellSymbols && !showCellBackgrounds)}>
-                                <Icon name="eye" size="md" className="mr-1" /> Preview PDF
+                                <Icon name="eye" size="lg" className="mr-1" /> Preview PDF
                             </Button>
                             <Button variant="primary" onClick={handleConfirmExport} disabled={!projectData || (selectedExportType === 'chart-only' && coMode !== 'stitch' && !exportShowCellSymbols && !showCellBackgrounds)}>
-                                <Icon name="download-pdf" size="md" className="mr-1" /> Export PDF
+                                <Icon name="download-pdf" size="lg" className="mr-1" /> Export PDF
                             </Button>
                         </div>
                     </div>
@@ -1316,7 +1316,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center font-medium"
                             title={`Reset ${selectedExportType === 'pattern-pack' ? 'Pattern Pack' : 'Chart-Only'} options to V3 defaults`}
                         >
-                            <Icon name="redo" size={12} className="mr-1 transform rotate-180 scale-x-[-1]" />
+                            <Icon name="redo" size="md" className="mr-1 transform rotate-180 scale-x-[-1]" />
                             Restore {selectedExportType === 'pattern-pack' ? 'Pattern Pack' : 'Chart-Only'} Defaults
                         </button>
                     </div>
@@ -1711,31 +1711,31 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 {activeTool === 'select' && (
                     <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-white p-2 rounded-lg shadow-xl flex gap-2 border border-gray-200 z-30">
                         <Button variant="secondary" onClick={handleSelectAll} title="Select All (Ctrl+A)">
-                            <Icon name="select-all" size="sm" />
+                            <Icon name="select-all" size={18} />
                         </Button>
                         <div className="w-px bg-gray-300 mx-1"></div>
                         <Button variant="secondary" onClick={handleCopy} disabled={!selection} title="Copy (Ctrl+C)">
-                            <Icon name="copy" className="w-4 h-4" />
+                            <Icon name="copy" size={18} />
                         </Button>
                         <Button variant="secondary" onClick={handleCut} disabled={!selection} title="Cut (Ctrl+X)">
-                            <Icon name="cut" className="w-4 h-4" />
+                            <Icon name="cut" size={18} />
                         </Button>
                         <Button variant="secondary" onClick={handlePaste} disabled={!clipboard} title="Paste (Ctrl+V)">
-                            <Icon name="paste" className="w-4 h-4" />
+                            <Icon name="paste" size={18} />
                         </Button>
                         <div className="w-px bg-gray-300 mx-1"></div>
                         <Button variant="secondary" onClick={() => handleFlipSelection('horizontal')} disabled={!selection} title="Flip Horizontal">
-                            <Icon name="selection-flip-horizontal" className="w-4 h-4" />
+                            <Icon name="selection-flip-horizontal" size={18} />
                         </Button>
                         <Button variant="secondary" onClick={() => handleFlipSelection('vertical')} disabled={!selection} title="Flip Vertical">
-                            <Icon name="selection-flip-vertical" className="w-4 h-4" />
+                            <Icon name="selection-flip-vertical" size={18} />
                         </Button>
                         <Button variant="secondary" onClick={handleRotateSelection} disabled={!selection} title="Rotate 90°">
-                            <Icon name="rotate-right" className="w-4 h-4" />
+                            <Icon name="rotate-right" size={18} />
                         </Button>
                         <div className="w-px bg-gray-300 mx-1"></div>
                         <Button variant="secondary" onClick={handleClearSelection} disabled={!selection} title="Clear (Del)">
-                            <Icon name="clear-selection" className="w-4 h-4" />
+                            <Icon name="clear-selection" size={18} />
                         </Button>
                     </div>
                 )}
@@ -1744,7 +1744,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             <aside className={`bg-white border-l shadow-xl z-20 transition-all duration-300 flex flex-col ${isPanelOpen ? 'w-80' : 'w-0 overflow-hidden'}`}>
                 <div className="p-4 border-b flex justify-between items-center bg-gray-50">
                     <h3 className="font-bold text-gray-700">Tools</h3>
-                    <Button variant="secondary" onClick={() => setIsPanelOpen(false)}><Icon name="close" size="sm" /></Button>
+                    <button onClick={() => setIsPanelOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors"><Icon name="close" size="lg" /></button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-6">
                     <div>
@@ -1912,8 +1912,8 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                     className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
                                 />
                             </label>
-                            <Button variant="secondary" onClick={() => setIsStitchPaletteOpen(true)} className="w-full justify-center text-xs h-8">
-                                <Icon name="manage-stitches" size={12} className="mr-1" /> Manage Stitches
+                            <Button variant="secondary" onClick={() => setIsStitchPaletteOpen(true)} className="w-full justify-center">
+                                <Icon name="manage-stitches" size="md" className="mr-2" /> Manage Stitches
                             </Button>
                         </div>
                     </div>
@@ -1926,14 +1926,14 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                 onClick={() => toggleSymmetry('vertical')}
                                 className={`flex-1 justify-center ${symmetry.vertical ? 'ring-2 ring-brand-purple ring-offset-1' : ''}`}
                             >
-                                <Icon name="symmetry-vertical" size="sm" className="mr-2" /> Vert
+                                <Icon name="symmetry-vertical" size="md" className="mr-2" /> Vert
                             </Button>
                             <Button
                                 variant={symmetry.horizontal ? 'active' : 'secondary'}
                                 onClick={() => toggleSymmetry('horizontal')}
                                 className={`flex-1 justify-center ${symmetry.horizontal ? 'ring-2 ring-brand-purple ring-offset-1' : ''}`}
                             >
-                                <Icon name="symmetry-horizontal" size="sm" className="mr-2" /> Horiz
+                                <Icon name="symmetry-horizontal" size="md" className="mr-2" /> Horiz
                             </Button>
                         </div>
                     </div>
@@ -1950,12 +1950,12 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
                     <div>
                         <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Generate Pattern</h4>
-                        <Button onClick={() => setIsGenerateModalOpen(true)} className="w-full justify-center"><Icon name="generate-pattern" size="sm" className="mr-2" /> Generate Pattern</Button>
+                        <Button onClick={() => setIsGenerateModalOpen(true)} className="w-full justify-center"><Icon name="generate-pattern" size="md" className="mr-2" /> Generate Pattern</Button>
                     </div>
 
                     <div>
                         <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Instructions</h4>
-                        <Button onClick={() => setIsInstructionsModalOpen(true)} className="w-full justify-center"><Icon name="edit-instructions" size="sm" className="mr-2" /> Edit Instructions</Button>
+                        <Button onClick={() => setIsInstructionsModalOpen(true)} className="w-full justify-center"><Icon name="edit-instructions" size="md" className="mr-2" /> Edit Instructions</Button>
                     </div>
 
                     <div>
@@ -1965,7 +1965,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             onClick={() => setIsExportModalOpen(true)}
                             className="w-full justify-center mb-2"
                         >
-                            <Icon name="export-project" size="sm" className="mr-2" /> Export Project...
+                            <Icon name="export-project" size="md" className="mr-2" /> Export Pattern...
                         </Button>
                         <p className="text-xs text-gray-600">
                             Create printable PDFs with charts, yarn requirements, and optional branding. You can preview your export before downloading.
@@ -1975,7 +1975,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
                 </div>
                 <div className="p-4 border-t bg-gray-50">
-                    <Button variant="primary" onClick={openSettingsModal} className="w-full justify-center"><Icon name="settings" size="sm" className="mr-2" /> Settings</Button>
+                    <Button variant="primary" onClick={openSettingsModal} className="w-full justify-center"><Icon name="settings" size="md" className="mr-2" /> Settings</Button>
                 </div>
             </aside>
 
