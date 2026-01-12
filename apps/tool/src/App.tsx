@@ -3,7 +3,7 @@ import { HashRouter, Routes, Route } from 'react-router-dom';
 import { ProjectProvider } from './context/ProjectContext';
 import { FloatingSelectionProvider } from './context/FloatingSelectionContext';
 import { Header, Sidebar, Footer } from './components/layout/Layout';
-import { ProjectsPage } from './pages/ProjectsPage';
+import { PatternBookPage } from './pages/PatternBookPage';
 import { PixelGraphPage } from './pages/PixelGraphPage';
 import { ExportEngineTestPage } from './pages/ExportEngineTestPage';
 
@@ -35,6 +35,35 @@ const App: React.FC = () => {
     useEffect(() => { localStorage.setItem('app_isSidebarVisible', String(isSidebarVisible)); }, [isSidebarVisible]);
     useEffect(() => { localStorage.setItem('app_isLeftHanded', String(isLeftHanded)); }, [isLeftHanded]);
 
+    // Update slider fill for cross-browser support (Required for custom gray track + blue fill)
+    useEffect(() => {
+        const updateSlider = (slider: HTMLInputElement) => {
+            const percent = ((+slider.value - +slider.min) / (+slider.max - +slider.min)) * 100;
+            slider.style.setProperty('--slider-fill', `${percent}%`);
+        };
+
+        const handleInput = (e: Event) => updateSlider(e.target as HTMLInputElement);
+
+        const observer = new MutationObserver(() => {
+            document.querySelectorAll<HTMLInputElement>('input[type="range"]').forEach(slider => {
+                updateSlider(slider);
+                slider.removeEventListener('input', handleInput);
+                slider.addEventListener('input', handleInput);
+            });
+        });
+
+        observer.observe(document.body, { childList: true, subtree: true });
+
+        return () => {
+            observer.disconnect();
+            document.querySelectorAll('input[type="range"]').forEach(s =>
+                s.removeEventListener('input', handleInput)
+            );
+        };
+    }, []);
+
+
+
     return (
         <ProjectProvider>
             <FloatingSelectionProvider>
@@ -52,7 +81,7 @@ const App: React.FC = () => {
 
                             <Routes>
                                 <Route path="/" element={<PixelGraphPage zoom={zoom} onZoomChange={setZoom} isLeftHanded={isLeftHanded} onToggleLeftHanded={() => setIsLeftHanded(!isLeftHanded)} />} />
-                                <Route path="/projects" element={<ProjectsPage />} />
+                                <Route path="/projects" element={<PatternBookPage />} />
                                 <Route path="/c2c" element={<PlaceholderPage title="C2C Crochet" />} />
                                 <Route path="/stripes" element={<PlaceholderPage title="Stripe Generator" />} />
                                 <Route path="/granny" element={<PlaceholderPage title="Granny Square Planner" />} />

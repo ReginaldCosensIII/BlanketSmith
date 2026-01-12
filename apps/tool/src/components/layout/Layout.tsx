@@ -30,11 +30,8 @@ export const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () =
     return (
         <header className="bg-white shadow-md p-2 flex justify-between items-center z-20">
             <div className="relative" ref={dropdownRef}>
-                <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex items-center gap-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 rounded-lg p-1">
-                    <div className="bg-indigo-600 p-2 rounded-lg flex items-center justify-center w-10 h-10">
-                        <span className="text-white font-bold text-lg">BS</span>
-                    </div>
-                    <h1 className="text-xl font-bold text-gray-800 hidden sm:block">BlanketSmith</h1>
+                <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex items-center h-14 overflow-visible focus:outline-none focus:ring-2 focus:ring-brand-midBlue focus:ring-offset-2 rounded-xl p-0">
+                    <img src="/branding/logos/Horizontal-Lockup-No-Slogan.svg" alt="BlanketSmith" className="h-20 w-auto max-w-none" />
                 </button>
                 {isDropdownOpen && (
                     <div className="absolute top-full mt-2 w-64 bg-white rounded-md shadow-lg border z-30 p-2 space-y-1">
@@ -49,7 +46,7 @@ export const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () =
                                 aria-checked={isSidebarVisible}
                                 id="sidebar-toggle"
                                 onClick={(e) => { e.stopPropagation(); onToggleSidebar(); }}
-                                className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 ${isSidebarVisible ? 'bg-indigo-600' : 'bg-gray-200'}`}
+                                className={`relative inline-flex items-center h-6 rounded-full w-11 transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-midBlue ${isSidebarVisible ? 'bg-brand-midBlue' : 'bg-gray-200'}`}
                             >
                                 <span
                                     className={`inline-block w-4 h-4 transform bg-white rounded-full transition-transform duration-200 ease-in-out ${isSidebarVisible ? 'translate-x-6' : 'translate-x-1'}`}
@@ -61,23 +58,23 @@ export const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () =
             </div>
             {state.project && <div className="text-gray-600 font-semibold">{state.project.name}</div>}
             <div className="flex items-center gap-2">
-                {state.project && <Button onClick={saveCurrentProject}><Icon name="save" className="w-4 h-4" /> Save</Button>}
-                <Button variant="secondary" onClick={() => navigate('/projects')}>My Projects</Button>
+                {state.project && <Button variant="secondary" onClick={saveCurrentProject}><Icon name="save" size="md" /> Save</Button>}
+                <Button variant="primary" onClick={() => navigate('/projects')}><Icon name="pattern-book" size="md" /> My Pattern Book</Button>
             </div>
         </header>
     );
 };
 
 const NavItem: React.FC<{ to: string; icon: string; label: string }> = ({ to, icon, label }) => (
-    <NavLink to={to} className={({ isActive }) => `flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${isActive ? 'bg-indigo-700 text-white' : 'text-indigo-200 hover:bg-indigo-500'}`}>
-        <Icon name={icon} className="w-6 h-6 mb-1" />
+    <NavLink to={to} className={({ isActive }) => `flex flex-col items-center justify-center p-2 rounded-lg transition-colors ${isActive ? 'bg-white/20 text-white' : 'text-blue-100 hover:bg-white/10'}`}>
+        <Icon name={icon} size="xl" className="mb-1" />
         <span className="text-xs font-medium">{label}</span>
     </NavLink>
 );
 
 export const Sidebar: React.FC = () => (
-    <aside className="bg-indigo-600 p-2 flex flex-col gap-2 h-full overflow-y-auto">
-        <NavItem to="/" icon="grid" label="Pixel" />
+    <aside className="bg-brand-midBlue p-2 flex flex-col gap-2 h-full overflow-y-auto">
+        <NavItem to="/" icon="pixel-mode" label="Pixel" />
         <NavItem to="/c2c" icon="c2c" label="C2C" />
         <NavItem to="/stripes" icon="stripes" label="Stripes" />
         <NavItem to="/granny" icon="granny" label="Granny" />
@@ -114,13 +111,13 @@ export const Footer: React.FC<{ zoom: number, onZoomChange: (newZoom: number) =>
     return (
         <footer className="bg-gray-100 p-2 flex justify-between items-center z-20 border-t">
             <div className="flex gap-2">
-                <Button variant="secondary" onClick={handleUndo} disabled={!canUndo && !hasFloatingSelection}><Icon name="undo" className="w-4 h-4" /> Undo</Button>
-                <Button variant="secondary" onClick={handleRedo} disabled={!canRedo && !hasFloatingSelection}><Icon name="redo" className="w-4 h-4" /> Redo</Button>
+                <Button variant="secondary" onClick={handleUndo} disabled={!canUndo && !hasFloatingSelection}><Icon name="undo" size="md" /> Undo</Button>
+                <Button variant="secondary" onClick={handleRedo} disabled={!canRedo && !hasFloatingSelection}><Icon name="redo" size="md" /> Redo</Button>
             </div>
             <div className="flex items-center gap-2">
-                <Button variant="secondary" onClick={handleZoomOut} className="p-2"><Icon name="zoom-out" className="w-4 h-4" /></Button>
+                <Button variant="secondary" onClick={handleZoomOut} className="p-2"><Icon name="zoom-out" size="md" /></Button>
                 <input type="range" min={MIN_ZOOM * 100} max={MAX_ZOOM * 100} value={zoom * 100} onChange={handleSliderChange} className="w-24 md:w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
-                <Button variant="secondary" onClick={handleZoomIn} className="p-2"><Icon name="zoom-in" className="w-4 h-4" /></Button>
+                <Button variant="secondary" onClick={handleZoomIn} className="p-2"><Icon name="zoom-in" size="md" /></Button>
                 <span className="text-sm font-mono text-gray-600 w-16 text-center">{Math.round(zoom * 100)}%</span>
             </div>
         </footer>

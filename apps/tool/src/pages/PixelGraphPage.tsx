@@ -1231,8 +1231,13 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
     const hasSizeChanged = projectData.width !== newWidth || projectData.height !== newHeight;
     const ToolButton = ({ tool, label, icon }: { tool: Tool, label: string, icon?: string }) => (
-        <Button variant={activeTool === tool ? 'primary' : 'secondary'} onClick={() => handleToolChange(tool)} className="text-xs justify-center flex-col h-14" title={label}>
-            {icon && <Icon name={icon} className="w-5 h-5 mb-1" />}
+        <Button
+            variant={activeTool === tool ? 'active' : 'secondary'}
+            onClick={() => handleToolChange(tool)}
+            className={`text-xs justify-center flex-col h-16 w-16 ${activeTool === tool ? 'ring-2 ring-brand-purple ring-offset-1' : ''}`}
+            title={label}
+        >
+            {icon && <Icon name={icon} size="toolbar" className="mb-1" />}
             <span>{label}</span>
         </Button>
     );
@@ -1259,15 +1264,15 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 footer={
                     <div className="flex justify-between items-center w-full">
                         <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <Icon name="info" className="w-4 h-4" />
+                            <Icon name="info" size="md" />
                             <span>You can preview your PDF before downloading.</span>
                         </div>
                         <div className="flex gap-2">
                             <Button variant="secondary" onClick={handlePreviewExport} disabled={!projectData || (selectedExportType === 'chart-only' && coMode !== 'stitch' && !exportShowCellSymbols && !showCellBackgrounds)}>
-                                <Icon name="eye" className="w-4 h-4 mr-1" /> Preview PDF
+                                <Icon name="eye" size="lg" className="mr-1" /> Preview PDF
                             </Button>
                             <Button variant="primary" onClick={handleConfirmExport} disabled={!projectData || (selectedExportType === 'chart-only' && coMode !== 'stitch' && !exportShowCellSymbols && !showCellBackgrounds)}>
-                                <Icon name="download" className="w-4 h-4 mr-1" /> Export PDF
+                                <Icon name="download-pdf" size="lg" className="mr-1" /> Export PDF
                             </Button>
                         </div>
                     </div>
@@ -1311,7 +1316,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             className="text-xs text-indigo-600 hover:text-indigo-800 flex items-center font-medium"
                             title={`Reset ${selectedExportType === 'pattern-pack' ? 'Pattern Pack' : 'Chart-Only'} options to V3 defaults`}
                         >
-                            <Icon name="redo" className="w-3 h-3 mr-1 transform rotate-180 scale-x-[-1]" />
+                            <Icon name="redo" size="md" className="mr-1 transform rotate-180 scale-x-[-1]" />
                             Restore {selectedExportType === 'pattern-pack' ? 'Pattern Pack' : 'Chart-Only'} Defaults
                         </button>
                     </div>
@@ -1531,7 +1536,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                                 onClick={() => setIsInstructionsModalOpen(true)}
                                                 className="w-full justify-center text-xs"
                                             >
-                                                <Icon name="edit" className="w-3 h-3 mr-1" />
+                                                <Icon name="edit" size={12} className="mr-1" />
                                                 Edit Instructions...
                                             </Button>
                                         </div>
@@ -1588,7 +1593,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                         <input type="file" ref={imageUploadRef} accept="image/*" onChange={handleImageUpload} className="hidden" />
                         <div className="flex gap-2">
                             <Button onClick={() => imageUploadRef.current?.click()} variant="secondary">
-                                <Icon name="upload" className="w-4 h-4 mr-2" /> Choose File
+                                <Icon name="upload" size="sm" className="mr-2" /> Choose File
                             </Button>
                             <span className="text-sm text-gray-500 self-center">{importFile ? importFile.name : 'No file chosen'}</span>
                         </div>
@@ -1622,7 +1627,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                     {previewGrid.width}x{previewGrid.height}
                                 </div>
                                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity bg-black/20">
-                                    <Button variant="secondary" onClick={() => setIsPreviewFullScreen(true)}><Icon name="maximize" className="w-4 h-4 mr-2" /> Full Screen</Button>
+                                    <Button variant="secondary" onClick={() => setIsPreviewFullScreen(true)}><Icon name="maximize" size="sm" className="mr-2" /> Full Screen</Button>
                                 </div>
                             </div>
                         ) : (
@@ -1658,7 +1663,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                     <span className="text-xs w-8 text-right">{previewZoom.toFixed(1)}x</span>
                                 </div>
                             </div>
-                            <Button variant="secondary" onClick={() => setIsPreviewFullScreen(false)}><Icon name="close" className="w-4 h-4 mr-2" /> Close</Button>
+                            <Button variant="secondary" onClick={() => setIsPreviewFullScreen(false)}><Icon name="close" size="sm" className="mr-2" /> Close</Button>
                         </div>
                         <div className="flex-1 overflow-auto flex items-center justify-center p-8">
                             <canvas
@@ -1706,31 +1711,31 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 {activeTool === 'select' && (
                     <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-white p-2 rounded-lg shadow-xl flex gap-2 border border-gray-200 z-30">
                         <Button variant="secondary" onClick={handleSelectAll} title="Select All (Ctrl+A)">
-                            <Icon name="grid" className="w-4 h-4" />
+                            <Icon name="select-all" size={18} />
                         </Button>
                         <div className="w-px bg-gray-300 mx-1"></div>
                         <Button variant="secondary" onClick={handleCopy} disabled={!selection} title="Copy (Ctrl+C)">
-                            <Icon name="edit" className="w-4 h-4" />
+                            <Icon name="copy" size={18} />
                         </Button>
                         <Button variant="secondary" onClick={handleCut} disabled={!selection} title="Cut (Ctrl+X)">
-                            <Icon name="trash" className="w-4 h-4" />
+                            <Icon name="cut" size={18} />
                         </Button>
                         <Button variant="secondary" onClick={handlePaste} disabled={!clipboard} title="Paste (Ctrl+V)">
-                            <Icon name="download" className="w-4 h-4" />
+                            <Icon name="paste" size={18} />
                         </Button>
                         <div className="w-px bg-gray-300 mx-1"></div>
                         <Button variant="secondary" onClick={() => handleFlipSelection('horizontal')} disabled={!selection} title="Flip Horizontal">
-                            <Icon name="symmetry-horizontal" className="w-4 h-4" />
+                            <Icon name="selection-flip-horizontal" size={18} />
                         </Button>
                         <Button variant="secondary" onClick={() => handleFlipSelection('vertical')} disabled={!selection} title="Flip Vertical">
-                            <Icon name="symmetry-vertical" className="w-4 h-4" />
+                            <Icon name="selection-flip-vertical" size={18} />
                         </Button>
                         <Button variant="secondary" onClick={handleRotateSelection} disabled={!selection} title="Rotate 90°">
-                            <Icon name="redo" className="w-4 h-4" />
+                            <Icon name="rotate-right" size={18} />
                         </Button>
                         <div className="w-px bg-gray-300 mx-1"></div>
                         <Button variant="secondary" onClick={handleClearSelection} disabled={!selection} title="Clear (Del)">
-                            <Icon name="close" className="w-4 h-4" />
+                            <Icon name="clear-selection" size={18} />
                         </Button>
                     </div>
                 )}
@@ -1739,7 +1744,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             <aside className={`bg-white border-l shadow-xl z-20 transition-all duration-300 flex flex-col ${isPanelOpen ? 'w-80' : 'w-0 overflow-hidden'}`}>
                 <div className="p-4 border-b flex justify-between items-center bg-gray-50">
                     <h3 className="font-bold text-gray-700">Tools</h3>
-                    <Button variant="secondary" onClick={() => setIsPanelOpen(false)}><Icon name="close" className="w-4 h-4" /></Button>
+                    <button onClick={() => setIsPanelOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors"><Icon name="close" size="lg" /></button>
                 </div>
                 <div className="flex-1 overflow-y-auto p-4 space-y-6">
                     <div>
@@ -1797,8 +1802,8 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                 <button onClick={() => setReplaceTarget('from')} className={`w-6 h-6 border rounded relative overflow-hidden ${replaceTarget === 'from' ? 'ring-2 ring-blue-500' : ''}`} style={{ backgroundColor: replaceFromColor ? yarnColorMap.get(replaceFromColor)?.hex : 'transparent' }} title="Click to set from palette/canvas">
                                     {replaceFromColor === null && (
                                         <>
-                                            <div className="absolute inset-0 bg-white opacity-50" style={{ backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)', backgroundSize: '8px 8px' }}></div>
-                                            <Icon name="close" className="w-3 h-3 absolute inset-0 m-auto text-red-500" />
+                                            <div className="absolute inset-0 bg-white opacity-50" style={{ backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)', backgroundSize: '8px 8px', backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px' }}></div>
+                                            <Icon name="transparency-color" size={20} className="absolute inset-0 m-auto text-red-500 opacity-80" />
                                         </>
                                     )}
                                 </button>
@@ -1808,8 +1813,8 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                 <button onClick={() => setReplaceTarget('to')} className={`w-6 h-6 border rounded relative overflow-hidden ${replaceTarget === 'to' ? 'ring-2 ring-blue-500' : ''}`} style={{ backgroundColor: replaceToColor ? yarnColorMap.get(replaceToColor)?.hex : 'transparent' }} title="Click to set from palette/canvas">
                                     {replaceToColor === null && (
                                         <>
-                                            <div className="absolute inset-0 bg-white opacity-50" style={{ backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)', backgroundSize: '8px 8px' }}></div>
-                                            <Icon name="close" className="w-3 h-3 absolute inset-0 m-auto text-red-500" />
+                                            <div className="absolute inset-0 bg-white opacity-50" style={{ backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)', backgroundSize: '8px 8px', backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px' }}></div>
+                                            <Icon name="transparency-color" size={20} className="absolute inset-0 m-auto text-red-500 opacity-80" />
                                         </>
                                     )}
                                 </button>
@@ -1826,24 +1831,24 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             <button
                                 onClick={(e) => handlePaletteClick(null, e)}
                                 onContextMenu={(e) => handlePaletteClick(null, e)}
-                                className={`w-8 h-8 rounded border-2 relative ${primaryColorId === null ? 'border-black z-10' : 'border-gray-200'} ${secondaryColorId === null ? 'ring-2 ring-red-500 ring-offset-1' : ''}`}
+                                className={`w-8 h-8 rounded border-2 relative overflow-hidden ${primaryColorId === null ? 'ring-2 ring-brand-midBlue ring-offset-1 z-10' : 'border-gray-200'} ${secondaryColorId === null ? 'ring-2 ring-brand-purple ring-offset-1' : ''}`}
                                 title="Eraser (Left: Primary, Right: Secondary)"
                             >
-                                <div className="absolute inset-0 bg-white opacity-50" style={{ backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)', backgroundSize: '8px 8px' }}></div>
-                                <Icon name="close" className="w-4 h-4 absolute inset-0 m-auto text-red-500" />
+                                <div className="absolute inset-0 bg-white opacity-50" style={{ backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)', backgroundSize: '8px 8px', backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px' }}></div>
+                                <Icon name="transparency-color" size={24} className="absolute inset-0 m-auto text-red-500 opacity-80" />
                             </button>
                             {project.yarnPalette.map(yarn => (
                                 <button
                                     key={yarn.id}
                                     onClick={(e) => handlePaletteClick(yarn.id, e)}
                                     onContextMenu={(e) => handlePaletteClick(yarn.id, e)}
-                                    className={`w-8 h-8 rounded border-2 ${primaryColorId === yarn.id ? 'border-black z-10' : 'border-gray-200'} ${secondaryColorId === yarn.id ? 'ring-2 ring-red-500 ring-offset-1' : ''}`}
+                                    className={`w-8 h-8 rounded border-2 ${primaryColorId === yarn.id ? 'ring-2 ring-brand-midBlue ring-offset-1 z-10' : 'border-gray-200'} ${secondaryColorId === yarn.id ? 'ring-2 ring-brand-purple ring-offset-1' : ''}`}
                                     style={{ backgroundColor: yarn.hex }}
                                     title={`${yarn.name} (${yarn.brand})`}
                                 />
                             ))}
                             <button onClick={() => setIsColorPickerOpen(true)} className="w-8 h-8 rounded border-2 border-dashed border-gray-400 flex items-center justify-center text-gray-500 hover:bg-gray-100" title="Add Custom Color">
-                                <Icon name="plus" className="w-4 h-4" />
+                                <Icon name="plus" size="sm" />
                             </button>
                         </div>
                         <div className="flex flex-col gap-2 mt-3">
@@ -1866,7 +1871,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                     )
                                 ) : (
                                     <div className="flex items-center justify-center w-8 h-8 bg-gray-100 rounded border border-gray-200 text-gray-300" title="Stitch disabled (Enable Combo Paint Mode)">
-                                        <Icon name="ban" className="w-4 h-4" />
+                                        <Icon name="ban" size="sm" />
                                     </div>
                                 )}
                             </div>
@@ -1890,7 +1895,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                     )
                                 ) : (
                                     <div className="flex items-center justify-center w-8 h-8 bg-gray-100 rounded border border-gray-200 text-gray-300" title="Stitch disabled (Enable Combo Paint Mode)">
-                                        <Icon name="ban" className="w-4 h-4" />
+                                        <Icon name="ban" size="sm" />
                                     </div>
                                 )}
                             </div>
@@ -1907,8 +1912,8 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                     className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
                                 />
                             </label>
-                            <Button variant="secondary" onClick={() => setIsStitchPaletteOpen(true)} className="w-full justify-center text-xs h-8">
-                                <Icon name="grid" className="w-3 h-3 mr-1" /> Manage Stitches
+                            <Button variant="secondary" onClick={() => setIsStitchPaletteOpen(true)} className="w-full justify-center">
+                                <Icon name="manage-stitches" size="md" className="mr-2" /> Manage Stitches
                             </Button>
                         </div>
                     </div>
@@ -1916,8 +1921,20 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                     <div>
                         <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Symmetry</h4>
                         <div className="flex gap-2">
-                            <Button variant={symmetry.vertical ? 'primary' : 'secondary'} onClick={() => toggleSymmetry('vertical')} className="flex-1 justify-center"><Icon name="symmetry-vertical" className="w-4 h-4 mr-2" /> Vert</Button>
-                            <Button variant={symmetry.horizontal ? 'primary' : 'secondary'} onClick={() => toggleSymmetry('horizontal')} className="flex-1 justify-center"><Icon name="symmetry-horizontal" className="w-4 h-4 mr-2" /> Horiz</Button>
+                            <Button
+                                variant={symmetry.vertical ? 'active' : 'secondary'}
+                                onClick={() => toggleSymmetry('vertical')}
+                                className={`flex-1 justify-center ${symmetry.vertical ? 'ring-2 ring-brand-purple ring-offset-1' : ''}`}
+                            >
+                                <Icon name="symmetry-vertical" size="md" className="mr-2" /> Vert
+                            </Button>
+                            <Button
+                                variant={symmetry.horizontal ? 'active' : 'secondary'}
+                                onClick={() => toggleSymmetry('horizontal')}
+                                className={`flex-1 justify-center ${symmetry.horizontal ? 'ring-2 ring-brand-purple ring-offset-1' : ''}`}
+                            >
+                                <Icon name="symmetry-horizontal" size="md" className="mr-2" /> Horiz
+                            </Button>
                         </div>
                     </div>
 
@@ -1933,22 +1950,22 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
                     <div>
                         <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Generate Pattern</h4>
-                        <Button onClick={() => setIsGenerateModalOpen(true)} className="w-full justify-center"><Icon name="upload" className="w-4 h-4 mr-2" /> Generate Pattern</Button>
+                        <Button onClick={() => setIsGenerateModalOpen(true)} className="w-full justify-center"><Icon name="generate-pattern" size="md" className="mr-2" /> Generate Pattern</Button>
                     </div>
 
                     <div>
                         <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Instructions</h4>
-                        <Button onClick={() => setIsInstructionsModalOpen(true)} className="w-full justify-center"><Icon name="edit" className="w-4 h-4 mr-2" /> Edit Instructions</Button>
+                        <Button onClick={() => setIsInstructionsModalOpen(true)} className="w-full justify-center"><Icon name="edit-instructions" size="md" className="mr-2" /> Edit Instructions</Button>
                     </div>
 
                     <div>
                         <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Export</h4>
                         <Button
-                            variant="secondary"
+                            variant="primary"
                             onClick={() => setIsExportModalOpen(true)}
                             className="w-full justify-center mb-2"
                         >
-                            <Icon name="download" className="w-4 h-4 mr-2" /> Export Project...
+                            <Icon name="export-project" size="md" className="mr-2" /> Export Pattern...
                         </Button>
                         <p className="text-xs text-gray-600">
                             Create printable PDFs with charts, yarn requirements, and optional branding. You can preview your export before downloading.
@@ -1958,14 +1975,14 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
                 </div>
                 <div className="p-4 border-t bg-gray-50">
-                    <Button variant="secondary" onClick={openSettingsModal} className="w-full justify-center"><Icon name="settings" className="w-4 h-4 mr-2" /> Settings</Button>
+                    <Button variant="primary" onClick={openSettingsModal} className="w-full justify-center"><Icon name="settings" size="md" className="mr-2" /> Settings</Button>
                 </div>
             </aside>
 
             {
                 !isPanelOpen && (
                     <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
-                        <Button onClick={() => setIsPanelOpen(true)} className="shadow-lg"><Icon name="brush" className="w-5 h-5 mr-2" /> Tools</Button>
+                        <Button onClick={() => setIsPanelOpen(true)} className="shadow-lg"><Icon name="brush" size="md" className="mr-2" /> Tools</Button>
                     </div>
                 )
             }
@@ -1987,14 +2004,14 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                 </div>
                                 <div className="flex gap-1">
                                     <Button
-                                        variant={primaryStitchId === stitch.id ? 'primary' : 'secondary'}
+                                        variant={primaryStitchId === stitch.id ? 'active' : 'secondary'}
                                         onClick={() => setPrimaryStitchId(stitch.id)}
                                         className="text-xs px-2 py-1"
                                     >
                                         Set L
                                     </Button>
                                     <Button
-                                        variant={secondaryStitchId === stitch.id ? 'primary' : 'secondary'}
+                                        variant={secondaryStitchId === stitch.id ? 'active' : 'secondary'}
                                         onClick={() => setSecondaryStitchId(stitch.id)}
                                         className="text-xs px-2 py-1"
                                     >
@@ -2120,9 +2137,27 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             <Modal isOpen={isColorPickerOpen} onClose={() => setIsColorPickerOpen(false)} title="Add Custom Color">
                 <div className="space-y-4">
                     <div className="flex gap-2 mb-4">
-                        <Button variant={pickerMode === 'HEX' ? 'primary' : 'secondary'} onClick={() => setPickerMode('HEX')} className="flex-1 justify-center">HEX</Button>
-                        <Button variant={pickerMode === 'RGB' ? 'primary' : 'secondary'} onClick={() => setPickerMode('RGB')} className="flex-1 justify-center">RGB</Button>
-                        <Button variant={pickerMode === 'HSL' ? 'primary' : 'secondary'} onClick={() => setPickerMode('HSL')} className="flex-1 justify-center">HSL</Button>
+                        <Button
+                            variant={pickerMode === 'HEX' ? 'active' : 'secondary'}
+                            onClick={() => setPickerMode('HEX')}
+                            className={`flex-1 justify-center ${pickerMode === 'HEX' ? 'ring-2 ring-brand-purple ring-offset-1' : ''}`}
+                        >
+                            HEX
+                        </Button>
+                        <Button
+                            variant={pickerMode === 'RGB' ? 'active' : 'secondary'}
+                            onClick={() => setPickerMode('RGB')}
+                            className={`flex-1 justify-center ${pickerMode === 'RGB' ? 'ring-2 ring-brand-purple ring-offset-1' : ''}`}
+                        >
+                            RGB
+                        </Button>
+                        <Button
+                            variant={pickerMode === 'HSL' ? 'active' : 'secondary'}
+                            onClick={() => setPickerMode('HSL')}
+                            className={`flex-1 justify-center ${pickerMode === 'HSL' ? 'ring-2 ring-brand-purple ring-offset-1' : ''}`}
+                        >
+                            HSL
+                        </Button>
                     </div>
 
                     <div className="flex gap-4">

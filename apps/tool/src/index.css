@@ -1,0 +1,133 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        font-family: 'Inter', sans-serif;
+        @apply text-gray-800;
+    }
+
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6 {
+        font-family: 'Poppins', sans-serif;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="password"],
+    select,
+    textarea {
+        @apply bg-white border-2 border-gray-300 text-gray-700 font-sans rounded-md shadow-sm outline-none transition-colors duration-200;
+        @apply focus:border-brand-cyan focus:ring-2 focus:ring-brand-cyan focus:ring-opacity-50;
+    }
+
+}
+
+/* Range Slider Styling - Cross-browser with filled track */
+input[type="range"] {
+    --slider-fill: 0%;
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    background: transparent;
+    outline: none;
+    cursor: pointer;
+}
+
+/* Webkit - Track with gradient fill (Fixes "black track" issue by explicitly setting #D1D5DB) */
+input[type="range"]::-webkit-slider-runnable-track {
+    width: 100%;
+    height: 6px;
+    background: linear-gradient(to right, #374FD9 0%, #374FD9 var(--slider-fill), #D1D5DB var(--slider-fill), #D1D5DB 100%);
+    border-radius: 3px;
+}
+
+/* Webkit - Thumb */
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background: #374FD9;
+    border-radius: 50%;
+    cursor: pointer;
+    margin-top: -6px;
+    transition: background-color 200ms ease;
+}
+
+input[type="range"]:hover::-webkit-slider-thumb {
+    background: #2F42C7;
+}
+
+input[type="range"]:active::-webkit-slider-thumb {
+    background: #7B8EF5;
+}
+
+/* Firefox - Track (unfilled) */
+input[type="range"]::-moz-range-track {
+    width: 100%;
+    height: 6px;
+    background: #D1D5DB;
+    border-radius: 3px;
+}
+
+/* Firefox - Progress (filled) */
+input[type="range"]::-moz-range-progress {
+    height: 6px;
+    background: #374FD9;
+    border-radius: 3px 0 0 3px;
+}
+
+/* Firefox - Thumb */
+input[type="range"]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: #374FD9;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: background-color 200ms ease;
+}
+
+input[type="range"]:hover::-moz-range-thumb {
+    background: #2F42C7;
+}
+
+input[type="range"]:active::-moz-range-thumb {
+    background: #7B8EF5;
+}
+
+@layer utilities {
+    .plain-input {
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .plain-input:focus {
+        border: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+        --tw-ring-shadow: none !important;
+    }
+}
+
+@layer utilities {
+    .plain-input {
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    .plain-input:focus {
+        border: none !important;
+        box-shadow: none !important;
+        outline: none !important;
+        --tw-ring-shadow: none !important;
+    }
+}

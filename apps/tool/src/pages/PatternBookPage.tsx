@@ -6,7 +6,7 @@ import { useProject } from '../context/ProjectContext';
 import { BLANKET_SIZES } from '../constants';
 import { Button, Modal, Icon } from '../components/ui/SharedComponents';
 
-export const ProjectsPage: React.FC = () => {
+export const PatternBookPage: React.FC = () => {
     const [projects, setProjects] = useState<AnyProject[]>(getProjects());
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newProjectName, setNewProjectName] = useState('');
@@ -127,7 +127,7 @@ export const ProjectsPage: React.FC = () => {
 
     const PatternTypeCard: React.FC<{ type: PatternType, icon: string, label: string, enabled: boolean }> = ({ type, icon, label, enabled }) => (
         <div onClick={() => enabled && setSelectedProjectType(type)} className={`p-4 border-2 rounded-lg text-center cursor-pointer transition-all duration-200 ${selectedProjectType === type ? 'border-indigo-600 bg-indigo-50 ring-2 ring-indigo-500' : 'border-gray-300 bg-white hover:border-indigo-400'} ${!enabled && 'opacity-50 cursor-not-allowed bg-gray-100'}`}>
-            <Icon name={icon} className="w-10 h-10 mx-auto mb-2 text-indigo-600" />
+            <Icon name={icon} size={48} className="mx-auto mb-2 text-indigo-600" />
             <h4 className="font-semibold text-gray-800">{label}</h4>
             {!enabled && <span className="text-xs text-gray-500 block">Coming Soon</span>}
         </div>
@@ -137,10 +137,14 @@ export const ProjectsPage: React.FC = () => {
         <div className="p-4 sm:p-6 lg:p-8">
             <input type="file" ref={importFileRef} className="hidden" accept=".json,.bsmith.json" onChange={handleFileImport} />
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-800">My Projects</h2>
+                <h2 className="text-2xl font-bold text-gray-800">My Pattern Book</h2>
                 <div className="flex items-center gap-2">
-                    <Button variant="secondary" onClick={() => importFileRef.current?.click()}>Import Project</Button>
-                    <Button onClick={openModal}>Create New Project</Button>
+                    <Button variant="secondary" onClick={() => importFileRef.current?.click()}>
+                        <Icon name="import" size="md" className="mr-2" /> Import Pattern
+                    </Button>
+                    <Button onClick={openModal}>
+                        <Icon name="create-project" size="md" className="mr-2" /> Create New Pattern
+                    </Button>
                 </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -156,13 +160,13 @@ export const ProjectsPage: React.FC = () => {
                         </div>
                         <div className="p-2 border-t bg-gray-50 flex gap-2">
                             <Button variant="secondary" className="flex-1 text-xs justify-center" onClick={() => handleLoadProject(p)}>Open</Button>
-                            <Button variant="secondary" className="p-2" onClick={(e) => handleExportProject(e, p)} title="Export Project JSON"> <Icon name="download" className="w-4 h-4" /> </Button>
-                            <Button variant="danger" className="p-2" onClick={(e) => handleDeleteProject(e, p.id)} title="Delete Project"> <Icon name="trash" className="w-4 h-4" /> </Button>
+                            <Button variant="secondary" className="p-2" onClick={(e) => handleExportProject(e, p)} title="Export Pattern JSON"> <Icon name="export-json" size={18} /> </Button>
+                            <Button variant="danger" className="p-2" onClick={(e) => handleDeleteProject(e, p.id)} title="Delete Pattern"> <Icon name="trash" size={18} /> </Button>
                         </div>
                     </div>
                 ))}
             </div>
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create New Project">
+            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create New Pattern">
                 {modalStep === 1 && (
                     <div className="space-y-4">
                         <h3 className="text-lg font-medium text-gray-900">1. Select Pattern Type</h3>
