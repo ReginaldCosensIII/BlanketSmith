@@ -46,6 +46,18 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
     }, [removeToast]);
 
+    // Listen for global events to decoupling services from UI
+    React.useEffect(() => {
+        const handleGlobalToast = (event: Event) => {
+            const customEvent = event as CustomEvent<{ message: string; type: ToastType; duration?: number }>;
+            const { message, type, duration } = customEvent.detail;
+            showToast(message, type, duration);
+        };
+
+        window.addEventListener('blanketsmith:toast', handleGlobalToast);
+        return () => window.removeEventListener('blanketsmith:toast', handleGlobalToast);
+    }, [showToast]);
+
     const showError = useCallback((message: string) => showToast(message, 'error'), [showToast]);
     const showSuccess = useCallback((message: string) => showToast(message, 'success'), [showToast]);
     const showInfo = useCallback((message: string) => showToast(message, 'info'), [showToast]);
