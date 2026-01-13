@@ -69,6 +69,11 @@ Before merging export changes, verify:
 - [ ] **Chart Isolation**: Charts ALWAYS start on a fresh page after Instructions.
 - [ ] **No Overview Overlap**: Instructions never share a page with Pattern Overview.
 
+### Error Handling & Recovery
+- [ ] **Invalid Project Import**: Importing a malformed project JSON triggers a Toast Error message.
+- [ ] **Export Failure**: A failed export (e.g. simulated by forcing an error) shows a Toast Error and does not crash the app.
+- [ ] **App Crash Baseline**: A render error triggers the "Something went wrong" Error Boundary UI with "Reload" and "Return Home" buttons.
+
 ## QA Artifacts
 For detailed export rules and manual QA procedures, see:
 - [Export Engine V3 QA Report](qa/Export-engine-v3-qa-report.md)

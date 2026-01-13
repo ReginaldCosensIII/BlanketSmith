@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Logging & Error Handling (LOG-001)**: Implemented professional observability baseline:
+    - Centralized `logger` utility with production gating.
+    - App-wide `ErrorBoundary` with actionable fallback UI (Reload/Home).
+    - Recoverable error notifications via `ToastContext` and global event system.
+    - Hardened `projectService` and `exportService` with improved safety and user feedback.
 - **Icon System**: Created `SharedComponents.tsx` with a lightweight, zero-dependency SVG `Icon` component.
 - **Branding**: Implemented `Horizontal-Lockup-No-Slogan.svg` in `Layout.tsx` for consistent header branding.
 - **Pattern Book**: Renamed "Projects" to "Pattern Book" across the application (Files, Routes, and UI).

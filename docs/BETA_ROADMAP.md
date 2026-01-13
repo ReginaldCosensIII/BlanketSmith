@@ -51,7 +51,7 @@ Milestones are ordered for delivery efficiency. Tasks can move between milestone
 ### Milestone A — Beta Foundations (Observability + Safety)
 **Outcome:** Problems are visible, debuggable, and fail gracefully.
 
-- **LOG-001:** Professional logging + error handling baseline (Blocker)
+- **LOG-001:** Professional logging + error handling baseline (Done)
   - Consistent error handling patterns for critical flows (editor actions, load/save, export)
   - UI-safe error boundaries where appropriate
   - Production-safe logs (actionable, minimal noise)
@@ -128,7 +128,7 @@ Milestones are ordered for delivery efficiency. Tasks can move between milestone
 Add items freely; keep IDs stable once created. Promote to Blocker list when needed.
 
 ### Beta Blockers (Must-Have)
-- [ ] **LOG-001:** Professional logging + error handling baseline (Status: Not Started)
+- [x] **LOG-001:** Professional logging + error handling baseline (Status: Done)
 - [ ] **UX-001:** Mobile/tablet usable editor experience (Status: Not Started)
 - [ ] **UX-002:** Non-mouse zoom/navigation controls (Status: Not Started)
 - [ ] **INS-001:** Instructions Engine v2 (Status: Not Started)

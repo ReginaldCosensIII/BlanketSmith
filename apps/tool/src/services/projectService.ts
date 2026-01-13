@@ -1,6 +1,8 @@
 
 import { AnyProject, PatternType, PixelGridData, YarnColor, CellData } from '../types';
 import { YARN_PALETTE } from '../constants';
+import { logger } from './logger';
+import { notify } from './notification';
 
 const PROJECTS_KEY = 'blanketsmith_projects';
 
@@ -23,7 +25,8 @@ export const getProjects = (): AnyProject[] => {
     const projects = projectsJson ? JSON.parse(projectsJson) : [];
     return projects.map(migrateProjectData);
   } catch (error) {
-    console.error('Failed to load projects from localStorage', error);
+    logger.error('Failed to load projects from localStorage', { error });
+    notify.error('Failed to load projects. Please check your browser storage settings.');
     return [];
   }
 };
@@ -39,8 +42,10 @@ export const saveProject = (project: AnyProject): void => {
   }
   try {
     localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+    logger.debug('Project saved successfully', { projectId: project.id });
   } catch (error) {
-    console.error('Failed to save project to localStorage', error);
+    logger.error('Failed to save project to localStorage', { error, projectId: project.id });
+    notify.error('Failed to save project. Ensure you have disk space available.');
   }
 };
 
@@ -49,13 +54,15 @@ export const deleteProject = (projectId: string): void => {
   projects = projects.filter(p => p.id !== projectId);
   try {
     localStorage.setItem(PROJECTS_KEY, JSON.stringify(projects));
+    logger.info('Project deleted', { projectId });
   } catch (error) {
-    console.error('Failed to delete project from localStorage', error);
+    logger.error('Failed to delete project from localStorage', { error, projectId });
+    notify.error('Failed to delete project.');
   }
 };
 
 export const createNewProject = (
-  type: PatternType, 
+  type: PatternType,
   name: string,
   width: number,
   height: number
@@ -165,7 +172,7 @@ export const processImageToGrid = (
 
           const closestYarn = findClosestYarnColor([avg_r, avg_g, avg_b], yarnPalette);
           const yarnId = closestYarn.id;
-          
+
           highFidelityGrid[y * gridWidth + x] = yarnId;
           colorUsageCount.set(yarnId, (colorUsageCount.get(yarnId) || 0) + 1);
         }
@@ -177,31 +184,31 @@ export const processImageToGrid = (
     const uniqueColorsUsed = Array.from(colorUsageCount.keys());
 
     if (uniqueColorsUsed.length > maxColors) {
-        // Determine the final palette (top N most used colors)
-        const sortedColors = uniqueColorsUsed.sort((a, b) => (colorUsageCount.get(b) || 0) - (colorUsageCount.get(a) || 0));
-        const finalPaletteIds = new Set(sortedColors.slice(0, maxColors));
-        const finalPaletteYarns = yarnPalette.filter(y => finalPaletteIds.has(y.id));
-        
-        // Create a map to remap culled colors to their closest color in the final palette
-        const remapping = new Map<string, string>();
-        
-        for (const yarnId of uniqueColorsUsed) {
-            if (!finalPaletteIds.has(yarnId)) {
-                const originalYarn = yarnPalette.find(y => y.id === yarnId);
-                if (originalYarn && finalPaletteYarns.length > 0) {
-                    const closestInFinalPalette = findClosestYarnColor(originalYarn.rgb, finalPaletteYarns);
-                    remapping.set(yarnId, closestInFinalPalette.id);
-                }
-            }
+      // Determine the final palette (top N most used colors)
+      const sortedColors = uniqueColorsUsed.sort((a, b) => (colorUsageCount.get(b) || 0) - (colorUsageCount.get(a) || 0));
+      const finalPaletteIds = new Set(sortedColors.slice(0, maxColors));
+      const finalPaletteYarns = yarnPalette.filter(y => finalPaletteIds.has(y.id));
+
+      // Create a map to remap culled colors to their closest color in the final palette
+      const remapping = new Map<string, string>();
+
+      for (const yarnId of uniqueColorsUsed) {
+        if (!finalPaletteIds.has(yarnId)) {
+          const originalYarn = yarnPalette.find(y => y.id === yarnId);
+          if (originalYarn && finalPaletteYarns.length > 0) {
+            const closestInFinalPalette = findClosestYarnColor(originalYarn.rgb, finalPaletteYarns);
+            remapping.set(yarnId, closestInFinalPalette.id);
+          }
         }
-        
-        // Apply the remapping to the grid
-        finalGrid = highFidelityGrid.map(yarnId => {
-            if (yarnId && remapping.has(yarnId)) {
-                return remapping.get(yarnId)!;
-            }
-            return yarnId;
-        });
+      }
+
+      // Apply the remapping to the grid
+      finalGrid = highFidelityGrid.map(yarnId => {
+        if (yarnId && remapping.has(yarnId)) {
+          return remapping.get(yarnId)!;
+        }
+        return yarnId;
+      });
     }
 
     const finalUsedYarnSet = new Set<string>();
