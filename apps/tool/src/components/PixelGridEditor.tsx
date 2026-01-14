@@ -74,6 +74,8 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const containerRef = useRef<HTMLDivElement>(null);
     const svgRef = useRef<SVGSVGElement>(null);
     const pinchDistRef = useRef<number | null>(null);
+    const touchMode = useRef<'none' | 'paint' | 'gesture'>('none');
+    const lastPinchCenter = useRef<{ x: number, y: number } | null>(null);
 
     const [isDrawing, setIsDrawing] = useState(false);
     const [drawingButton, setDrawingButton] = useState<'left' | 'right' | null>(null);
@@ -133,10 +135,16 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         };
     };
 
-    const getPinchDist = (e: TouchEvent) => {
-        const t1 = e.touches[0];
-        const t2 = e.touches[1];
-        return Math.sqrt(Math.pow(t1.clientX - t2.clientX, 2) + Math.pow(t1.clientY - t2.clientY, 2));
+    const getPinchInfo = (e: React.TouchEvent | TouchEvent) => {
+        const touches = 'nativeEvent' in e ? e.nativeEvent.touches : e.touches;
+        if (touches.length < 2) return null;
+
+        const t1 = touches[0];
+        const t2 = touches[1];
+        const dist = Math.sqrt(Math.pow(t1.clientX - t2.clientX, 2) + Math.pow(t1.clientY - t2.clientY, 2));
+        const centerX = (t1.clientX + t2.clientX) / 2;
+        const centerY = (t1.clientY + t2.clientY) / 2;
+        return { dist, centerX, centerY };
     }
 
     const lastGridPos = useRef<{ x: number, y: number } | null>(null);
@@ -185,11 +193,8 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             e.preventDefault();
         }
 
-        if ('touches' in e.nativeEvent && e.nativeEvent.touches.length === 2) {
+        if ('button' in e && e.button === 2) {
             e.preventDefault();
-            pinchDistRef.current = getPinchDist(e.nativeEvent as TouchEvent);
-            setIsDrawing(false);
-            return;
         }
 
         let isRightClick = false;
@@ -244,40 +249,6 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     };
 
     const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
-        if ('touches' in e.nativeEvent && e.nativeEvent.touches.length === 2 && pinchDistRef.current !== null) {
-            e.preventDefault();
-            const container = containerRef.current;
-            if (!container) return;
-
-            const newDist = getPinchDist(e.nativeEvent as TouchEvent);
-            if (newDist === 0) return;
-
-            const scale = newDist / pinchDistRef.current;
-            const newZoom = Math.max(MIN_ZOOM, Math.min(zoom * scale, MAX_ZOOM));
-
-            const rect = container.getBoundingClientRect();
-            const touch1 = e.nativeEvent.touches[0];
-            const touch2 = e.nativeEvent.touches[1];
-            const pinchCenterX = (touch1.clientX + touch2.clientX) / 2 - rect.left;
-            const pinchCenterY = (touch1.clientY + touch2.clientY) / 2 - rect.top;
-
-            const pointX = (container.scrollLeft + pinchCenterX) / zoom;
-            const pointY = (container.scrollTop + pinchCenterY) / zoom;
-
-            const newScrollLeft = pointX * newZoom - pinchCenterX;
-            const newScrollTop = pointY * newZoom - pinchCenterY;
-
-            onZoomChange(newZoom);
-            pinchDistRef.current = newDist;
-
-            requestAnimationFrame(() => {
-                if (containerRef.current) {
-                    containerRef.current.scrollLeft = newScrollLeft;
-                    containerRef.current.scrollTop = newScrollTop;
-                }
-            });
-            return;
-        }
 
         e.preventDefault();
         const { x, y } = getMousePosition(e.nativeEvent as any);
@@ -408,6 +379,97 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         }
         setHoveredCell(null);
     };
+
+    // --- NEW TOUCH HANDLERS ---
+
+    const handleTouchStart = (e: React.TouchEvent) => {
+        if (e.touches.length === 1) {
+            touchMode.current = 'paint';
+            handleMouseDown(e);
+        } else if (e.touches.length === 2) {
+            touchMode.current = 'gesture';
+            e.preventDefault();
+            const info = getPinchInfo(e);
+            if (info) {
+                pinchDistRef.current = info.dist;
+                lastPinchCenter.current = { x: info.centerX, y: info.centerY };
+            }
+            setIsDrawing(false); // Stop any painting
+            setHoveredCell(null); // Clear hover
+        }
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (touchMode.current === 'paint') {
+            handleMouseMove(e);
+        } else if (touchMode.current === 'gesture' && e.touches.length === 2) {
+            e.preventDefault(); // Critical to prevent browser zoom/pan
+            const container = containerRef.current;
+            if (!container || pinchDistRef.current === null || !lastPinchCenter.current) return;
+
+            const info = getPinchInfo(e);
+            if (!info || info.dist === 0) return;
+
+            // --- ZOOM LOGIC ---
+            const scale = info.dist / pinchDistRef.current;
+            const newZoom = Math.max(MIN_ZOOM, Math.min(zoom * scale, MAX_ZOOM));
+
+            // --- PAN LOGIC ---
+            const rect = container.getBoundingClientRect();
+
+            // Current center of pinch relative to container viewport
+            const pinchCtxX = min(Math.max(0, info.centerX - rect.left), rect.width);
+            const pinchCtxY = min(Math.max(0, info.centerY - rect.top), rect.height);
+
+            // Where that point is in "canvas space"
+            const scaleCorrection = zoom; // Current zoom
+            const pointX = (container.scrollLeft + pinchCtxX) / scaleCorrection;
+            const pointY = (container.scrollTop + pinchCtxY) / scaleCorrection;
+
+            // Calculate target scroll to keep that point under fingers @ newZoom
+            // New scroll = (CanvasCoord * NewZoom) - ScreenOffset
+            let newScrollLeft = pointX * newZoom - pinchCtxX;
+            let newScrollTop = pointY * newZoom - pinchCtxY;
+
+            // Subtract movement of fingers (Pan)
+            const dx = info.centerX - lastPinchCenter.current.x;
+            const dy = info.centerY - lastPinchCenter.current.y;
+
+            newScrollLeft -= dx;
+            newScrollTop -= dy;
+
+            onZoomChange(newZoom);
+
+            // Sync Updates
+            pinchDistRef.current = info.dist;
+            lastPinchCenter.current = { x: info.centerX, y: info.centerY };
+
+            requestAnimationFrame(() => {
+                if (containerRef.current) {
+                    containerRef.current.scrollLeft = newScrollLeft;
+                    containerRef.current.scrollTop = newScrollTop;
+                }
+            });
+        }
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        if (touchMode.current === 'paint') {
+            handleMouseUp();
+        }
+
+        if (e.touches.length === 0) {
+            touchMode.current = 'none';
+            pinchDistRef.current = null;
+            lastPinchCenter.current = null;
+        } else if (e.touches.length < 2 && touchMode.current === 'gesture') {
+            // If we drop from 2 fingers to 1, end the gesture to avoid jumping
+            touchMode.current = 'none';
+        }
+    };
+
+    // Helper for safe bounding
+    const min = Math.min;
 
     const handleWheel = (e: React.WheelEvent) => {
         e.preventDefault();
@@ -605,9 +667,9 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseLeave}
-            onTouchStart={handleMouseDown}
-            onTouchMove={handleMouseMove}
-            onTouchEnd={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
         >
             <svg
                 ref={svgRef}
