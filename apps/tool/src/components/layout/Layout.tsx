@@ -56,7 +56,7 @@ export const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () =
                     </div>
                 )}
             </div>
-            {state.project && <div className="text-gray-600 font-semibold">{state.project.name}</div>}
+            {state.project && <div className="text-gray-600 font-semibold hidden md:block">{state.project.name}</div>}
             <div className="flex items-center gap-2">
                 {state.project && <Button variant="secondary" onClick={saveCurrentProject}><Icon name="save" size="md" /> <span className="hidden md:inline">Save</span></Button>}
                 <Button variant="primary" onClick={() => navigate('/projects')}><Icon name="pattern-book" size="md" /> <span className="hidden md:inline">My Pattern Book</span></Button>
