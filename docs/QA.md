@@ -86,8 +86,12 @@ For detailed export rules and manual QA procedures, see:
 - [ ] **Viewport**: No erratic zooming/jumping on input focus or rotation.
 - [ ] **Accessibility Check**: Icon-only buttons have discernible icons or tooltips (if separate hover state exists).
 
-### Phase 2: Touch Interaction
+### Phase 2: Touch Interaction (Refined)
 - [ ] **One-Finger Paint**: Dragging with one finger draws/selects just like mouse.
 - [ ] **Two-Finger Pan**: Dragging with two fingers moves the canvas (does NOT paint).
 - [ ] **Pinch-to-Zoom**: Pinching zooms in/out centered on fingers.
+- [ ] **Strict Lock Test**:
+    - Place 2 fingers, move < 5px: NO action (Wobble protection).
+    - Pinch wide (>10px): LOCKS Zoom. Pan is disabled.
+    - Drag (>5px): LOCKS Pan. Zoom is disabled.
 - [ ] **Conflict Test**: Start painting, then add finger -> Should ignore or cancel neatly. Start pinching, lift one finger -> Should stop zooming.
