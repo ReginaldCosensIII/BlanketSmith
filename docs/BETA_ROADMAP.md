@@ -119,7 +119,10 @@ Milestones are ordered for delivery efficiency. Tasks can move between milestone
 **Outcome:** Beta build is fast enough and regression-tested.
 
 - **PERF-001:** Large-grid performance pass (High; scheduled late but before release)
-- Regression sweep, export verification, mobile/tablet verification
+- Regression sweep, export verification,
+- [ ] **Mobile/Tablet Experience** (UX-001)
+    - [x] Phase 1: Layout Fixes (Header/Footer/Sidebar)
+    - [ ] Phase 2: Touch Interaction Refactor (Pan/Zoom/Gestures)
 
 ---
 

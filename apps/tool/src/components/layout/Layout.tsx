@@ -58,8 +58,8 @@ export const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () =
             </div>
             {state.project && <div className="text-gray-600 font-semibold">{state.project.name}</div>}
             <div className="flex items-center gap-2">
-                {state.project && <Button variant="secondary" onClick={saveCurrentProject}><Icon name="save" size="md" /> Save</Button>}
-                <Button variant="primary" onClick={() => navigate('/projects')}><Icon name="pattern-book" size="md" /> My Pattern Book</Button>
+                {state.project && <Button variant="secondary" onClick={saveCurrentProject}><Icon name="save" size="md" /> <span className="hidden md:inline">Save</span></Button>}
+                <Button variant="primary" onClick={() => navigate('/projects')}><Icon name="pattern-book" size="md" /> <span className="hidden md:inline">My Pattern Book</span></Button>
             </div>
         </header>
     );
@@ -111,8 +111,8 @@ export const Footer: React.FC<{ zoom: number, onZoomChange: (newZoom: number) =>
     return (
         <footer className="bg-gray-100 p-2 flex justify-between items-center z-20 border-t">
             <div className="flex gap-2">
-                <Button variant="secondary" onClick={handleUndo} disabled={!canUndo && !hasFloatingSelection}><Icon name="undo" size="md" /> Undo</Button>
-                <Button variant="secondary" onClick={handleRedo} disabled={!canRedo && !hasFloatingSelection}><Icon name="redo" size="md" /> Redo</Button>
+                <Button variant="secondary" onClick={handleUndo} disabled={!canUndo && !hasFloatingSelection}><Icon name="undo" size="md" /> <span className="hidden md:inline">Undo</span></Button>
+                <Button variant="secondary" onClick={handleRedo} disabled={!canRedo && !hasFloatingSelection}><Icon name="redo" size="md" /> <span className="hidden md:inline">Redo</span></Button>
             </div>
             <div className="flex items-center gap-2">
                 <Button variant="secondary" onClick={handleZoomOut} className="p-2"><Icon name="zoom-out" size="md" /></Button>

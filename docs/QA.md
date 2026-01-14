@@ -77,3 +77,11 @@ Before merging export changes, verify:
 ## QA Artifacts
 For detailed export rules and manual QA procedures, see:
 - [Export Engine V3 QA Report](qa/Export-engine-v3-qa-report.md)
+
+## Mobile & Tablet (UX-001)
+
+### Phase 1: Layout & Responsiveness
+- [ ] **Mobile Launch State**: Sidebar hidden on mobile (<768px). Header buttons are icon-only.
+- [ ] **Sidebar Toggle**: Toggle works from dropdown. Auto-hides when selecting nav on mobile (if applicable).
+- [ ] **Viewport**: No erratic zooming/jumping on input focus or rotation.
+- [ ] **Accessibility Check**: Icon-only buttons have discernible icons or tooltips (if separate hover state exists).
