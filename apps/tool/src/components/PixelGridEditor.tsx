@@ -76,6 +76,13 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const pinchDistRef = useRef<number | null>(null);
     const touchMode = useRef<'none' | 'paint' | 'gesture'>('none');
     const lastPinchCenter = useRef<{ x: number, y: number } | null>(null);
+    const currentZoomRef = useRef<number>(zoom);
+    const lastZoomTimeRef = useRef<number>(0);
+
+    // Sync ref when prop changes (e.g. from footer controls)
+    useEffect(() => {
+        currentZoomRef.current = zoom;
+    }, [zoom]);
 
     const [isDrawing, setIsDrawing] = useState(false);
     const [drawingButton, setDrawingButton] = useState<'left' | 'right' | null>(null);
@@ -411,8 +418,11 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             if (!info || info.dist === 0) return;
 
             // --- ZOOM LOGIC ---
+            // Use ref for calculation to avoid stale closures if we throttle re-renders
+            const startZoom = currentZoomRef.current;
             const scale = info.dist / pinchDistRef.current;
-            const newZoom = Math.max(MIN_ZOOM, Math.min(zoom * scale, MAX_ZOOM));
+            const newZoom = Math.max(MIN_ZOOM, Math.min(startZoom * scale, MAX_ZOOM));
+            currentZoomRef.current = newZoom; // Update ref immediately
 
             // --- PAN LOGIC ---
             const rect = container.getBoundingClientRect();
@@ -422,7 +432,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             const pinchCtxY = min(Math.max(0, info.centerY - rect.top), rect.height);
 
             // Where that point is in "canvas space"
-            const scaleCorrection = zoom; // Current zoom
+            const scaleCorrection = startZoom; // Use previous zoom for coordinate mapping
             const pointX = (container.scrollLeft + pinchCtxX) / scaleCorrection;
             const pointY = (container.scrollTop + pinchCtxY) / scaleCorrection;
 
@@ -438,7 +448,12 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             newScrollLeft -= dx;
             newScrollTop -= dy;
 
-            onZoomChange(newZoom);
+            // Throttle state updates (React renders) to ~20FPS (50ms)
+            const now = Date.now();
+            if (now - lastZoomTimeRef.current > 50) {
+                onZoomChange(newZoom);
+                lastZoomTimeRef.current = now;
+            }
 
             // Sync Updates
             pinchDistRef.current = info.dist;
@@ -459,11 +474,17 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         }
 
         if (e.touches.length === 0) {
+            // End of gesture: Force sync final zoom state logic
+            if (touchMode.current === 'gesture') {
+                onZoomChange(currentZoomRef.current);
+            }
+
             touchMode.current = 'none';
             pinchDistRef.current = null;
             lastPinchCenter.current = null;
         } else if (e.touches.length < 2 && touchMode.current === 'gesture') {
-            // If we drop from 2 fingers to 1, end the gesture to avoid jumping
+            // Drop from 2 fingers to 1: Sync and End gesture
+            onZoomChange(currentZoomRef.current);
             touchMode.current = 'none';
         }
     };
