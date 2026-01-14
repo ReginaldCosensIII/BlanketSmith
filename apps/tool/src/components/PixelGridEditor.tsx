@@ -74,7 +74,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const containerRef = useRef<HTMLDivElement>(null);
     const svgRef = useRef<SVGSVGElement>(null);
     const pinchDistRef = useRef<number | null>(null);
-    const touchMode = useRef<'none' | 'paint' | 'gesture'>('none');
+    const touchMode = useRef<'none' | 'paint' | 'detecting' | 'zooming' | 'panning'>('none');
     const lastPinchCenter = useRef<{ x: number, y: number } | null>(null);
     const currentZoomRef = useRef<number>(zoom);
     const pendingScrollRef = useRef<{ left: number, top: number } | null>(null);
@@ -403,7 +403,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             touchMode.current = 'paint';
             handleMouseDown(e);
         } else if (e.touches.length === 2) {
-            touchMode.current = 'gesture';
+            touchMode.current = 'detecting'; // Start in detecting mode
             e.preventDefault();
             const info = getPinchInfo(e);
             if (info) {
@@ -418,7 +418,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const handleTouchMove = (e: React.TouchEvent) => {
         if (touchMode.current === 'paint') {
             handleMouseMove(e);
-        } else if (touchMode.current === 'gesture' && e.touches.length === 2) {
+        } else if ((touchMode.current === 'detecting' || touchMode.current === 'zooming' || touchMode.current === 'panning') && e.touches.length === 2) {
             e.preventDefault(); // Critical to prevent browser zoom/pan
             const container = containerRef.current;
             if (!container || pinchDistRef.current === null || !lastPinchCenter.current) return;
@@ -427,55 +427,77 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             if (!info || info.dist === 0) return;
 
             const distDelta = Math.abs(info.dist - pinchDistRef.current);
-            const ZOOM_THRESHOLD = 2; // px change needed to trigger zoom
+            const dx = info.centerX - lastPinchCenter.current.x;
+            const dy = info.centerY - lastPinchCenter.current.y;
+            const panDelta = Math.sqrt(dx * dx + dy * dy);
 
-            // --- ZOOM LOGIC ---
-            if (distDelta > ZOOM_THRESHOLD) {
+            // --- LOCK LOGIC ---
+            if (touchMode.current === 'detecting') {
+                const LOCK_THRESHOLD = 5; // px
+
+                if (distDelta > LOCK_THRESHOLD) {
+                    touchMode.current = 'zooming';
+                    // Reset reference to prevent jump
+                    pinchDistRef.current = info.dist;
+                    lastPinchCenter.current = { x: info.centerX, y: info.centerY };
+                } else if (panDelta > LOCK_THRESHOLD) {
+                    touchMode.current = 'panning';
+                    // Reset reference to prevent jump
+                    lastPinchCenter.current = { x: info.centerX, y: info.centerY };
+                }
+                return; // Wait for next frame to apply movement once locked
+            }
+
+            // --- EXECUTE LOCKED MODE ---
+
+            if (touchMode.current === 'zooming') {
                 const startZoom = currentZoomRef.current;
                 const scale = info.dist / pinchDistRef.current;
                 const newZoom = Math.max(MIN_ZOOM, Math.min(startZoom * scale, MAX_ZOOM));
 
-                // Calculate target scroll to keep pinch center stable
+                // Keep pinch center stable logic...
                 const rect = container.getBoundingClientRect();
                 const pinchCtxX = min(Math.max(0, info.centerX - rect.left), rect.width);
                 const pinchCtxY = min(Math.max(0, info.centerY - rect.top), rect.height);
 
-                // Canvas coordinates of the pinch center state BEFORE zoom
                 const scaleCorrection = startZoom;
                 const pointX = (container.scrollLeft + pinchCtxX) / scaleCorrection;
                 const pointY = (container.scrollTop + pinchCtxY) / scaleCorrection;
 
-                // Target scroll state AFTER zoom
                 let newScrollLeft = pointX * newZoom - pinchCtxX;
                 let newScrollTop = pointY * newZoom - pinchCtxY;
 
-                // Adjust for finger movement (Pan during Zoom)
-                const dx = info.centerX - lastPinchCenter.current.x;
-                const dy = info.centerY - lastPinchCenter.current.y;
-                newScrollLeft -= dx;
-                newScrollTop -= dy;
+                // Note: We intentionally DO NOT subtract pan delta during 'strict zoom'
+                // to keep the zoom strictly centered on the pinch point rather than "dragging" map.
+                // However, subtle pinch movement naturally includes some pan. 
+                // A "true" pinch zoom often feels better if center moves with fingers.
+                // Let's INCLUDE center tracking for "Zooming" to allow "Pinch-Pan", 
+                // but strictly lock "Panning" to ensure no accidental zoom.
 
-                // Store for Application in useLayoutEffect
+                const dX = info.centerX - lastPinchCenter.current.x;
+                const dY = info.centerY - lastPinchCenter.current.y;
+                newScrollLeft -= dX;
+                newScrollTop -= dY;
+
                 pendingScrollRef.current = { left: newScrollLeft, top: newScrollTop };
 
-                // Update State
                 currentZoomRef.current = newZoom;
                 onZoomChange(newZoom);
 
-                // Update Refs
                 pinchDistRef.current = info.dist;
                 lastPinchCenter.current = { x: info.centerX, y: info.centerY };
             }
-            // --- PAN ONLY LOGIC ---
-            else {
-                const dx = info.centerX - lastPinchCenter.current.x;
-                const dy = info.centerY - lastPinchCenter.current.y;
-                // Only pan if meaningful movement to prevent micro-jitters
-                if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
-                    container.scrollLeft -= dx;
-                    container.scrollTop -= dy;
-                    lastPinchCenter.current = { x: info.centerX, y: info.centerY };
-                }
+            else if (touchMode.current === 'panning') {
+                // Strict Pan - NO Zoom
+                const dX = info.centerX - lastPinchCenter.current.x;
+                const dY = info.centerY - lastPinchCenter.current.y;
+
+                container.scrollLeft -= dX;
+                container.scrollTop -= dY;
+
+                lastPinchCenter.current = { x: info.centerX, y: info.centerY };
+                // Also update pinchDistRef to avoid jump if we somehow switch (unlikely with strict lock)
+                pinchDistRef.current = info.dist;
             }
         }
     };
@@ -486,17 +508,12 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         }
 
         if (e.touches.length === 0) {
-            // End of gesture: Force sync final zoom state logic
-            if (touchMode.current === 'gesture') {
-                onZoomChange(currentZoomRef.current);
-            }
-
+            // Drop locks
             touchMode.current = 'none';
             pinchDistRef.current = null;
             lastPinchCenter.current = null;
-        } else if (e.touches.length < 2 && touchMode.current === 'gesture') {
-            // Drop from 2 fingers to 1: Sync and End gesture
-            onZoomChange(currentZoomRef.current);
+        } else if (e.touches.length < 2 && (touchMode.current === 'detecting' || touchMode.current === 'zooming' || touchMode.current === 'panning')) {
+            // Drop locks if less than 2 fingers
             touchMode.current = 'none';
         }
     };
