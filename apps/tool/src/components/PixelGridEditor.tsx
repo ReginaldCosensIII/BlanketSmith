@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { PixelGridData, YarnColor, Symmetry, CellData } from '../types';
 import { PIXEL_FONT, MIN_ZOOM, MAX_ZOOM } from '../constants';
 import { useCanvasLogic } from '../hooks/useCanvasLogic';
@@ -77,11 +77,20 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const touchMode = useRef<'none' | 'paint' | 'gesture'>('none');
     const lastPinchCenter = useRef<{ x: number, y: number } | null>(null);
     const currentZoomRef = useRef<number>(zoom);
-    const lastZoomTimeRef = useRef<number>(0);
+    const pendingScrollRef = useRef<{ left: number, top: number } | null>(null);
 
     // Sync ref when prop changes (e.g. from footer controls)
     useEffect(() => {
         currentZoomRef.current = zoom;
+    }, [zoom]);
+
+    // Apply pending scroll immediately after render (synced with new zoom level)
+    useLayoutEffect(() => {
+        if (pendingScrollRef.current && containerRef.current) {
+            containerRef.current.scrollLeft = pendingScrollRef.current.left;
+            containerRef.current.scrollTop = pendingScrollRef.current.top;
+            pendingScrollRef.current = null;
+        }
     }, [zoom]);
 
     const [isDrawing, setIsDrawing] = useState(false);
@@ -417,54 +426,57 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             const info = getPinchInfo(e);
             if (!info || info.dist === 0) return;
 
+            const distDelta = Math.abs(info.dist - pinchDistRef.current);
+            const ZOOM_THRESHOLD = 2; // px change needed to trigger zoom
+
             // --- ZOOM LOGIC ---
-            // Use ref for calculation to avoid stale closures if we throttle re-renders
-            const startZoom = currentZoomRef.current;
-            const scale = info.dist / pinchDistRef.current;
-            const newZoom = Math.max(MIN_ZOOM, Math.min(startZoom * scale, MAX_ZOOM));
-            currentZoomRef.current = newZoom; // Update ref immediately
+            if (distDelta > ZOOM_THRESHOLD) {
+                const startZoom = currentZoomRef.current;
+                const scale = info.dist / pinchDistRef.current;
+                const newZoom = Math.max(MIN_ZOOM, Math.min(startZoom * scale, MAX_ZOOM));
 
-            // --- PAN LOGIC ---
-            const rect = container.getBoundingClientRect();
+                // Calculate target scroll to keep pinch center stable
+                const rect = container.getBoundingClientRect();
+                const pinchCtxX = min(Math.max(0, info.centerX - rect.left), rect.width);
+                const pinchCtxY = min(Math.max(0, info.centerY - rect.top), rect.height);
 
-            // Current center of pinch relative to container viewport
-            const pinchCtxX = min(Math.max(0, info.centerX - rect.left), rect.width);
-            const pinchCtxY = min(Math.max(0, info.centerY - rect.top), rect.height);
+                // Canvas coordinates of the pinch center state BEFORE zoom
+                const scaleCorrection = startZoom;
+                const pointX = (container.scrollLeft + pinchCtxX) / scaleCorrection;
+                const pointY = (container.scrollTop + pinchCtxY) / scaleCorrection;
 
-            // Where that point is in "canvas space"
-            const scaleCorrection = startZoom; // Use previous zoom for coordinate mapping
-            const pointX = (container.scrollLeft + pinchCtxX) / scaleCorrection;
-            const pointY = (container.scrollTop + pinchCtxY) / scaleCorrection;
+                // Target scroll state AFTER zoom
+                let newScrollLeft = pointX * newZoom - pinchCtxX;
+                let newScrollTop = pointY * newZoom - pinchCtxY;
 
-            // Calculate target scroll to keep that point under fingers @ newZoom
-            // New scroll = (CanvasCoord * NewZoom) - ScreenOffset
-            let newScrollLeft = pointX * newZoom - pinchCtxX;
-            let newScrollTop = pointY * newZoom - pinchCtxY;
+                // Adjust for finger movement (Pan during Zoom)
+                const dx = info.centerX - lastPinchCenter.current.x;
+                const dy = info.centerY - lastPinchCenter.current.y;
+                newScrollLeft -= dx;
+                newScrollTop -= dy;
 
-            // Subtract movement of fingers (Pan)
-            const dx = info.centerX - lastPinchCenter.current.x;
-            const dy = info.centerY - lastPinchCenter.current.y;
+                // Store for Application in useLayoutEffect
+                pendingScrollRef.current = { left: newScrollLeft, top: newScrollTop };
 
-            newScrollLeft -= dx;
-            newScrollTop -= dy;
-
-            // Throttle state updates (React renders) to ~20FPS (50ms)
-            const now = Date.now();
-            if (now - lastZoomTimeRef.current > 50) {
+                // Update State
+                currentZoomRef.current = newZoom;
                 onZoomChange(newZoom);
-                lastZoomTimeRef.current = now;
+
+                // Update Refs
+                pinchDistRef.current = info.dist;
+                lastPinchCenter.current = { x: info.centerX, y: info.centerY };
             }
-
-            // Sync Updates
-            pinchDistRef.current = info.dist;
-            lastPinchCenter.current = { x: info.centerX, y: info.centerY };
-
-            requestAnimationFrame(() => {
-                if (containerRef.current) {
-                    containerRef.current.scrollLeft = newScrollLeft;
-                    containerRef.current.scrollTop = newScrollTop;
+            // --- PAN ONLY LOGIC ---
+            else {
+                const dx = info.centerX - lastPinchCenter.current.x;
+                const dy = info.centerY - lastPinchCenter.current.y;
+                // Only pan if meaningful movement to prevent micro-jitters
+                if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+                    container.scrollLeft -= dx;
+                    container.scrollTop -= dy;
+                    lastPinchCenter.current = { x: info.centerX, y: info.centerY };
                 }
-            });
+            }
         }
     };
 
