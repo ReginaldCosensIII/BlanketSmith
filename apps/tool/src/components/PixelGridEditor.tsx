@@ -433,14 +433,15 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
             // --- LOCK LOGIC ---
             if (touchMode.current === 'detecting') {
-                const LOCK_THRESHOLD = 5; // px
+                const ZOOM_THRESHOLD = 10; // px - Higher to prevent accidental zooms
+                const PAN_THRESHOLD = 5;   // px - Prevent initial wobble
 
-                if (distDelta > LOCK_THRESHOLD) {
+                if (distDelta > ZOOM_THRESHOLD) {
                     touchMode.current = 'zooming';
                     // Reset reference to prevent jump
                     pinchDistRef.current = info.dist;
                     lastPinchCenter.current = { x: info.centerX, y: info.centerY };
-                } else if (panDelta > LOCK_THRESHOLD) {
+                } else if (panDelta > PAN_THRESHOLD) {
                     touchMode.current = 'panning';
                     // Reset reference to prevent jump
                     lastPinchCenter.current = { x: info.centerX, y: info.centerY };
