@@ -95,3 +95,8 @@ For detailed export rules and manual QA procedures, see:
     - Pinch wide (>10px): LOCKS Zoom. Pan is disabled.
     - Drag (>5px): LOCKS Pan. Zoom is disabled.
 - [ ] **Conflict Test**: Start painting, then add finger -> Should ignore or cancel neatly. Start pinching, lift one finger -> Should stop zooming.
+- [ ] **Stray Action Test**:
+    - Select **Fill Tool**.
+    - Quickly zoom or pan with two fingers.
+    - **Verify**: No fill occurs even if fingers were not perfectly synchronized.
+    - **Verify**: A clean, single tap still triggers the Fill.
