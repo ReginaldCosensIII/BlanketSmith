@@ -671,10 +671,8 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 let newScrollLeft = pointX * newZoom - pinchCtxX;
                 let newScrollTop = pointY * newZoom - (info.centerY - containerRect.top);
 
-                const dX = info.centerX - lastPinchCenter.current.x;
-                const dY = info.centerY - lastPinchCenter.current.y;
-                newScrollLeft -= dX;
-                newScrollTop -= dY;
+                // STRICT ZOOM: No explicit pan delta subtraction.
+                // we rely solely on the math above to keep the content under the fingers.
 
                 pendingScrollRef.current = { left: newScrollLeft, top: newScrollTop };
 
