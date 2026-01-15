@@ -139,12 +139,24 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         return () => resizeObserver.disconnect();
     }, [width, height, zoom, onZoomChange]);
 
-    const getMousePosition = (e: React.MouseEvent | React.TouchEvent) => {
+    const getMousePosition = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
         if (!svgRef.current) return { x: 0, y: 0 };
         const CTM = svgRef.current.getScreenCTM();
         if (!CTM) return { x: 0, y: 0 };
-        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+
+        // Handle both React and Native events
+        let clientX, clientY;
+        if ('touches' in e) {
+            // TouchEvent (React or Native)
+            const touch = (e as any).touches[0];
+            clientX = touch.clientX;
+            clientY = touch.clientY;
+        } else {
+            // MouseEvent
+            clientX = (e as any).clientX;
+            clientY = (e as any).clientY;
+        }
+
         return {
             x: (clientX - CTM.e) / CTM.a,
             y: (clientY - CTM.f) / CTM.d,
@@ -204,7 +216,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         });
     };
 
-    const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+    const handleMouseDown = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
         if ('button' in e && e.button === 2) {
             e.preventDefault();
         }
@@ -219,7 +231,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         }
         const clickButton = isRightClick ? 'right' : 'left';
 
-        const { x, y } = getMousePosition(e.nativeEvent as any);
+        const { x, y } = getMousePosition('nativeEvent' in e ? e.nativeEvent : e as any);
         const gridX = Math.floor(x - RULER_SIZE);
         const gridY = Math.floor(y - RULER_SIZE);
 
@@ -264,10 +276,10 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         }
     };
 
-    const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
+    const handleMouseMove = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
 
         e.preventDefault();
-        const { x, y } = getMousePosition(e.nativeEvent as any);
+        const { x, y } = getMousePosition('nativeEvent' in e ? e.nativeEvent : e as any);
         const gridX = Math.floor(x - RULER_SIZE);
         const gridY = Math.floor(y - RULER_SIZE);
 
@@ -306,12 +318,26 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         }
 
         if (isDrawing && activeTool === 'brush') {
-            if ('buttons' in e.nativeEvent) {
-                if (drawingButton === 'left' && (e.nativeEvent.buttons & 1) === 0) {
+            if ('nativeEvent' in e) {
+                // React Event (might wrap MouseEvent or TouchEvent)
+                const native = e.nativeEvent;
+                if ('buttons' in native) {
+                    if (drawingButton === 'left' && (native.buttons & 1) === 0) {
+                        handleMouseUp();
+                        return;
+                    }
+                    if (drawingButton === 'right' && (native.buttons & 2) === 0) {
+                        handleMouseUp();
+                        return;
+                    }
+                }
+            } else if ('buttons' in e) {
+                // Native MouseEvent
+                if (drawingButton === 'left' && ((e as MouseEvent).buttons & 1) === 0) {
                     handleMouseUp();
                     return;
                 }
-                if (drawingButton === 'right' && (e.nativeEvent.buttons & 2) === 0) {
+                if (drawingButton === 'right' && ((e as MouseEvent).buttons & 2) === 0) {
                     handleMouseUp();
                     return;
                 }
@@ -398,13 +424,21 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
     // --- NEW TOUCH HANDLERS ---
 
-    const handleTouchStart = (e: React.TouchEvent) => {
+    // Refs to current handlers to allow useEffect binding without stale closures
+    const handlersRef = useRef({
+        handleTouchStart: (e: TouchEvent) => { },
+        handleTouchMove: (e: TouchEvent) => { },
+        handleTouchEnd: (e: TouchEvent) => { }
+    });
+
+    const handleTouchStart = (e: TouchEvent) => {
         if (e.touches.length === 1) {
             touchMode.current = 'paint';
-            handleMouseDown(e);
+            handleMouseDown(e as any);
         } else if (e.touches.length === 2) {
             touchMode.current = 'detecting'; // Start in detecting mode
-            e.preventDefault();
+            if (e.cancelable) e.preventDefault();
+
             const info = getPinchInfo(e);
             if (info) {
                 pinchDistRef.current = info.dist;
@@ -521,6 +555,132 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             touchMode.current = 'none';
         }
     };
+
+    const handleTouchMove_Native = (e: TouchEvent) => {
+        if (touchMode.current === 'paint') {
+            handleMouseMove(e as any);
+        } else if ((touchMode.current === 'detecting' || touchMode.current === 'zooming' || touchMode.current === 'panning') && e.touches.length === 2) {
+            if (e.cancelable) e.preventDefault();
+            const container = containerRef.current;
+            if (!container || pinchDistRef.current === null || !lastPinchCenter.current) return;
+
+            const info = getPinchInfo(e);
+            if (!info || info.dist === 0) return;
+
+            const distDelta = Math.abs(info.dist - pinchDistRef.current);
+            const dx = info.centerX - lastPinchCenter.current.x;
+            const dy = info.centerY - lastPinchCenter.current.y;
+            const panDelta = Math.sqrt(dx * dx + dy * dy);
+
+            // --- LOCK LOGIC ---
+            if (touchMode.current === 'detecting') {
+                const ZOOM_THRESHOLD = 20; // px
+                const PAN_THRESHOLD = 5;   // px
+
+                if (distDelta > ZOOM_THRESHOLD) {
+                    touchMode.current = 'zooming';
+                    pinchDistRef.current = info.dist;
+                    lastPinchCenter.current = { x: info.centerX, y: info.centerY };
+                } else if (panDelta > PAN_THRESHOLD) {
+                    touchMode.current = 'panning';
+                    lastPinchCenter.current = { x: info.centerX, y: info.centerY };
+                }
+                return;
+            }
+
+            // --- EXECUTE LOCKED MODE ---
+
+            if (touchMode.current === 'zooming') {
+                const startZoom = currentZoomRef.current;
+                const scale = info.dist / pinchDistRef.current;
+                const newZoom = Math.max(MIN_ZOOM, Math.min(startZoom * scale, MAX_ZOOM));
+
+                // --- CORRECTED ZOOM MATH (Accounts for Centered Content) ---
+                const containerRect = container.getBoundingClientRect();
+                const pinchCtxX = min(Math.max(0, info.centerX - containerRect.left), containerRect.width);
+
+                if (!svgRef.current) return;
+                const svgRect = svgRef.current.getBoundingClientRect();
+
+                const pinchInSVG_X = info.centerX - svgRect.left;
+                const pinchInSVG_Y = info.centerY - svgRect.top;
+
+                const pointX = pinchInSVG_X / startZoom;
+                const pointY = pinchInSVG_Y / startZoom;
+
+                let newScrollLeft = pointX * newZoom - pinchCtxX;
+                let newScrollTop = pointY * newZoom - (info.centerY - containerRect.top);
+
+                const dX = info.centerX - lastPinchCenter.current.x;
+                const dY = info.centerY - lastPinchCenter.current.y;
+                newScrollLeft -= dX;
+                newScrollTop -= dY;
+
+                pendingScrollRef.current = { left: newScrollLeft, top: newScrollTop };
+
+                currentZoomRef.current = newZoom;
+                onZoomChange(newZoom);
+
+                pinchDistRef.current = info.dist;
+                lastPinchCenter.current = { x: info.centerX, y: info.centerY };
+            }
+            else if (touchMode.current === 'panning') {
+                const dX = info.centerX - lastPinchCenter.current.x;
+                const dY = info.centerY - lastPinchCenter.current.y;
+
+                container.scrollLeft -= dX;
+                container.scrollTop -= dY;
+
+                lastPinchCenter.current = { x: info.centerX, y: info.centerY };
+                pinchDistRef.current = info.dist;
+            }
+        }
+    };
+
+    const handleTouchEnd_Native = (e: TouchEvent) => {
+        if (touchMode.current === 'paint') {
+            handleMouseUp();
+        }
+
+        if (e.touches.length === 0) {
+            touchMode.current = 'none';
+            pinchDistRef.current = null;
+            lastPinchCenter.current = null;
+        } else if (e.touches.length < 2 && (touchMode.current === 'detecting' || touchMode.current === 'zooming' || touchMode.current === 'panning')) {
+            touchMode.current = 'none';
+        }
+    };
+
+    // Keep handlersRef updated
+    useEffect(() => {
+        handlersRef.current = {
+            handleTouchStart: handleTouchStart,
+            handleTouchMove: handleTouchMove_Native,
+            handleTouchEnd: handleTouchEnd_Native
+        };
+    });
+
+    // Attach Non-Passive Listeners
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const onStart = (e: TouchEvent) => handlersRef.current.handleTouchStart(e);
+        const onMove = (e: TouchEvent) => handlersRef.current.handleTouchMove(e);
+        const onEnd = (e: TouchEvent) => handlersRef.current.handleTouchEnd(e);
+
+        container.addEventListener('touchstart', onStart, { passive: false });
+        container.addEventListener('touchmove', onMove, { passive: false });
+        container.addEventListener('touchend', onEnd, { passive: false });
+        container.addEventListener('touchcancel', onEnd, { passive: false });
+
+        return () => {
+            container.removeEventListener('touchstart', onStart);
+            container.removeEventListener('touchmove', onMove);
+            container.removeEventListener('touchend', onEnd);
+            container.removeEventListener('touchcancel', onEnd);
+        };
+    }, []);
 
     // Helper for safe bounding
     const min = Math.min;
@@ -721,9 +881,6 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseLeave}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
         >
             <svg
                 ref={svgRef}
