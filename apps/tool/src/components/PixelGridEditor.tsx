@@ -449,6 +449,11 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             setIsDrawing(false);
             setPaintedCells(new Set()); // Discard pending pixels
             setHoveredCell(null);
+
+            // ABORT SELECTION: If we started selecting, cancel it too!
+            if (activeTool === 'select') {
+                onSelectionChange(null);
+            }
         }
     };
 
