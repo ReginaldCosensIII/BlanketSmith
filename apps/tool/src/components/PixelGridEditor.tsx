@@ -410,8 +410,11 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 pinchDistRef.current = info.dist;
                 lastPinchCenter.current = { x: info.centerX, y: info.centerY };
             }
-            setIsDrawing(false); // Stop any painting
-            setHoveredCell(null); // Clear hover
+
+            // ABORT PAINT: If we started drawing with the first finger (stray dot), cancel it!
+            setIsDrawing(false);
+            setPaintedCells(new Set()); // Discard pending pixels
+            setHoveredCell(null);
         }
     };
 
