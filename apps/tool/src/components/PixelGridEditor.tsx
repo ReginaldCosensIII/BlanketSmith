@@ -88,11 +88,46 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
     // Apply pending scroll immediately after render (synced with new zoom level)
     useLayoutEffect(() => {
-        if (pendingScrollRef.current && containerRef.current) {
-            containerRef.current.scrollLeft = pendingScrollRef.current.left;
-            containerRef.current.scrollTop = pendingScrollRef.current.top;
+        const container = containerRef.current;
+        if (!container) return;
+
+        if (pendingScrollRef.current) {
+            // GESTURE ZOOM: Use the calculated scroll from the gesture handler
+            container.scrollLeft = pendingScrollRef.current.left;
+            container.scrollTop = pendingScrollRef.current.top;
             pendingScrollRef.current = null;
+        } else {
+            // EXTERNAL ZOOM (Footer/Shortcuts): Center-Preserving Zoom
+            // We want to keep the center of the viewport fixed relative to content
+            const prevZoom = currentZoomRef.current;
+            const newZoom = zoom;
+
+            if (Math.abs(newZoom - prevZoom) > 0.001) {
+                const rect = container.getBoundingClientRect();
+                const viewportW = rect.width;
+                const viewportH = rect.height;
+                const viewportCenterX = viewportW / 2;
+                const viewportCenterY = viewportH / 2;
+
+                // 1. Calculate the point currently at the center of the viewport (in unzoomed coords)
+                // Note: We use max(0, ...) to effectively pin top-left if content < viewport,
+                // but standard scroll logic usually handles negative scroll by clamping to 0.
+                // However, we must account for our custom centering logic (margin: auto etc doesn't apply to scroll).
+                // Actually, scrollLeft is 0 when centered if content < viewport.
+
+                // Let's rely on standard scroll math:
+                const centerX_Prev = (container.scrollLeft + viewportCenterX) / prevZoom;
+                const centerY_Prev = (container.scrollTop + viewportCenterY) / prevZoom;
+
+                // 2. Calculate new scroll to keep that point at center
+                const newScrollLeft = (centerX_Prev * newZoom) - viewportCenterX;
+                const newScrollTop = (centerY_Prev * newZoom) - viewportCenterY;
+
+                container.scrollLeft = newScrollLeft;
+                container.scrollTop = newScrollTop;
+            }
         }
+        currentZoomRef.current = zoom;
     }, [zoom]);
 
     const [isDrawing, setIsDrawing] = useState(false);
