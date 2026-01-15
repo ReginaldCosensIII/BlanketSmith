@@ -132,7 +132,7 @@ Add items freely; keep IDs stable once created. Promote to Blocker list when nee
 
 ### Beta Blockers (Must-Have)
 - [x] **LOG-001:** Professional logging + error handling baseline (Status: Done)
-- [ ] **UX-001:** Mobile/tablet usable editor experience (Status: Not Started)
+- [x] **UX-001:** Mobile/tablet usable editor experience (Status: Done)
 - [ ] **UX-002:** Non-mouse zoom/navigation controls (Status: Not Started)
 - [ ] **INS-001:** Instructions Engine v2 (Status: Not Started)
 - [ ] **RPT-001:** Feedback/bug reporting mechanism (Status: Not Started)
