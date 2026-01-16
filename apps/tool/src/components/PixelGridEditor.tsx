@@ -42,6 +42,37 @@ interface PixelGridEditorProps {
 
 const RULER_SIZE = 2;
 
+/**
+ * Calculates the new scroll position to keep a specific point on the screen (focusPoint)
+ * anchored to the same point on the content (SVG) after zooming.
+ * This unifies Pinch, Wheel, and Footer zoom logic coordinate systems.
+ */
+const calculateCenteredScroll = (
+    container: HTMLElement,
+    svg: SVGElement,
+    focusPoint: { x: number, y: number }, // Client Coordinates (Screen)
+    currentZoom: number,
+    newZoom: number
+) => {
+    const containerRect = container.getBoundingClientRect();
+    const svgRect = svg.getBoundingClientRect();
+
+    // 1. Calculate the point on the SVG (unzoomed units) where the user is focusing
+    // This relies on getBoundingClientRect() which correctly accounts for CSS centering
+    const focusInSVGX = (focusPoint.x - svgRect.left) / currentZoom;
+    const focusInSVGY = (focusPoint.y - svgRect.top) / currentZoom;
+
+    // 2. Calculate where that point determines the scroll position relative to container
+    // New Scroll = (PointInSVG * NewZoom) - (Offset from Container Top-Left)
+    const pinchCtxX = focusPoint.x - containerRect.left;
+    const pinchCtxY = focusPoint.y - containerRect.top;
+
+    const newScrollLeft = (focusInSVGX * newZoom) - pinchCtxX;
+    const newScrollTop = (focusInSVGY * newZoom) - pinchCtxY;
+
+    return { left: newScrollLeft, top: newScrollTop };
+};
+
 export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     data,
     yarnPalette,
@@ -74,7 +105,14 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const containerRef = useRef<HTMLDivElement>(null);
     const svgRef = useRef<SVGSVGElement>(null);
     const pinchDistRef = useRef<number | null>(null);
+    const pinchStartRectRef = useRef<{ left: number, top: number } | null>(null);
+    const startZoomRef = useRef<number>(zoom);
     const touchMode = useRef<'none' | 'paint' | 'detecting' | 'zooming' | 'panning'>('none');
+
+    // DEFERRED ZOOM ALIGNMENT: 
+    // Stores the intent to align a specific point on the SVG (unzoomed x,y) 
+    // under a specific screen coordinate (clientX, clientY) AFTER the next render.
+    const pendingZoomAlignmentRef = useRef<{ point: { x: number, y: number }, targetScreen: { x: number, y: number } } | null>(null);
     const lastPinchCenter = useRef<{ x: number, y: number } | null>(null);
     const currentZoomRef = useRef<number>(zoom);
 
@@ -88,11 +126,117 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
     // Apply pending scroll immediately after render (synced with new zoom level)
     useLayoutEffect(() => {
-        if (pendingScrollRef.current && containerRef.current) {
-            containerRef.current.scrollLeft = pendingScrollRef.current.left;
-            containerRef.current.scrollTop = pendingScrollRef.current.top;
+        const container = containerRef.current;
+        if (!container) return;
+
+        if (pendingZoomAlignmentRef.current) {
+            // DEFERRED ALIGNMENT (Touch Pinned Zoom)
+            // The render has finished, so the SVG size/pos is now updated for `newZoom`.
+            // We can now calculate the exact scroll position to align `targetScreen` with `point`.
+
+            const alignment = pendingZoomAlignmentRef.current;
+            const containRect = container.getBoundingClientRect();
+
+            // "point" acts as a normalized coordinate in the SVG space
+            // IMPORTANT: We use the CURRENT zoom (which was just applied)
+            const currentAppliedZoom = zoom;
+
+            // Calculate where the point WOULD be relative to SVG origin (0,0)
+            const pointOffsetInSVG = {
+                x: alignment.point.x * currentAppliedZoom,
+                y: alignment.point.y * currentAppliedZoom
+            };
+
+            // The SVG itself might be centered via CSS.
+            // We need to know where the SVG Left/Top is relative to Container, 
+            // BUT calculating "SVG Left" directly is circular if we rely on scroll.
+            // INSTEAD: We know the standard behavior:
+            // ScrollLeft = (PointInSVG_FromOrigin) - (Distance_From_Container_Left_To_Use_Finger) + (SVG_Layout_Offset_If_Any)
+
+            // Simplest way: use calculateCenteredScroll logic inversely? 
+            // Actually, we can just use the SVG's *internal* coordinate system since we have the point.
+
+            // Refined Math: 
+            // We want [ScreenX] = [ContainerLeft] - [ScrollLeft] + [SVG_Left_Visual_Offset] + [Point_In_SVG_Visual]
+            // Solve for ScrollLeft:
+            // ScrollLeft = ContainerLeft + SVG_Left_Visual_Offset + Point_In_SVG_Visual - ScreenX
+
+            // But 'SVG_Left_Visual_Offset' depends on... CSS centering (margin: auto).
+            // This is determined by `svgRef.current.getBoundingClientRect()`? 
+            // scrollLeft affects rect.left...
+
+            // Wait, we need the "Offset from Container Content Box".
+            // Let's use `calculateCenteredScroll`? No, that assumes we are transitioning.
+            // Here we are ALREADY at the new zoom layout, just wrong scroll.
+
+            if (svgRef.current) {
+                // Force Scroll to 0 temporarily to measure "Natural Layout" (CSS Center)?
+                // Too jerky.
+
+                // Better: Realize that:
+                // SVG_Visual_Left_Relative_To_Container = (ContainerWidth - SVGWidth)/2 (if SVG < Container)
+                // OR 0 (if SVG >= Container)
+
+                const svgWidth = width * currentAppliedZoom;
+                const svgHeight = height * currentAppliedZoom;
+
+                const containerWidth = containRect.width;
+                const containerHeight = containRect.height;
+
+                const cssOffsetX = Math.max(0, (containerWidth - svgWidth) / 2);
+                const cssOffsetY = Math.max(0, (containerHeight - svgHeight) / 2);
+
+                const targetScreenX = alignment.targetScreen.x;
+                const targetScreenY = alignment.targetScreen.y;
+
+                const relativeFingerX = targetScreenX - containRect.left;
+                const relativeFingerY = targetScreenY - containRect.top;
+
+                const newScrollLeft = cssOffsetX + pointOffsetInSVG.x - relativeFingerX;
+                const newScrollTop = cssOffsetY + pointOffsetInSVG.y - relativeFingerY;
+
+                container.scrollLeft = newScrollLeft;
+                container.scrollTop = newScrollTop;
+            }
+
+            pendingZoomAlignmentRef.current = null;
+
+        } else if (pendingScrollRef.current) {
+            // ... (Keep existing GESTURE ZOOM fallback or LEGACY)
+            // Only used if we have other gesture logic, but now Touch uses AlignmentRef.
+            container.scrollLeft = pendingScrollRef.current.left;
+            container.scrollTop = pendingScrollRef.current.top;
             pendingScrollRef.current = null;
+        } else {
+            // EXTERNAL ZOOM (Footer/Shortcuts)
+            // ... (Keep existing logic)
+            const prevZoom = currentZoomRef.current;
+            const newZoom = zoom;
+
+            // Only center if the zoom actually changed significantly (avoid micro-jitter)
+            if (Math.abs(newZoom - prevZoom) > 0.001) {
+                if (svgRef.current) {
+                    const rect = container.getBoundingClientRect();
+                    // Default focus: Center of Viewport
+                    const focusPoint = {
+                        x: rect.left + rect.width / 2,
+                        y: rect.top + rect.height / 2
+                    };
+
+                    const { left, top } = calculateCenteredScroll(
+                        container,
+                        svgRef.current,
+                        focusPoint,
+                        prevZoom,
+                        newZoom
+                    );
+
+                    container.scrollLeft = left;
+                    container.scrollTop = top;
+                }
+            }
         }
+        currentZoomRef.current = zoom;
     }, [zoom]);
 
     const [isDrawing, setIsDrawing] = useState(false);
@@ -466,6 +610,13 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             if (info) {
                 pinchDistRef.current = info.dist;
                 lastPinchCenter.current = { x: info.centerX, y: info.centerY };
+                startZoomRef.current = currentZoomRef.current;
+
+                // CACHE LAYOUT STATE for Strict Pinned Zoom
+                if (svgRef.current) {
+                    const r = svgRef.current.getBoundingClientRect();
+                    pinchStartRectRef.current = { left: r.left, top: r.top };
+                }
             }
 
             // ABORT PAINT: If we started drawing with the first finger (stray dot), cancel it!
@@ -506,6 +657,12 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                     // Reset reference to prevent jump
                     pinchDistRef.current = info.dist;
                     lastPinchCenter.current = { x: info.centerX, y: info.centerY };
+                    // LOCK STATE: Capture robust state for zoom calc
+                    startZoomRef.current = currentZoomRef.current;
+                    if (container && svgRef.current) {
+                        const r = svgRef.current.getBoundingClientRect();
+                        pinchStartRectRef.current = { left: r.left, top: r.top };
+                    }
                 } else if (panDelta > PAN_THRESHOLD) {
                     touchMode.current = 'panning';
                     // Reset reference to prevent jump
@@ -517,41 +674,32 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             // --- EXECUTE LOCKED MODE ---
 
             if (touchMode.current === 'zooming') {
-                const startZoom = currentZoomRef.current;
+                const startZoom = startZoomRef.current; // Cached Start Zoom
                 const scale = info.dist / pinchDistRef.current;
                 const newZoom = Math.max(MIN_ZOOM, Math.min(startZoom * scale, MAX_ZOOM));
 
-                // Keep pinch center stable logic...
-                const rect = container.getBoundingClientRect();
-                const pinchCtxX = min(Math.max(0, info.centerX - rect.left), rect.width);
-                const pinchCtxY = min(Math.max(0, info.centerY - rect.top), rect.height);
+                // --- ROBUST PINNED ZOOM (Lag-Proof) ---
+                // We use cached start state to calculate where the SVG *should* be
+                const startRect = pinchStartRectRef.current;
 
-                const scaleCorrection = startZoom;
-                const pointX = (container.scrollLeft + pinchCtxX) / scaleCorrection;
-                const pointY = (container.scrollTop + pinchCtxY) / scaleCorrection;
+                if (startRect) {
+                    // 1. Calculate the point on the image that WAS under the pinch center at start
+                    const startPinchX = lastPinchCenter.current.x;
+                    const startPinchY = lastPinchCenter.current.y;
 
-                let newScrollLeft = pointX * newZoom - pinchCtxX;
-                let newScrollTop = pointY * newZoom - pinchCtxY;
+                    const pointX = (startPinchX - startRect.left) / startZoom;
+                    const pointY = (startPinchY - startRect.top) / startZoom;
 
-                // Note: We intentionally DO NOT subtract pan delta during 'strict zoom'
-                // to keep the zoom strictly centered on the pinch point rather than "dragging" map.
-                // However, subtle pinch movement naturally includes some pan. 
-                // A "true" pinch zoom often feels better if center moves with fingers.
-                // Let's INCLUDE center tracking for "Zooming" to allow "Pinch-Pan", 
-                // but strictly lock "Panning" to ensure no accidental zoom.
+                    // 2. DEFER ALIGNMENT:
+                    // We don't calculate scroll here. We just say:
+                    // "I want (pointX, pointY) to be at (info.centerX, info.centerY) after render."
+                    pendingZoomAlignmentRef.current = {
+                        point: { x: pointX, y: pointY },
+                        targetScreen: { x: info.centerX, y: info.centerY }
+                    };
+                }
 
-                const dX = info.centerX - lastPinchCenter.current.x;
-                const dY = info.centerY - lastPinchCenter.current.y;
-                newScrollLeft -= dX;
-                newScrollTop -= dY;
-
-                pendingScrollRef.current = { left: newScrollLeft, top: newScrollTop };
-
-                currentZoomRef.current = newZoom;
                 onZoomChange(newZoom);
-
-                pinchDistRef.current = info.dist;
-                lastPinchCenter.current = { x: info.centerX, y: info.centerY };
             }
             else if (touchMode.current === 'panning') {
                 // Strict Pan - NO Zoom
@@ -755,6 +903,8 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         e.preventDefault();
         const container = containerRef.current;
         if (!container) return;
+        const svg = svgRef.current;
+        if (!svg) return;
 
         const rect = container.getBoundingClientRect();
         const viewportCenterX = rect.width / 2;
@@ -765,20 +915,28 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             ? Math.min(zoom * 1.2, MAX_ZOOM)
             : Math.max(zoom / 1.2, MIN_ZOOM);
 
-        const pointX = (container.scrollLeft + viewportCenterX) / prevZoom;
-        const pointY = (container.scrollTop + viewportCenterY) / prevZoom;
+        if (newZoom !== prevZoom) {
+            const focusPoint = { x: e.clientX, y: e.clientY };
 
-        const newScrollLeft = pointX * newZoom - viewportCenterX;
-        const newScrollTop = pointY * newZoom - viewportCenterY;
+            const { left, top } = calculateCenteredScroll(
+                container,
+                svg,
+                focusPoint,
+                prevZoom,
+                newZoom
+            );
 
-        onZoomChange(newZoom);
+            // Apply updates
+            onZoomChange(newZoom);
 
-        requestAnimationFrame(() => {
-            if (containerRef.current) {
-                containerRef.current.scrollLeft = newScrollLeft;
-                containerRef.current.scrollTop = newScrollTop;
-            }
-        });
+            // Use requestAnimationFrame for smooth visual update
+            requestAnimationFrame(() => {
+                if (containerRef.current) {
+                    containerRef.current.scrollLeft = left;
+                    containerRef.current.scrollTop = top;
+                }
+            });
+        }
     };
 
     const handleContextMenu = (e: React.MouseEvent) => {
