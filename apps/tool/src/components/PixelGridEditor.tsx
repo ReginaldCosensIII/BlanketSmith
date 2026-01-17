@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { PixelGridData, YarnColor, Symmetry, CellData } from '../types';
 import { PIXEL_FONT, MIN_ZOOM, MAX_ZOOM } from '../constants';
 import { useCanvasLogic } from '../hooks/useCanvasLogic';
@@ -42,6 +42,37 @@ interface PixelGridEditorProps {
 
 const RULER_SIZE = 2;
 
+/**
+ * Calculates the new scroll position to keep a specific point on the screen (focusPoint)
+ * anchored to the same point on the content (SVG) after zooming.
+ * This unifies Pinch, Wheel, and Footer zoom logic coordinate systems.
+ */
+const calculateCenteredScroll = (
+    container: HTMLElement,
+    svg: SVGElement,
+    focusPoint: { x: number, y: number }, // Client Coordinates (Screen)
+    currentZoom: number,
+    newZoom: number
+) => {
+    const containerRect = container.getBoundingClientRect();
+    const svgRect = svg.getBoundingClientRect();
+
+    // 1. Calculate the point on the SVG (unzoomed units) where the user is focusing
+    // This relies on getBoundingClientRect() which correctly accounts for CSS centering
+    const focusInSVGX = (focusPoint.x - svgRect.left) / currentZoom;
+    const focusInSVGY = (focusPoint.y - svgRect.top) / currentZoom;
+
+    // 2. Calculate where that point determines the scroll position relative to container
+    // New Scroll = (PointInSVG * NewZoom) - (Offset from Container Top-Left)
+    const pinchCtxX = focusPoint.x - containerRect.left;
+    const pinchCtxY = focusPoint.y - containerRect.top;
+
+    const newScrollLeft = (focusInSVGX * newZoom) - pinchCtxX;
+    const newScrollTop = (focusInSVGY * newZoom) - pinchCtxY;
+
+    return { left: newScrollLeft, top: newScrollTop };
+};
+
 export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     data,
     yarnPalette,
@@ -74,6 +105,139 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const containerRef = useRef<HTMLDivElement>(null);
     const svgRef = useRef<SVGSVGElement>(null);
     const pinchDistRef = useRef<number | null>(null);
+    const pinchStartRectRef = useRef<{ left: number, top: number } | null>(null);
+    const startZoomRef = useRef<number>(zoom);
+    const touchMode = useRef<'none' | 'paint' | 'detecting' | 'zooming' | 'panning'>('none');
+
+    // DEFERRED ZOOM ALIGNMENT: 
+    // Stores the intent to align a specific point on the SVG (unzoomed x,y) 
+    // under a specific screen coordinate (clientX, clientY) AFTER the next render.
+    const pendingZoomAlignmentRef = useRef<{ point: { x: number, y: number }, targetScreen: { x: number, y: number } } | null>(null);
+    const lastPinchCenter = useRef<{ x: number, y: number } | null>(null);
+    const currentZoomRef = useRef<number>(zoom);
+
+    const pendingScrollRef = useRef<{ left: number, top: number } | null>(null);
+    const pendingTapRef = useRef<{ x: number, y: number, gridX: number, gridY: number, time: number } | null>(null);
+
+    // Sync ref when prop changes (e.g. from footer controls)
+    useEffect(() => {
+        currentZoomRef.current = zoom;
+    }, [zoom]);
+
+    // Apply pending scroll immediately after render (synced with new zoom level)
+    useLayoutEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        if (pendingZoomAlignmentRef.current) {
+            // DEFERRED ALIGNMENT (Touch Pinned Zoom)
+            // The render has finished, so the SVG size/pos is now updated for `newZoom`.
+            // We can now calculate the exact scroll position to align `targetScreen` with `point`.
+
+            const alignment = pendingZoomAlignmentRef.current;
+            const containRect = container.getBoundingClientRect();
+
+            // "point" acts as a normalized coordinate in the SVG space
+            // IMPORTANT: We use the CURRENT zoom (which was just applied)
+            const currentAppliedZoom = zoom;
+
+            // Calculate where the point WOULD be relative to SVG origin (0,0)
+            const pointOffsetInSVG = {
+                x: alignment.point.x * currentAppliedZoom,
+                y: alignment.point.y * currentAppliedZoom
+            };
+
+            // The SVG itself might be centered via CSS.
+            // We need to know where the SVG Left/Top is relative to Container, 
+            // BUT calculating "SVG Left" directly is circular if we rely on scroll.
+            // INSTEAD: We know the standard behavior:
+            // ScrollLeft = (PointInSVG_FromOrigin) - (Distance_From_Container_Left_To_Use_Finger) + (SVG_Layout_Offset_If_Any)
+
+            // Simplest way: use calculateCenteredScroll logic inversely? 
+            // Actually, we can just use the SVG's *internal* coordinate system since we have the point.
+
+            // Refined Math: 
+            // We want [ScreenX] = [ContainerLeft] - [ScrollLeft] + [SVG_Left_Visual_Offset] + [Point_In_SVG_Visual]
+            // Solve for ScrollLeft:
+            // ScrollLeft = ContainerLeft + SVG_Left_Visual_Offset + Point_In_SVG_Visual - ScreenX
+
+            // But 'SVG_Left_Visual_Offset' depends on... CSS centering (margin: auto).
+            // This is determined by `svgRef.current.getBoundingClientRect()`? 
+            // scrollLeft affects rect.left...
+
+            // Wait, we need the "Offset from Container Content Box".
+            // Let's use `calculateCenteredScroll`? No, that assumes we are transitioning.
+            // Here we are ALREADY at the new zoom layout, just wrong scroll.
+
+            if (svgRef.current) {
+                // Force Scroll to 0 temporarily to measure "Natural Layout" (CSS Center)?
+                // Too jerky.
+
+                // Better: Realize that:
+                // SVG_Visual_Left_Relative_To_Container = (ContainerWidth - SVGWidth)/2 (if SVG < Container)
+                // OR 0 (if SVG >= Container)
+
+                const svgWidth = width * currentAppliedZoom;
+                const svgHeight = height * currentAppliedZoom;
+
+                const containerWidth = containRect.width;
+                const containerHeight = containRect.height;
+
+                const cssOffsetX = Math.max(0, (containerWidth - svgWidth) / 2);
+                const cssOffsetY = Math.max(0, (containerHeight - svgHeight) / 2);
+
+                const targetScreenX = alignment.targetScreen.x;
+                const targetScreenY = alignment.targetScreen.y;
+
+                const relativeFingerX = targetScreenX - containRect.left;
+                const relativeFingerY = targetScreenY - containRect.top;
+
+                const newScrollLeft = cssOffsetX + pointOffsetInSVG.x - relativeFingerX;
+                const newScrollTop = cssOffsetY + pointOffsetInSVG.y - relativeFingerY;
+
+                container.scrollLeft = newScrollLeft;
+                container.scrollTop = newScrollTop;
+            }
+
+            pendingZoomAlignmentRef.current = null;
+
+        } else if (pendingScrollRef.current) {
+            // ... (Keep existing GESTURE ZOOM fallback or LEGACY)
+            // Only used if we have other gesture logic, but now Touch uses AlignmentRef.
+            container.scrollLeft = pendingScrollRef.current.left;
+            container.scrollTop = pendingScrollRef.current.top;
+            pendingScrollRef.current = null;
+        } else {
+            // EXTERNAL ZOOM (Footer/Shortcuts)
+            // ... (Keep existing logic)
+            const prevZoom = currentZoomRef.current;
+            const newZoom = zoom;
+
+            // Only center if the zoom actually changed significantly (avoid micro-jitter)
+            if (Math.abs(newZoom - prevZoom) > 0.001) {
+                if (svgRef.current) {
+                    const rect = container.getBoundingClientRect();
+                    // Default focus: Center of Viewport
+                    const focusPoint = {
+                        x: rect.left + rect.width / 2,
+                        y: rect.top + rect.height / 2
+                    };
+
+                    const { left, top } = calculateCenteredScroll(
+                        container,
+                        svgRef.current,
+                        focusPoint,
+                        prevZoom,
+                        newZoom
+                    );
+
+                    container.scrollLeft = left;
+                    container.scrollTop = top;
+                }
+            }
+        }
+        currentZoomRef.current = zoom;
+    }, [zoom]);
 
     const [isDrawing, setIsDrawing] = useState(false);
     const [drawingButton, setDrawingButton] = useState<'left' | 'right' | null>(null);
@@ -121,22 +285,40 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         return () => resizeObserver.disconnect();
     }, [width, height, zoom, onZoomChange]);
 
-    const getMousePosition = (e: React.MouseEvent | React.TouchEvent) => {
+    const getMousePosition = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
         if (!svgRef.current) return { x: 0, y: 0 };
         const CTM = svgRef.current.getScreenCTM();
         if (!CTM) return { x: 0, y: 0 };
-        const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-        const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+
+        // Handle both React and Native events
+        let clientX, clientY;
+        if ('touches' in e) {
+            // TouchEvent (React or Native)
+            const touch = (e as any).touches[0];
+            clientX = touch.clientX;
+            clientY = touch.clientY;
+        } else {
+            // MouseEvent
+            clientX = (e as any).clientX;
+            clientY = (e as any).clientY;
+        }
+
         return {
             x: (clientX - CTM.e) / CTM.a,
             y: (clientY - CTM.f) / CTM.d,
         };
     };
 
-    const getPinchDist = (e: TouchEvent) => {
-        const t1 = e.touches[0];
-        const t2 = e.touches[1];
-        return Math.sqrt(Math.pow(t1.clientX - t2.clientX, 2) + Math.pow(t1.clientY - t2.clientY, 2));
+    const getPinchInfo = (e: React.TouchEvent | TouchEvent) => {
+        const touches = 'nativeEvent' in e ? e.nativeEvent.touches : e.touches;
+        if (touches.length < 2) return null;
+
+        const t1 = touches[0];
+        const t2 = touches[1];
+        const dist = Math.sqrt(Math.pow(t1.clientX - t2.clientX, 2) + Math.pow(t1.clientY - t2.clientY, 2));
+        const centerX = (t1.clientX + t2.clientX) / 2;
+        const centerY = (t1.clientY + t2.clientY) / 2;
+        return { dist, centerX, centerY };
     }
 
     const lastGridPos = useRef<{ x: number, y: number } | null>(null);
@@ -180,16 +362,13 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         });
     };
 
-    const handleMouseDown = (e: React.MouseEvent | React.TouchEvent) => {
+    const handleMouseDown = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
         if ('button' in e && e.button === 2) {
             e.preventDefault();
         }
 
-        if ('touches' in e.nativeEvent && e.nativeEvent.touches.length === 2) {
+        if ('button' in e && e.button === 2) {
             e.preventDefault();
-            pinchDistRef.current = getPinchDist(e.nativeEvent as TouchEvent);
-            setIsDrawing(false);
-            return;
         }
 
         let isRightClick = false;
@@ -198,7 +377,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         }
         const clickButton = isRightClick ? 'right' : 'left';
 
-        const { x, y } = getMousePosition(e.nativeEvent as any);
+        const { x, y } = getMousePosition('nativeEvent' in e ? e.nativeEvent : e as any);
         const gridX = Math.floor(x - RULER_SIZE);
         const gridY = Math.floor(y - RULER_SIZE);
 
@@ -243,44 +422,10 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         }
     };
 
-    const handleMouseMove = (e: React.MouseEvent | React.TouchEvent) => {
-        if ('touches' in e.nativeEvent && e.nativeEvent.touches.length === 2 && pinchDistRef.current !== null) {
-            e.preventDefault();
-            const container = containerRef.current;
-            if (!container) return;
-
-            const newDist = getPinchDist(e.nativeEvent as TouchEvent);
-            if (newDist === 0) return;
-
-            const scale = newDist / pinchDistRef.current;
-            const newZoom = Math.max(MIN_ZOOM, Math.min(zoom * scale, MAX_ZOOM));
-
-            const rect = container.getBoundingClientRect();
-            const touch1 = e.nativeEvent.touches[0];
-            const touch2 = e.nativeEvent.touches[1];
-            const pinchCenterX = (touch1.clientX + touch2.clientX) / 2 - rect.left;
-            const pinchCenterY = (touch1.clientY + touch2.clientY) / 2 - rect.top;
-
-            const pointX = (container.scrollLeft + pinchCenterX) / zoom;
-            const pointY = (container.scrollTop + pinchCenterY) / zoom;
-
-            const newScrollLeft = pointX * newZoom - pinchCenterX;
-            const newScrollTop = pointY * newZoom - pinchCenterY;
-
-            onZoomChange(newZoom);
-            pinchDistRef.current = newDist;
-
-            requestAnimationFrame(() => {
-                if (containerRef.current) {
-                    containerRef.current.scrollLeft = newScrollLeft;
-                    containerRef.current.scrollTop = newScrollTop;
-                }
-            });
-            return;
-        }
+    const handleMouseMove = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
 
         e.preventDefault();
-        const { x, y } = getMousePosition(e.nativeEvent as any);
+        const { x, y } = getMousePosition('nativeEvent' in e ? e.nativeEvent : e as any);
         const gridX = Math.floor(x - RULER_SIZE);
         const gridY = Math.floor(y - RULER_SIZE);
 
@@ -319,12 +464,26 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         }
 
         if (isDrawing && activeTool === 'brush') {
-            if ('buttons' in e.nativeEvent) {
-                if (drawingButton === 'left' && (e.nativeEvent.buttons & 1) === 0) {
+            if ('nativeEvent' in e) {
+                // React Event (might wrap MouseEvent or TouchEvent)
+                const native = e.nativeEvent;
+                if ('buttons' in native) {
+                    if (drawingButton === 'left' && (native.buttons & 1) === 0) {
+                        handleMouseUp();
+                        return;
+                    }
+                    if (drawingButton === 'right' && (native.buttons & 2) === 0) {
+                        handleMouseUp();
+                        return;
+                    }
+                }
+            } else if ('buttons' in e) {
+                // Native MouseEvent
+                if (drawingButton === 'left' && ((e as MouseEvent).buttons & 1) === 0) {
                     handleMouseUp();
                     return;
                 }
-                if (drawingButton === 'right' && (e.nativeEvent.buttons & 2) === 0) {
+                if (drawingButton === 'right' && ((e as MouseEvent).buttons & 2) === 0) {
                     handleMouseUp();
                     return;
                 }
@@ -409,10 +568,339 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         setHoveredCell(null);
     };
 
+    // --- NEW TOUCH HANDLERS ---
+
+    // Refs to current handlers to allow useEffect binding without stale closures
+    const handlersRef = useRef({
+        handleTouchStart: (e: TouchEvent) => { },
+        handleTouchMove: (e: TouchEvent) => { },
+        handleTouchEnd: (e: TouchEvent) => { }
+    });
+
+    const handleTouchStart = (e: TouchEvent) => {
+        if (e.touches.length === 1) {
+            const touch = e.touches[0];
+            const { x, y } = getMousePosition(e);
+            const gridX = Math.floor(x - RULER_SIZE);
+            const gridY = Math.floor(y - RULER_SIZE);
+
+            // CLASSIFY TOOL: Instant vs Continuous
+            // Continuous: Brush, Select (Drag to operate)
+            // Instant: Fill, Text, Eyedropper, Replace (Click to operate)
+            const isInstantTool = !['brush', 'select'].includes(activeTool) && !floatingSelection;
+
+            if (isInstantTool) {
+                // DEFER ACTION: Wait for clean release (Tap-to-Execute)
+                touchMode.current = 'paint'; // Use paint mode for single finger tracking
+                pendingTapRef.current = { x, y, gridX, gridY, time: Date.now() };
+            } else {
+                // CONTINUOUS ACTION: Start immediately
+                touchMode.current = 'paint';
+                handleMouseDown(e as any);
+            }
+
+        } else if (e.touches.length === 2) {
+            touchMode.current = 'detecting'; // Start in detecting mode
+            if (e.cancelable) e.preventDefault();
+
+            // CANCEL PENDING TAP: If second finger lands, it's a gesture, not a tap
+            pendingTapRef.current = null;
+
+            const info = getPinchInfo(e);
+            if (info) {
+                pinchDistRef.current = info.dist;
+                lastPinchCenter.current = { x: info.centerX, y: info.centerY };
+                startZoomRef.current = currentZoomRef.current;
+
+                // CACHE LAYOUT STATE for Strict Pinned Zoom
+                if (svgRef.current) {
+                    const r = svgRef.current.getBoundingClientRect();
+                    pinchStartRectRef.current = { left: r.left, top: r.top };
+                }
+            }
+
+            // ABORT PAINT: If we started drawing with the first finger (stray dot), cancel it!
+            setIsDrawing(false);
+            setPaintedCells(new Set()); // Discard pending pixels
+            setHoveredCell(null);
+
+            // ABORT SELECTION: If we started selecting, cancel it too!
+            if (activeTool === 'select') {
+                onSelectionChange(null);
+            }
+        }
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        if (touchMode.current === 'paint') {
+            handleMouseMove(e);
+        } else if ((touchMode.current === 'detecting' || touchMode.current === 'zooming' || touchMode.current === 'panning') && e.touches.length === 2) {
+            e.preventDefault(); // Critical to prevent browser zoom/pan
+            const container = containerRef.current;
+            if (!container || pinchDistRef.current === null || !lastPinchCenter.current) return;
+
+            const info = getPinchInfo(e);
+            if (!info || info.dist === 0) return;
+
+            const distDelta = Math.abs(info.dist - pinchDistRef.current);
+            const dx = info.centerX - lastPinchCenter.current.x;
+            const dy = info.centerY - lastPinchCenter.current.y;
+            const panDelta = Math.sqrt(dx * dx + dy * dy);
+
+            // --- LOCK LOGIC ---
+            if (touchMode.current === 'detecting') {
+                const ZOOM_THRESHOLD = 10; // px - Higher to prevent accidental zooms
+                const PAN_THRESHOLD = 5;   // px - Prevent initial wobble
+
+                if (distDelta > ZOOM_THRESHOLD) {
+                    touchMode.current = 'zooming';
+                    // Reset reference to prevent jump
+                    pinchDistRef.current = info.dist;
+                    lastPinchCenter.current = { x: info.centerX, y: info.centerY };
+                    // LOCK STATE: Capture robust state for zoom calc
+                    startZoomRef.current = currentZoomRef.current;
+                    if (container && svgRef.current) {
+                        const r = svgRef.current.getBoundingClientRect();
+                        pinchStartRectRef.current = { left: r.left, top: r.top };
+                    }
+                } else if (panDelta > PAN_THRESHOLD) {
+                    touchMode.current = 'panning';
+                    // Reset reference to prevent jump
+                    lastPinchCenter.current = { x: info.centerX, y: info.centerY };
+                }
+                return; // Wait for next frame to apply movement once locked
+            }
+
+            // --- EXECUTE LOCKED MODE ---
+
+            if (touchMode.current === 'zooming') {
+                const startZoom = startZoomRef.current; // Cached Start Zoom
+                const scale = info.dist / pinchDistRef.current;
+                const newZoom = Math.max(MIN_ZOOM, Math.min(startZoom * scale, MAX_ZOOM));
+
+                // --- ROBUST PINNED ZOOM (Lag-Proof) ---
+                // We use cached start state to calculate where the SVG *should* be
+                const startRect = pinchStartRectRef.current;
+
+                if (startRect) {
+                    // 1. Calculate the point on the image that WAS under the pinch center at start
+                    const startPinchX = lastPinchCenter.current.x;
+                    const startPinchY = lastPinchCenter.current.y;
+
+                    const pointX = (startPinchX - startRect.left) / startZoom;
+                    const pointY = (startPinchY - startRect.top) / startZoom;
+
+                    // 2. DEFER ALIGNMENT:
+                    // We don't calculate scroll here. We just say:
+                    // "I want (pointX, pointY) to be at (info.centerX, info.centerY) after render."
+                    pendingZoomAlignmentRef.current = {
+                        point: { x: pointX, y: pointY },
+                        targetScreen: { x: info.centerX, y: info.centerY }
+                    };
+                }
+
+                onZoomChange(newZoom);
+            }
+            else if (touchMode.current === 'panning') {
+                // Strict Pan - NO Zoom
+                const dX = info.centerX - lastPinchCenter.current.x;
+                const dY = info.centerY - lastPinchCenter.current.y;
+
+                container.scrollLeft -= dX;
+                container.scrollTop -= dY;
+
+                lastPinchCenter.current = { x: info.centerX, y: info.centerY };
+                // Also update pinchDistRef to avoid jump if we somehow switch (unlikely with strict lock)
+                pinchDistRef.current = info.dist;
+            }
+        }
+    };
+
+    const handleTouchEnd = (e: React.TouchEvent) => {
+        if (touchMode.current === 'paint') {
+            handleMouseUp();
+        }
+
+        if (e.touches.length === 0) {
+            // Drop locks
+            touchMode.current = 'none';
+            pinchDistRef.current = null;
+            lastPinchCenter.current = null;
+        } else if (e.touches.length < 2 && (touchMode.current === 'detecting' || touchMode.current === 'zooming' || touchMode.current === 'panning')) {
+            // Drop locks if less than 2 fingers
+            touchMode.current = 'none';
+        }
+    };
+
+    const handleTouchMove_Native = (e: TouchEvent) => {
+        const TAP_TOLERANCE = 5; // px
+
+        if (touchMode.current === 'paint') {
+            // CHECK MOVEMENT FOR PENDING TAP
+            if (pendingTapRef.current) {
+                const { x, y } = getMousePosition(e as any); // Safe cast for helper
+                // Note: getMousePosition returns SVG coords. 
+                // We should ideally check screen movement for tap tolerance to be zoom-independent,
+                // but checking grid movement is "okay" if we are careful. 
+                // Better: Check clientX/Y delta!
+                const t = e.touches[0];
+                // We didn't store initial clientX/Y in pendingTap, let's just abort if we move significantly in GRID coords?
+                // Actually, let's be strict. If you drag, it's not a tap.
+
+                // If we had the initial screen coords we could do: dist(start, current) > 10px
+                // Since we only stored converted coords, let's verify if grid changed significantly?
+                // Or better, just utilize the 'brush' logic: 'handleMouseMove' will be called?
+                // No, we SKIPPED handleMouseDown for instant tools, so handleMouseMove might be weird.
+                // Let's just invalidate if we move too far.
+                const dx = Math.abs(x - pendingTapRef.current.x);
+                const dy = Math.abs(y - pendingTapRef.current.y);
+
+                // 10 "Screen Pixels" roughly translates to 10 / Zoom "SVG Units".
+                // Let's use a rough heuristic: if we move > 0.5 grid units, it's a drag?
+                if (dx > 0.5 || dy > 0.5) {
+                    pendingTapRef.current = null;
+                }
+                return;
+            }
+
+            handleMouseMove(e as any);
+        } else if ((touchMode.current === 'detecting' || touchMode.current === 'zooming' || touchMode.current === 'panning') && e.touches.length === 2) {
+            // CANCEL PENDING TAP
+            pendingTapRef.current = null;
+
+            if (e.cancelable) e.preventDefault();
+            const container = containerRef.current;
+            if (!container || pinchDistRef.current === null || !lastPinchCenter.current) return;
+
+            const info = getPinchInfo(e);
+            if (!info || info.dist === 0) return;
+
+            const distDelta = Math.abs(info.dist - pinchDistRef.current);
+            const dx = info.centerX - lastPinchCenter.current.x;
+            const dy = info.centerY - lastPinchCenter.current.y;
+            const panDelta = Math.sqrt(dx * dx + dy * dy);
+
+            // --- LOCK LOGIC ---
+            if (touchMode.current === 'detecting') {
+                const ZOOM_THRESHOLD = 20; // px
+                const PAN_THRESHOLD = 5;   // px
+
+                if (distDelta > ZOOM_THRESHOLD) {
+                    touchMode.current = 'zooming';
+                    pinchDistRef.current = info.dist;
+                    lastPinchCenter.current = { x: info.centerX, y: info.centerY };
+                } else if (panDelta > PAN_THRESHOLD) {
+                    touchMode.current = 'panning';
+                    lastPinchCenter.current = { x: info.centerX, y: info.centerY };
+                }
+                return;
+            }
+
+            // --- EXECUTE LOCKED MODE ---
+
+            if (touchMode.current === 'zooming') {
+                const startZoom = startZoomRef.current;
+                const scale = info.dist / pinchDistRef.current;
+                const newZoom = Math.max(MIN_ZOOM, Math.min(startZoom * scale, MAX_ZOOM));
+
+                // --- ROBUST PINNED ZOOM (Lag-Proof) ---
+                // We use cached start state to calculate where the SVG *should* be
+                const startRect = pinchStartRectRef.current;
+
+                if (startRect) {
+                    // 1. Calculate the point on the image that WAS under the pinch center at start
+                    const startPinchX = lastPinchCenter.current.x;
+                    const startPinchY = lastPinchCenter.current.y;
+
+                    const pointX = (startPinchX - startRect.left) / startZoom;
+                    const pointY = (startPinchY - startRect.top) / startZoom;
+
+                    // 2. DEFER ALIGNMENT:
+                    // We don't calculate scroll here. We just say:
+                    // "I want (pointX, pointY) to be at (info.centerX, info.centerY) after render."
+                    pendingZoomAlignmentRef.current = {
+                        point: { x: pointX, y: pointY },
+                        targetScreen: { x: info.centerX, y: info.centerY }
+                    };
+                }
+
+                onZoomChange(newZoom);
+            }
+            else if (touchMode.current === 'panning') {
+                const dX = info.centerX - lastPinchCenter.current.x;
+                const dY = info.centerY - lastPinchCenter.current.y;
+
+                container.scrollLeft -= dX;
+                container.scrollTop -= dY;
+
+                lastPinchCenter.current = { x: info.centerX, y: info.centerY };
+                pinchDistRef.current = info.dist;
+            }
+        }
+    };
+
+    const handleTouchEnd_Native = (e: TouchEvent) => {
+        if (touchMode.current === 'paint') {
+            // EXECUTE PENDING TAP
+            if (pendingTapRef.current) {
+                // If we are here, we haven't moved significantly or cancelled
+                onCanvasClick(pendingTapRef.current.gridX, pendingTapRef.current.gridY, false);
+                pendingTapRef.current = null;
+            } else {
+                handleMouseUp();
+            }
+        }
+
+        if (e.touches.length === 0) {
+            touchMode.current = 'none';
+            pinchDistRef.current = null;
+            lastPinchCenter.current = null;
+            pendingTapRef.current = null; // Cleanup
+        } else if (e.touches.length < 2 && (touchMode.current === 'detecting' || touchMode.current === 'zooming' || touchMode.current === 'panning')) {
+            touchMode.current = 'none';
+        }
+    };
+
+    // Keep handlersRef updated
+    useEffect(() => {
+        handlersRef.current = {
+            handleTouchStart: handleTouchStart,
+            handleTouchMove: handleTouchMove_Native,
+            handleTouchEnd: handleTouchEnd_Native
+        };
+    });
+
+    // Attach Non-Passive Listeners
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const onStart = (e: TouchEvent) => handlersRef.current.handleTouchStart(e);
+        const onMove = (e: TouchEvent) => handlersRef.current.handleTouchMove(e);
+        const onEnd = (e: TouchEvent) => handlersRef.current.handleTouchEnd(e);
+
+        container.addEventListener('touchstart', onStart, { passive: false });
+        container.addEventListener('touchmove', onMove, { passive: false });
+        container.addEventListener('touchend', onEnd, { passive: false });
+        container.addEventListener('touchcancel', onEnd, { passive: false });
+
+        return () => {
+            container.removeEventListener('touchstart', onStart);
+            container.removeEventListener('touchmove', onMove);
+            container.removeEventListener('touchend', onEnd);
+            container.removeEventListener('touchcancel', onEnd);
+        };
+    }, []);
+
+    // Helper for safe bounding
+    const min = Math.min;
+
     const handleWheel = (e: React.WheelEvent) => {
         e.preventDefault();
         const container = containerRef.current;
         if (!container) return;
+        const svg = svgRef.current;
+        if (!svg) return;
 
         const rect = container.getBoundingClientRect();
         const viewportCenterX = rect.width / 2;
@@ -423,20 +911,28 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             ? Math.min(zoom * 1.2, MAX_ZOOM)
             : Math.max(zoom / 1.2, MIN_ZOOM);
 
-        const pointX = (container.scrollLeft + viewportCenterX) / prevZoom;
-        const pointY = (container.scrollTop + viewportCenterY) / prevZoom;
+        if (newZoom !== prevZoom) {
+            const focusPoint = { x: e.clientX, y: e.clientY };
 
-        const newScrollLeft = pointX * newZoom - viewportCenterX;
-        const newScrollTop = pointY * newZoom - viewportCenterY;
+            const { left, top } = calculateCenteredScroll(
+                container,
+                svg,
+                focusPoint,
+                prevZoom,
+                newZoom
+            );
 
-        onZoomChange(newZoom);
+            // Apply updates
+            onZoomChange(newZoom);
 
-        requestAnimationFrame(() => {
-            if (containerRef.current) {
-                containerRef.current.scrollLeft = newScrollLeft;
-                containerRef.current.scrollTop = newScrollTop;
-            }
-        });
+            // Use requestAnimationFrame for smooth visual update
+            requestAnimationFrame(() => {
+                if (containerRef.current) {
+                    containerRef.current.scrollLeft = left;
+                    containerRef.current.scrollTop = top;
+                }
+            });
+        }
     };
 
     const handleContextMenu = (e: React.MouseEvent) => {
@@ -605,9 +1101,6 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseLeave}
-            onTouchStart={handleMouseDown}
-            onTouchMove={handleMouseMove}
-            onTouchEnd={handleMouseUp}
         >
             <svg
                 ref={svgRef}

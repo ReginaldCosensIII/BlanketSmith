@@ -28,7 +28,11 @@ const PartnerPage: React.FC = () => (
 );
 
 const App: React.FC = () => {
-    const [isSidebarVisible, setIsSidebarVisible] = useState(() => localStorage.getItem('app_isSidebarVisible') !== 'false'); // Default true
+    const [isSidebarVisible, setIsSidebarVisible] = useState(() => {
+        const saved = localStorage.getItem('app_isSidebarVisible');
+        if (saved !== null) return saved !== 'false';
+        return window.innerWidth >= 768; // Default to closed on mobile, open on desktop
+    });
     const [isLeftHanded, setIsLeftHanded] = useState(() => localStorage.getItem('app_isLeftHanded') === 'true'); // Default false
     const [zoom, setZoom] = useState(1);
 

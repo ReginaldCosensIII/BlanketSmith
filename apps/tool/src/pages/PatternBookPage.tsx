@@ -140,10 +140,10 @@ export const PatternBookPage: React.FC = () => {
                 <h2 className="text-2xl font-bold text-gray-800">My Pattern Book</h2>
                 <div className="flex items-center gap-2">
                     <Button variant="secondary" onClick={() => importFileRef.current?.click()}>
-                        <Icon name="import" size="md" className="mr-2" /> Import Pattern
+                        <Icon name="import" size="md" className="mr-2" /> <span className="hidden md:inline">Import Pattern</span>
                     </Button>
                     <Button onClick={openModal}>
-                        <Icon name="create-project" size="md" className="mr-2" /> Create New Pattern
+                        <Icon name="create-project" size="md" className="mr-2" /> <span className="hidden md:inline">Create New Pattern</span>
                     </Button>
                 </div>
             </div>

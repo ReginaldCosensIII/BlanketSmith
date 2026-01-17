@@ -92,7 +92,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **Guardrails**: Added "Blank Chart Guard" to disable export when no visual elements are selected, and "Stitch Lock" to enforce standard stitch visuals.
     - **State Persistence**: Chart-Only visual settings are now preserved when temporarily switching to Stitch mode.
     - **QA Alignment**: Refactored `ExportEngineTestPage` to consume canonical defaults, removing legacy overrides.
-    - **Policy Documentation**: Added `docs/EXPORT_CENTER_DEFAULTS.md` defining all V3 policies.
+    - **Policies Documentation**: Added `docs/EXPORT_CENTER_DEFAULTS.md` defining all V3 policies.
+- **Mobile/Tablet Experience (UX-001)**:
+    - **UI Optimization**: Cleaned up mobile header/footer (removed text labels, optimized spacing) and implemented responsive sidebar logic for small screens.
+    - **Touch Interaction**: Completely refactored touch handling for professional-grade responsiveness:
+        - **Two-Finger Pan**: Dedicated panning gesture distinct from painting.
+        - **Pinch-to-Zoom**: Smooth, centered zoom experience with robust "Deferred Alignment" logic to prevent drift on heavy grids.
+        - **Strict Locking**: Implemented rigid gesture locking to prevent accidental mode switching (e.g. painting while pinching).
+        - **Tool Safety**: "Instant Tools" (Fill, Text, Eyedropper) now wait for a clean tap, preventing accidental triggers during gestures.
+    - **Zoom Logic Unification**: Standardized zoom behavior across Mouse Wheel, Footer Buttons, and Pinch gestures using a shared SVG-relative coordinate system.
+
 
 ## [v0.1.0-stable-baseline] - 2025-11-25
 
