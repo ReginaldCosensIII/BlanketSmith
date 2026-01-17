@@ -100,3 +100,20 @@ For detailed export rules and manual QA procedures, see:
     - Quickly zoom or pan with two fingers.
     - **Verify**: No fill occurs even if fingers were not perfectly synchronized.
     - **Verify**: A clean, single tap still triggers the Fill.
+
+### Phase 3: Zoom Logic Regression (Unified Zoom)
+- [ ] **Mouse Wheel (Filled vs Empty)**: 
+    - Fill grid with brush content.
+    - Zoom with Mouse Wheel.
+    - **Verify**: Should stay centered on mouse cursor. NO jump to top-left.
+- [ ] **Footer Zoom (Small Canvas)**:
+    - Zoom out until canvas is smaller than viewport.
+    - Click Footer Zoom (+) button.
+    - **Verify**: Should expand from center. NO jump to top-left.
+- [ ] **Pinch Zoom (Filled Canvas)**:
+    - On touch device, fill grid heavily.
+    - Pinch to zoom.
+    - **Verify**: Map stays pinned under fingers. NO drift or jump to top-left.
+- [ ] **Grid Alignment**:
+    - Zoom to various levels (odd/even).
+    - **Verify**: Grid lines adhere to rulers. Grid is not skewed or offset.

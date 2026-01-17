@@ -799,36 +799,32 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             // --- EXECUTE LOCKED MODE ---
 
             if (touchMode.current === 'zooming') {
-                const startZoom = currentZoomRef.current;
+                const startZoom = startZoomRef.current;
                 const scale = info.dist / pinchDistRef.current;
                 const newZoom = Math.max(MIN_ZOOM, Math.min(startZoom * scale, MAX_ZOOM));
 
-                // --- CORRECTED ZOOM MATH (Accounts for Centered Content) ---
-                const containerRect = container.getBoundingClientRect();
-                const pinchCtxX = min(Math.max(0, info.centerX - containerRect.left), containerRect.width);
+                // --- ROBUST PINNED ZOOM (Lag-Proof) ---
+                // We use cached start state to calculate where the SVG *should* be
+                const startRect = pinchStartRectRef.current;
 
-                if (!svgRef.current) return;
-                const svgRect = svgRef.current.getBoundingClientRect();
+                if (startRect) {
+                    // 1. Calculate the point on the image that WAS under the pinch center at start
+                    const startPinchX = lastPinchCenter.current.x;
+                    const startPinchY = lastPinchCenter.current.y;
 
-                const pinchInSVG_X = info.centerX - svgRect.left;
-                const pinchInSVG_Y = info.centerY - svgRect.top;
+                    const pointX = (startPinchX - startRect.left) / startZoom;
+                    const pointY = (startPinchY - startRect.top) / startZoom;
 
-                const pointX = pinchInSVG_X / startZoom;
-                const pointY = pinchInSVG_Y / startZoom;
+                    // 2. DEFER ALIGNMENT:
+                    // We don't calculate scroll here. We just say:
+                    // "I want (pointX, pointY) to be at (info.centerX, info.centerY) after render."
+                    pendingZoomAlignmentRef.current = {
+                        point: { x: pointX, y: pointY },
+                        targetScreen: { x: info.centerX, y: info.centerY }
+                    };
+                }
 
-                let newScrollLeft = pointX * newZoom - pinchCtxX;
-                let newScrollTop = pointY * newZoom - (info.centerY - containerRect.top);
-
-                // STRICT ZOOM: No explicit pan delta subtraction.
-                // we rely solely on the math above to keep the content under the fingers.
-
-                pendingScrollRef.current = { left: newScrollLeft, top: newScrollTop };
-
-                currentZoomRef.current = newZoom;
                 onZoomChange(newZoom);
-
-                pinchDistRef.current = info.dist;
-                lastPinchCenter.current = { x: info.centerX, y: info.centerY };
             }
             else if (touchMode.current === 'panning') {
                 const dX = info.centerX - lastPinchCenter.current.x;
