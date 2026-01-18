@@ -4,6 +4,7 @@ import { useProject } from '../../context/ProjectContext';
 import { useFloatingSelection } from '../../context/FloatingSelectionContext';
 import { Button, Icon } from '../ui/SharedComponents';
 import { MIN_ZOOM, MAX_ZOOM } from '../../constants';
+import '../../styles/footer.css';
 
 export const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () => void; }> = ({ isSidebarVisible, onToggleSidebar }) => {
     const { state, saveCurrentProject } = useProject();
