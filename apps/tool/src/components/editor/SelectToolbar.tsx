@@ -227,7 +227,13 @@ export const SelectToolbar: React.FC<SelectToolbarProps> = ({
     let containerClass = "bg-white rounded-lg shadow-xl border border-gray-200 z-30 flex flex-col";
 
     if (!position) {
-        containerClass += " absolute bottom-8 left-1/2 transform -translate-x-1/2 transition-none";
+        if (layoutMode === 'vertical') {
+            // Default Vertical: Top-Left (under fullscreen button)
+            containerClass += " absolute top-20 left-4 transition-none";
+        } else {
+            // Default Horizontal/Compact: Bottom Center
+            containerClass += " absolute bottom-8 left-1/2 transform -translate-x-1/2 transition-none";
+        }
     }
 
     // Specific styling per mode
