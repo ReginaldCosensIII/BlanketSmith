@@ -104,6 +104,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **Layout Fixes**:
         - **Mobile Footer**: Enforced `100dvh` layout and safe-area padding to prevent footer occlusion on mobile browsers.
         - **Fullscreen Button**: Implemented persistent, overlay-based Fullscreen Toggle in the top-left of the editor, enhancing visibility across all device types and removing clutter from the footer.
+    - **Performance**:
+        - **Brush Tool**: Optimized drawing logic with synchronous stroke tracking (`currentStrokeRef`) to eliminate skipped cells and gaps during rapid mouse/touch movements.
 
 
 ## [v0.1.0-stable-baseline] - 2025-11-25

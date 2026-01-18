@@ -272,6 +272,8 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const [isDrawing, setIsDrawing] = useState(false);
     const [drawingButton, setDrawingButton] = useState<'left' | 'right' | null>(null);
     const [paintedCells, setPaintedCells] = useState<Set<number>>(new Set());
+    // SYNC STROKE TRACKING: Fixes stale closure issues during rapid mouse moves
+    const currentStrokeRef = useRef<Set<number>>(new Set());
     const [hoveredCell, setHoveredCell] = useState<{ x: number; y: number } | null>(null);
     const [selectionStart, setSelectionStart] = useState<{ x: number, y: number } | null>(null);
     const [floatingDragStart, setFloatingDragStart] = useState<{ x: number, y: number } | null>(null);
@@ -437,13 +439,18 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         if (activeTool === 'brush') {
             setIsDrawing(true);
             setDrawingButton(clickButton);
+            setIsDrawing(true);
+            setDrawingButton(clickButton);
             setPaintedCells(new Set());
+            // Sync tracking: Clear ref and init
+            currentStrokeRef.current = new Set();
             lastGridPos.current = { x: gridX, y: gridY };
 
-            const newPainted = new Set<number>();
-            paintAt(gridX, gridY, clickButton, newPainted);
-            if (newPainted.size > 0) {
-                setPaintedCells(newPainted);
+            // We pass the ref's current Set to paintAt to mutate it directly
+            paintAt(gridX, gridY, clickButton, currentStrokeRef.current);
+
+            if (currentStrokeRef.current.size > 0) {
+                setPaintedCells(new Set(currentStrokeRef.current));
             }
         } else {
             if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height || activeTool === 'text') {
@@ -520,7 +527,10 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             }
 
             const button = drawingButton || 'left';
-            const newPainted = new Set(paintedCells);
+
+            // Sync tracking: Use the ref instead of state to avoid stale closure
+            // We DO NOT clone the set here, we append to the persistent stroke set
+            const currentStroke = currentStrokeRef.current;
 
             // Interpolate line from last pos to current pos
             if (lastGridPos.current) {
@@ -539,18 +549,19 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 let cy = y0;
 
                 while (true) {
-                    paintAt(cx, cy, button, newPainted);
+                    paintAt(cx, cy, button, currentStroke);
                     if (cx === x1 && cy === y1) break;
                     const e2 = 2 * err;
                     if (e2 > -dy) { err -= dy; cx += sx; }
                     if (e2 < dx) { err += dx; cy += sy; }
                 }
             } else {
-                paintAt(gridX, gridY, button, newPainted);
+                paintAt(gridX, gridY, button, currentStroke);
             }
 
             lastGridPos.current = { x: gridX, y: gridY };
-            setPaintedCells(newPainted);
+            // Sync state for rendering
+            setPaintedCells(new Set(currentStroke));
         }
     };
 
@@ -570,12 +581,12 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             return;
         }
 
-        if (isDrawing && paintedCells.size > 0 && activeTool === 'brush') {
+        if (isDrawing && currentStrokeRef.current.size > 0 && activeTool === 'brush') {
             const newGrid = [...grid];
             const colorToApply = drawingButton === 'right' ? secondaryColorId : primaryColorId;
             const stitchToApply = drawingButton === 'right' ? secondaryStitchId : primaryStitchId;
 
-            paintedCells.forEach(index => {
+            currentStrokeRef.current.forEach(index => {
                 const cell = newGrid[index];
                 if (isComboPaintMode) {
                     newGrid[index] = { ...cell, colorId: colorToApply, stitchId: stitchToApply };
@@ -589,6 +600,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         setIsDrawing(false);
         setDrawingButton(null);
         setPaintedCells(new Set());
+        currentStrokeRef.current = new Set();
     };
 
     const handleMouseLeave = () => {
