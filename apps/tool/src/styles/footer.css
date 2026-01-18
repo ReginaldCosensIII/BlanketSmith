@@ -1,0 +1,21 @@
+/* Mobile Footer Fixes */
+
+/* 
+   Ensure the main application wrapper takes up the full dynamic viewport height on mobile.
+   This helps prevent the footer from being hidden behind mobile browser toolbars.
+   Targeting #root > div based on App.tsx structure: 
+   <div className="flex flex-col h-screen bg-gray-100"> 
+*/
+@media screen and (max-width: 768px) {
+    #root>div {
+        height: 100dvh !important;
+        /* Fallback to 100vh if dvh not supported is automatic in modern browsers, but explicit !important to override tailwind h-screen */
+        min-height: -webkit-fill-available;
+        /* iOS Safari fallback */
+    }
+
+    footer {
+        padding-bottom: env(safe-area-inset-bottom, 20px);
+        /* Respect safe area + fallback */
+    }
+}

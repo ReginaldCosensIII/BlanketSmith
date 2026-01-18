@@ -101,6 +101,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
         - **Strict Locking**: Implemented rigid gesture locking to prevent accidental mode switching (e.g. painting while pinching).
         - **Tool Safety**: "Instant Tools" (Fill, Text, Eyedropper) now wait for a clean tap, preventing accidental triggers during gestures.
     - **Zoom Logic Unification**: Standardized zoom behavior across Mouse Wheel, Footer Buttons, and Pinch gestures using a shared SVG-relative coordinate system.
+    - **Layout Fixes**:
+        - **Mobile Footer**: Enforced `100dvh` layout and safe-area padding to prevent footer occlusion on mobile browsers.
+        - **Fullscreen Button**: Implemented persistent, overlay-based Fullscreen Toggle in the top-left of the editor, enhancing visibility across all device types and removing clutter from the footer.
 
 
 ## [v0.1.0-stable-baseline] - 2025-11-25

@@ -7,6 +7,8 @@ import { GridRenderer } from './editor/GridRenderer';
 import { Rulers } from './editor/Rulers';
 import { EditorOverlay } from './editor/EditorOverlay';
 
+import { Button, Icon } from './ui/SharedComponents';
+
 type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column' | 'eyedropper' | 'text' | 'select';
 
 import { StitchDefinition } from '../data/stitches';
@@ -118,6 +120,34 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
     const pendingScrollRef = useRef<{ left: number, top: number } | null>(null);
     const pendingTapRef = useRef<{ x: number, y: number, gridX: number, gridY: number, time: number } | null>(null);
+
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [isFullscreenSupported, setIsFullscreenSupported] = useState(false);
+
+    useEffect(() => {
+        setIsFullscreenSupported(document.fullscreenEnabled);
+
+        const handleFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    }, []);
+
+    const toggleFullscreen = async () => {
+        try {
+            if (!document.fullscreenElement) {
+                await document.documentElement.requestFullscreen();
+            } else {
+                if (document.exitFullscreen) {
+                    await document.exitFullscreen();
+                }
+            }
+        } catch (err) {
+            console.error("Error toggling fullscreen:", err);
+        }
+    };
 
     // Sync ref when prop changes (e.g. from footer controls)
     useEffect(() => {
@@ -649,8 +679,8 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
             // --- LOCK LOGIC ---
             if (touchMode.current === 'detecting') {
-                const ZOOM_THRESHOLD = 10; // px - Higher to prevent accidental zooms
-                const PAN_THRESHOLD = 5;   // px - Prevent initial wobble
+                const ZOOM_THRESHOLD = 20; // px - Higher to prevent accidental zooms
+                const PAN_THRESHOLD = 20;   // px - Prevent initial wobble
 
                 if (distDelta > ZOOM_THRESHOLD) {
                     touchMode.current = 'zooming';
@@ -1102,6 +1132,13 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseLeave}
         >
+            {isFullscreenSupported && (
+                <div className="absolute top-4 left-4 z-10">
+                    <Button variant="secondary" onClick={toggleFullscreen} className="p-2 shadow-md hover:shadow-lg opacity-80 hover:opacity-100 transition-all font-sans font-medium hover:bg-white bg-white/90" aria-label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}>
+                        <Icon name={isFullscreen ? "minimize" : "maximize"} size="md" />
+                    </Button>
+                </div>
+            )}
             <svg
                 ref={svgRef}
                 width={svgTotalWidth * zoom}
