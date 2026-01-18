@@ -194,6 +194,10 @@ const UNLOCKED_ICON_PATH = ["M6 22h12c1.1 0 2-.9 2-2v-9c0-1.1-.9-2-2-2H9V7c0-1.6
 
 const BOOK_ICON_PATH = ["M8 6h9v2H8z", "M20 2H6C4.35 2 3 3.35 3 5v14c0 1.65 1.35 3 3 3h15v-2H6c-.55 0-1-.45-1-1s.45-1 1-1h14c.55 0 1-.45 1-1V3c0-.55-.45-1-1-1m-6 14H6c-.35 0-.69.07-1 .18V5c0-.55.45-1 1-1h13v12z"];
 
+const DOTS_VERTICAL_ICON_PATH = ["M12 10a2 2 0 1 0 0 4 2 2 0 1 0 0-4m0 6a2 2 0 1 0 0 4 2 2 0 1 0 0-4m0-12a2 2 0 1 0 0 4 2 2 0 1 0 0-4"];
+
+const DOTS_HORIZONTAL_ICON_PATH = ["M12 10a2 2 0 1 0 0 4 2 2 0 1 0 0-4m6 0a2 2 0 1 0 0 4 2 2 0 1 0 0-4M6 10a2 2 0 1 0 0 4 2 2 0 1 0 0-4"];
+
 /**
  * CENTRAL ICON REGISTRY
  * =====================
@@ -264,6 +268,7 @@ const ICON_MAP: Record<string, IconDef> = {
   'minus': { paths: MINUS_ICON_PATH },
   'refresh': { paths: REFRESH_ICON_PATH },
   'settings': { paths: SETTING_ICON_PATH },
+  'select-toolbar-settings': { paths: SETTING_ICON_PATH },
   'info': { paths: INFO_ICON_PATH },
   'help': { paths: HELP_ICON_PATH },
   'eye': { paths: EYE_ICON_PATH },
