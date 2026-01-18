@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, useMemo, ChangeEvent }
 import { PixelGridData, YarnColor, CellData, Symmetry, ContextMenuItem, ExportType, ExportOptions, InstructionDoc } from '../types';
 import { useProject } from '../context/ProjectContext';
 import { PixelGridEditor } from '../components/PixelGridEditor';
+import { SelectToolbar } from '../components/editor/SelectToolbar';
 import { exportPixelGridToPDF, exportPixelGridToImage } from '../services/exportService';
 import { getDefaultChartOnlyExportOptionsV3, getDefaultPatternPackExportOptionsV3 } from '../services/exportDefaultsV3';
 
@@ -1709,35 +1710,17 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 />
 
                 {activeTool === 'select' && (
-                    <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 bg-white p-2 rounded-lg shadow-xl flex gap-2 border border-gray-200 z-30">
-                        <Button variant="secondary" onClick={handleSelectAll} title="Select All (Ctrl+A)">
-                            <Icon name="select-all" size={18} />
-                        </Button>
-                        <div className="w-px bg-gray-300 mx-1"></div>
-                        <Button variant="secondary" onClick={handleCopy} disabled={!selection} title="Copy (Ctrl+C)">
-                            <Icon name="copy" size={18} />
-                        </Button>
-                        <Button variant="secondary" onClick={handleCut} disabled={!selection} title="Cut (Ctrl+X)">
-                            <Icon name="cut" size={18} />
-                        </Button>
-                        <Button variant="secondary" onClick={handlePaste} disabled={!clipboard} title="Paste (Ctrl+V)">
-                            <Icon name="paste" size={18} />
-                        </Button>
-                        <div className="w-px bg-gray-300 mx-1"></div>
-                        <Button variant="secondary" onClick={() => handleFlipSelection('horizontal')} disabled={!selection} title="Flip Horizontal">
-                            <Icon name="selection-flip-horizontal" size={18} />
-                        </Button>
-                        <Button variant="secondary" onClick={() => handleFlipSelection('vertical')} disabled={!selection} title="Flip Vertical">
-                            <Icon name="selection-flip-vertical" size={18} />
-                        </Button>
-                        <Button variant="secondary" onClick={handleRotateSelection} disabled={!selection} title="Rotate 90°">
-                            <Icon name="rotate-right" size={18} />
-                        </Button>
-                        <div className="w-px bg-gray-300 mx-1"></div>
-                        <Button variant="secondary" onClick={handleClearSelection} disabled={!selection} title="Clear (Del)">
-                            <Icon name="clear-selection" size={18} />
-                        </Button>
-                    </div>
+                    <SelectToolbar
+                        onSelectAll={handleSelectAll}
+                        onCopy={handleCopy}
+                        onCut={handleCut}
+                        onPaste={handlePaste}
+                        onFlip={handleFlipSelection}
+                        onRotate={handleRotateSelection}
+                        onClear={handleClearSelection}
+                        hasSelection={!!selection}
+                        hasClipboard={!!clipboard}
+                    />
                 )}
             </main>
 
