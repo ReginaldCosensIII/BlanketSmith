@@ -1226,17 +1226,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     };
 
     return (
-        <div
-            ref={containerRef}
-            className="w-full h-full bg-gray-200 overflow-auto grid place-items-center touch-none"
-            style={{ cursor: getCursor() }}
-            onWheel={handleWheel}
-            onContextMenu={handleContextMenu}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseLeave}
-        >
+        <>
             {isFullscreenSupported && (
                 <div className="absolute top-4 left-4 z-10">
                     <Button variant="secondary" onClick={toggleFullscreen} className="p-2 shadow-md hover:shadow-lg opacity-80 hover:opacity-100 transition-all font-sans font-medium hover:bg-white bg-white/90" aria-label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}>
@@ -1244,77 +1234,89 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                     </Button>
                 </div>
             )}
-            <svg
-                ref={svgRef}
-                width={svgTotalWidth * zoom}
-                height={svgTotalHeight * zoom}
-                viewBox={`0 0 ${svgTotalWidth} ${svgTotalHeight}`}
-                shapeRendering="crispEdges"
+            <div
+                ref={containerRef}
+                className="w-full h-full bg-gray-200 overflow-auto grid place-items-center touch-none"
+                style={{ cursor: getCursor() }}
+                onWheel={handleWheel}
+                onContextMenu={handleContextMenu}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseLeave}
             >
-                <Rulers
-                    width={width}
-                    height={height}
-                    zoom={zoom}
-                    rulerSize={RULER_SIZE}
-                    svgTotalWidth={svgTotalWidth}
-                    svgTotalHeight={svgTotalHeight}
-                />
-
-                <g transform={`translate(${RULER_SIZE}, ${RULER_SIZE})`}>
-                    <GridRenderer
+                <svg
+                    ref={svgRef}
+                    width={svgTotalWidth * zoom}
+                    height={svgTotalHeight * zoom}
+                    viewBox={`0 0 ${svgTotalWidth} ${svgTotalHeight}`}
+                    shapeRendering="crispEdges"
+                >
+                    <Rulers
                         width={width}
                         height={height}
-                        grid={temporaryGrid}
-                        yarnColorMap={yarnColorMap}
-                        stitchMap={stitchMap}
-                        showGridLines={showGridLines}
                         zoom={zoom}
+                        rulerSize={RULER_SIZE}
+                        svgTotalWidth={svgTotalWidth}
+                        svgTotalHeight={svgTotalHeight}
                     />
 
-                    {floatingSelection && (
-                        <g transform={`translate(${floatingSelection.x}, ${floatingSelection.y})`}>
-                            {floatingSelection.data.map((cell, i) => {
-                                const col = i % floatingSelection.w;
-                                const row = Math.floor(i / floatingSelection.w);
-                                if (!cell.colorId) return null;
-                                const color = yarnColorMap.get(cell.colorId);
-                                const stitch = cell.stitchId ? stitchMap.get(cell.stitchId) : null;
-                                return (
-                                    <g key={i}>
-                                        <rect
-                                            x={col}
-                                            y={row}
-                                            width={1}
-                                            height={1}
-                                            fill={color || 'transparent'}
-                                        />
-                                        {stitch && (
-                                            <text
-                                                x={col + 0.5}
-                                                y={row + 0.75}
-                                                fontSize="0.7"
-                                                textAnchor="middle"
-                                                fill="rgba(0,0,0,0.7)"
-                                                style={{ pointerEvents: 'none', userSelect: 'none' }}
-                                            >
-                                                {stitch.symbol}
-                                            </text>
-                                        )}
-                                    </g>
-                                );
-                            })}
-                        </g>
-                    )}
+                    <g transform={`translate(${RULER_SIZE}, ${RULER_SIZE})`}>
+                        <GridRenderer
+                            width={width}
+                            height={height}
+                            grid={temporaryGrid}
+                            yarnColorMap={yarnColorMap}
+                            stitchMap={stitchMap}
+                            showGridLines={showGridLines}
+                            zoom={zoom}
+                        />
 
-                    <EditorOverlay
-                        width={width}
-                        height={height}
-                        showCenterGuides={showCenterGuides}
-                        selection={selection}
-                        hoverPreviews={getHoverPreviews()}
-                    />
-                </g>
-            </svg >
-        </div >
+                        {floatingSelection && (
+                            <g transform={`translate(${floatingSelection.x}, ${floatingSelection.y})`}>
+                                {floatingSelection.data.map((cell, i) => {
+                                    const col = i % floatingSelection.w;
+                                    const row = Math.floor(i / floatingSelection.w);
+                                    if (!cell.colorId) return null;
+                                    const color = yarnColorMap.get(cell.colorId);
+                                    const stitch = cell.stitchId ? stitchMap.get(cell.stitchId) : null;
+                                    return (
+                                        <g key={i}>
+                                            <rect
+                                                x={col}
+                                                y={row}
+                                                width={1}
+                                                height={1}
+                                                fill={color || 'transparent'}
+                                            />
+                                            {stitch && (
+                                                <text
+                                                    x={col + 0.5}
+                                                    y={row + 0.75}
+                                                    fontSize="0.7"
+                                                    textAnchor="middle"
+                                                    fill="rgba(0,0,0,0.7)"
+                                                    style={{ pointerEvents: 'none', userSelect: 'none' }}
+                                                >
+                                                    {stitch.symbol}
+                                                </text>
+                                            )}
+                                        </g>
+                                    );
+                                })}
+                            </g>
+                        )}
+
+                        <EditorOverlay
+                            width={width}
+                            height={height}
+                            showCenterGuides={showCenterGuides}
+                            selection={selection}
+                            hoverPreviews={getHoverPreviews()}
+                        />
+                    </g>
+                </svg >
+            </div >
+        </>
     );
 };

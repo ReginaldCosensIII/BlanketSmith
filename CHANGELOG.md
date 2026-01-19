@@ -11,8 +11,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Logging & Error Handling (LOG-001)**: Implemented professional observability baseline:
     - Centralized `logger` utility with production gating.
     - App-wide `ErrorBoundary` with actionable fallback UI (Reload/Home).
-    - Recoverable error notifications via `ToastContext` and global event system.
-    - Hardened `projectService` and `exportService` with improved safety and user feedback.
+### Fixed
+- **Mobile/Tablet**: Structurally isolated fullscreen button to prevent event bleed and touch unresponsiveness on mobile.
 - **Icon System**: Created `SharedComponents.tsx` with a lightweight, zero-dependency SVG `Icon` component.
 - **Branding**: Implemented `Horizontal-Lockup-No-Slogan.svg` in `Layout.tsx` for consistent header branding.
 - **Pattern Book**: Renamed "Projects" to "Pattern Book" across the application (Files, Routes, and UI).
@@ -106,6 +106,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
         - **Fullscreen Button**: Implemented persistent, overlay-based Fullscreen Toggle in the top-left of the editor, enhancing visibility across all device types and removing clutter from the footer.
         - **Select Toolbar**: Made the selection toolbar draggable and added a **Layout Switcher** with three modes (Horizontal, Vertical, Compact Grid) to optimize usability across different screen sizes and user preferences.
         - **Touch Workflow**: Optimized `Text`, `Fill Row`, and `Fill Column` tools for touch devices. Users can now drag to position the preview and release to place, eliminating the need for a double-tap.
+        - **UI Fix**: Resolved issue where interacting with the Full Screen button could trigger accidental canvas edits.
     - **Performance**:
         - **Brush Tool**: Optimized drawing logic with synchronous stroke tracking (`currentStrokeRef`) to eliminate skipped cells and gaps during rapid mouse/touch movements.
 
