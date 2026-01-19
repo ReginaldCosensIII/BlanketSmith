@@ -719,9 +719,10 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             const gridY = Math.floor(y - RULER_SIZE);
 
             // CLASSIFY TOOL: Instant vs Continuous
-            // Continuous: Brush, Select (Drag to operate)
-            // Instant: Fill, Text, Eyedropper, Replace (Click to operate)
-            const isInstantTool = !['brush', 'select'].includes(activeTool) && !floatingSelection;
+            // Continuous: Brush, Select, Text, Rows, Cols (Drag to operate/place)
+            // Instant: Fill, Eyedropper, Replace (Click to operate)
+            const continuousTools = ['brush', 'select', 'text', 'fill-row', 'fill-column'];
+            const isInstantTool = !continuousTools.includes(activeTool) && !floatingSelection;
 
             if (isInstantTool) {
                 // DEFER ACTION: Wait for clean release (Tap-to-Execute)
@@ -1235,10 +1236,6 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseLeave}
-            onTouchStart={handleMouseDown}
-            onTouchMove={handleMouseMove}
-            onTouchEnd={handleMouseUp}
-            onTouchCancel={handleMouseUp}
         >
             {isFullscreenSupported && (
                 <div className="absolute top-4 left-4 z-10">
