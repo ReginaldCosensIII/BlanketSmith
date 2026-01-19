@@ -319,20 +319,37 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
     const getMousePosition = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
         if (!svgRef.current) return { x: 0, y: 0 };
+        // We use client coordinates, then transform to SVG
+        // But finding the SVG CTM (Current Transformation Matrix) 
+        // effectively maps client coords -> SVG coords
         const CTM = svgRef.current.getScreenCTM();
         if (!CTM) return { x: 0, y: 0 };
 
-        // Handle both React and Native events
-        let clientX, clientY;
-        if ('touches' in e) {
-            // TouchEvent (React or Native)
-            const touch = (e as any).touches[0];
+        let clientX = 0;
+        let clientY = 0;
+
+        // Check Touches first (prioritize first touch)
+        if ('touches' in e && e.touches.length > 0) {
+            const touch = e.touches[0];
+            clientX = touch.clientX;
+            clientY = touch.clientY;
+        } else if ('nativeEvent' in e && 'touches' in (e.nativeEvent as any) && (e.nativeEvent as any).touches.length > 0) {
+            const touch = (e.nativeEvent as any).touches[0];
+            clientX = touch.clientX;
+            clientY = touch.clientY;
+        } else if ('changedTouches' in e && e.changedTouches.length > 0) {
+            // For touchEnd, touches is empty, use changedTouches
+            const touch = e.changedTouches[0];
+            clientX = touch.clientX;
+            clientY = touch.clientY;
+        } else if ('nativeEvent' in e && 'changedTouches' in (e.nativeEvent as any) && (e.nativeEvent as any).changedTouches.length > 0) {
+            const touch = (e.nativeEvent as any).changedTouches[0];
             clientX = touch.clientX;
             clientY = touch.clientY;
         } else {
-            // MouseEvent
-            clientX = (e as any).clientX;
-            clientY = (e as any).clientY;
+            // Mouse
+            clientX = (e as any).clientX || 0;
+            clientY = (e as any).clientY || 0;
         }
 
         return {
@@ -394,11 +411,13 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         });
     };
 
-    const handleMouseDown = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
-        if ('button' in e && e.button === 2) {
-            e.preventDefault();
-        }
+    const touchPlacementRef = useRef<{ active: boolean, x: number, y: number } | null>(null);
 
+    const checkIsTouch = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
+        return 'touches' in e || ('nativeEvent' in e && 'touches' in (e.nativeEvent as any));
+    };
+
+    const handleMouseDown = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
         if ('button' in e && e.button === 2) {
             e.preventDefault();
         }
@@ -413,7 +432,11 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         const gridX = Math.floor(x - RULER_SIZE);
         const gridY = Math.floor(y - RULER_SIZE);
 
+        const isTouch = checkIsTouch(e);
+        const touchHoverTools = ['text', 'fill-row', 'fill-column'];
+
         if (activeTool === 'select') {
+            // ... (Keep existing select logic)
             // Right click on select tool is now handled by onContextMenu handler
             if (isRightClick) return;
 
@@ -437,8 +460,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         }
 
         if (activeTool === 'brush') {
-            setIsDrawing(true);
-            setDrawingButton(clickButton);
+            // ... (Keep existing brush logic)
             setIsDrawing(true);
             setDrawingButton(clickButton);
             setPaintedCells(new Set());
@@ -453,6 +475,32 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 setPaintedCells(new Set(currentStrokeRef.current));
             }
         } else {
+            // TOUCH OPTIMIZATION for Text/Row/Column Tools
+            if (isTouch && touchHoverTools.includes(activeTool) && gridX >= 0 && gridX < width && gridY >= 0 && gridY < height) {
+                // Multi-touch guard (Pinch/Zoom)
+                if ('touches' in e && e.touches.length > 1) {
+                    // Cancel any active placement if second finger touches down
+                    if (touchPlacementRef.current) {
+                        touchPlacementRef.current = null;
+                        setHoveredCell(null);
+                    }
+                    return;
+                }
+
+                // Prevent ghost mouse events
+                if (e.cancelable) e.preventDefault();
+
+                // Defer action to MouseUp (Release)
+                // Initialize "Dragging" state for placement to show hover
+                touchPlacementRef.current = { active: true, x: gridX, y: gridY };
+                // Ensure hover is shown immediately
+                if (!hoveredCell || hoveredCell.x !== gridX || hoveredCell.y !== gridY) {
+                    setHoveredCell({ x: gridX, y: gridY });
+                }
+                return;
+            }
+
+            // Normal Mouse Behavior (Immediate Click)
             if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height || activeTool === 'text') {
                 onCanvasClick(gridX, gridY, isRightClick);
             }
@@ -460,17 +508,46 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     };
 
     const handleMouseMove = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
-
         e.preventDefault();
+
+        // Multi-touch guard (Pinch/Zoom) - Cancel active placement/drawing
+        if ('touches' in e && e.touches.length > 1) {
+            // Unconditionally clear hover on multi-touch (fixes Brush tool ghosting)
+            setHoveredCell(null);
+
+            if (touchPlacementRef.current) {
+                touchPlacementRef.current = null;
+            }
+            if (isDrawing) {
+                setIsDrawing(false);
+                // active tool specific cleanup if needed
+            }
+            return;
+        }
+
         const { x, y } = getMousePosition('nativeEvent' in e ? e.nativeEvent : e as any);
         const gridX = Math.floor(x - RULER_SIZE);
         const gridY = Math.floor(y - RULER_SIZE);
 
-        if (!hoveredCell || hoveredCell.x !== gridX || hoveredCell.y !== gridY) {
-            setHoveredCell({ x: gridX, y: gridY });
+        const isTouch = checkIsTouch(e);
+
+        if (!isTouch || touchPlacementRef.current?.active) {
+            if (!hoveredCell || hoveredCell.x !== gridX || hoveredCell.y !== gridY) {
+                setHoveredCell({ x: gridX, y: gridY });
+            }
+        } else {
+            // Touch event but NOT in placement mode (e.g. Brush tool single finger move)
+            // We generally do NOT want a hover cursor on touch unless we are explicitly "placing"
+            if (hoveredCell) setHoveredCell(null);
+        }
+
+        // Touch Placement Drag Logic
+        if (touchPlacementRef.current?.active) {
+            touchPlacementRef.current = { ...touchPlacementRef.current, x: gridX, y: gridY };
         }
 
         if (floatingDragStart && floatingSelection) {
+            // ... (Keep existing floating drag logic)
             const dx = gridX - floatingDragStart.x;
             const dy = gridY - floatingDragStart.y;
             if (dx !== 0 || dy !== 0) {
@@ -485,6 +562,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         }
 
         if (isDrawing && activeTool === 'select' && selectionStart) {
+            // ... (Keep existing selection logic)
             const startX = selectionStart.x;
             const startY = selectionStart.y;
 
@@ -501,6 +579,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         }
 
         if (isDrawing && activeTool === 'brush') {
+            // ... (Keep existing brush logic)
             if ('nativeEvent' in e) {
                 // React Event (might wrap MouseEvent or TouchEvent)
                 const native = e.nativeEvent;
@@ -570,6 +649,19 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             pinchDistRef.current = null;
         }
 
+        // TOUCH OPTIMIZATION: Commit placement on release
+        if (touchPlacementRef.current?.active) {
+            const { x, y } = touchPlacementRef.current;
+            // Only fire if valid bounds (should be clamped/checked already, but safety first)
+            if (x >= 0 && x < width && y >= 0 && y < height) {
+                // Assume Left Click for touch tap release
+                onCanvasClick(x, y, false);
+            }
+            touchPlacementRef.current = null;
+            setHoveredCell(null); // Clear preview
+            return;
+        }
+
         if (floatingDragStart) {
             setFloatingDragStart(null);
             return;
@@ -627,9 +719,10 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             const gridY = Math.floor(y - RULER_SIZE);
 
             // CLASSIFY TOOL: Instant vs Continuous
-            // Continuous: Brush, Select (Drag to operate)
-            // Instant: Fill, Text, Eyedropper, Replace (Click to operate)
-            const isInstantTool = !['brush', 'select'].includes(activeTool) && !floatingSelection;
+            // Continuous: Brush, Select, Text, Rows, Cols (Drag to operate/place)
+            // Instant: Fill, Eyedropper, Replace (Click to operate)
+            const continuousTools = ['brush', 'select', 'text', 'fill-row', 'fill-column'];
+            const isInstantTool = !continuousTools.includes(activeTool) && !floatingSelection;
 
             if (isInstantTool) {
                 // DEFER ACTION: Wait for clean release (Tap-to-Execute)
