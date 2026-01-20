@@ -28,7 +28,7 @@ export const SHORTCUTS = {
     'nav-reset-zoom': ['0'],
 
     // UI
-    'ui-toggle-zoom-lock': ['mod+period'],
+    'ui-toggle-zoom-lock': ['mod+.'],
 };
 
 export type ShortcutAction = keyof typeof SHORTCUTS;

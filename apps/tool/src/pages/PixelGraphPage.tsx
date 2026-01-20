@@ -2149,6 +2149,10 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             <span className="text-sm text-gray-700">Show Center Guides</span>
                         </label>
                         <label className="flex items-center gap-2 mt-2">
+                            <input type="checkbox" checked={isZoomLocked} onChange={onToggleZoomLock} />
+                            <span className="text-sm text-gray-700">Invert Mouse Wheel (Wheel to Pan)</span>
+                        </label>
+                        <label className="flex items-center gap-2 mt-2">
                             <input type="checkbox" checked={isLeftHanded} onChange={onToggleLeftHanded} />
                             <span className="text-sm text-gray-700">Left-Handed Mode</span>
                         </label>
