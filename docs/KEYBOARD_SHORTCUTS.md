@@ -20,6 +20,7 @@ BlanketSmith supports the following keyboard shortcuts to help speed up your wor
 | | Redo | `Ctrl`+`Y` (or `Cmd`+`Y`) or `Ctrl`+`Shift`+`Z` |
 | | Delete Selection | `Delete`, `Backspace` |
 | | Select All | `Ctrl`+`A` (or `Cmd`+`A`) |
+| | Deselect | `Escape` |
 | **Navigation** | Zoom In | `=` , `+` |
 | | Zoom Out | `-` , `_` |
 | | Reset Zoom | `0` |

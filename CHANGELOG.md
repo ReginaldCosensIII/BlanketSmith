@@ -14,6 +14,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Shortcuts System**: Added foundation for keyboard shortcuts (navigation, tools, system actions) and centralized config.
     - Added `apps/tool/src/config/shortcutConfig.ts`.
     - Added `KEYBOARD_SHORTCUTS.md` documentation.
+- **UX-002 Navigation Overhaul**:
+    - **Global Shortcuts**: Implemented `useKeyboardShortcuts` engine with centralized config.
+    - **Smart Undo/Redo**: Shortcuts now respect Floating Selections (matching UI behavior).
+    - **Wheel Mechanics**: Fixed native wheel events for smoother zoom; added **Wheel Mode Toggle** (Ctrl+.) to invert zoom/pan logic.
 
 ### Fixed
 - **Mobile/Tablet**: Structurally isolated fullscreen button to prevent event bleed and touch unresponsiveness on mobile.

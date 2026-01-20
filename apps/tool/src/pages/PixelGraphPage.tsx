@@ -274,7 +274,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         'system-save': () => console.log('Save triggered (shortcut)'), // Placeholder as requested
         'system-select-all': () => handleSelectAll(),
         'system-delete': () => handleClearSelection(),
-        'system-deselect': () => handleClearSelection(),
+        'system-deselect': () => handleDeselect(),
 
         // Nav
         'nav-zoom-in': () => onZoomChange(Math.min(zoom * 1.25, MAX_ZOOM)),
@@ -448,6 +448,15 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         }
         updateGrid(newGrid);
     }, [selection, projectData, floatingSelection, updateGrid]);
+
+    const handleDeselect = useCallback(() => {
+        if (floatingSelection) {
+            setFloatingSelection(null);
+            setSelection(null);
+        } else {
+            setSelection(null);
+        }
+    }, [floatingSelection]);
 
     const handleCut = () => { handleCopy(); handleClearSelection(); };
 
