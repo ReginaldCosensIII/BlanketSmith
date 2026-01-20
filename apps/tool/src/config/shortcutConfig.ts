@@ -20,6 +20,7 @@ export const SHORTCUTS = {
     'system-redo': ['mod+y', 'mod+shift+z'],
     'system-delete': ['delete', 'backspace'],
     'system-select-all': ['mod+a'],
+    'system-deselect': ['escape'],
 
     // NAVIGATION
     'nav-zoom-in': ['=', '+'],

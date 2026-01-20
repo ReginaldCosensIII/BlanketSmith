@@ -251,6 +251,11 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         'tool-fill-row': () => setActiveTool('fill-row'),
         'tool-fill-column': () => setActiveTool('fill-column'),
 
+        // Clipboard (Local Handlers)
+        'clipboard-copy': () => handleCopy(),
+        'clipboard-cut': () => handleCut(),
+        'clipboard-paste': () => handlePaste(),
+
         // System
         'system-undo': () => {
             if (floatingSelection) {
@@ -266,6 +271,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         'system-save': () => console.log('Save triggered (shortcut)'), // Placeholder as requested
         'system-select-all': () => handleSelectAll(),
         'system-delete': () => handleClearSelection(),
+        'system-deselect': () => handleClearSelection(),
 
         // Nav
         'nav-zoom-in': () => onZoomChange(Math.min(zoom * 1.25, MAX_ZOOM)),

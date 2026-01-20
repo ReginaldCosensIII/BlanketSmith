@@ -1100,7 +1100,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         return newGrid;
     }, [grid, paintedCells, drawingButton, primaryColorId, secondaryColorId, activeTool]);
 
-    // --- WHEEL MECHANICS ---
+    // --- WHEEL MECHANICS (Native Listener) ---
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
@@ -1323,7 +1323,6 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 ref={containerRef}
                 className="w-full h-full bg-gray-200 overflow-auto grid place-items-center touch-none"
                 style={{ cursor: getCursor() }}
-                onWheel={handleWheel}
                 onContextMenu={handleContextMenu}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
