@@ -459,19 +459,13 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     }, [floatingSelection]);
 
     // UX-003: Background Click Handler (Exclusion Strategy)
+    // UX-003: Background Click Handler (Explicit Inclusion Strategy)
     const handleMainClick = (e: React.MouseEvent) => {
-        if (!selection) return;
-
         const target = e.target as HTMLElement;
-
-        // 1. Ignore Canvas clicks (handled by handleCanvasClick)
-        if (target.tagName === 'CANVAS') return;
-
-        // 2. Ignore Interactive Elements (Buttons, Inputs, etc.)
-        if (target.closest('button, input, select, a, [role="button"]')) return;
-
-        // 3. If we safely clicked "void" or structural wrappers, drop selection
-        handleDeselect();
+        // Only fire if the clicked element explicitly identifies itself as the background
+        if (target.getAttribute('data-role') === 'background' && selection) {
+            handleDeselect();
+        }
     };
 
     const handleCut = () => { handleCopy(); handleClearSelection(); };
@@ -1329,7 +1323,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const toggleSymmetry = (mode: 'vertical' | 'horizontal') => { setSymmetry(prev => ({ ...prev, [mode]: !prev[mode] })); }
 
     return (
-        <div className="flex-1 flex h-full overflow-hidden relative" onClick={handleMainClick}>
+        <div className="flex-1 flex h-full overflow-hidden relative" onClick={handleMainClick} data-role="background">
             {isProcessing && <div className="absolute inset-0 bg-white/70 z-30 flex items-center justify-center"><div className="text-lg font-semibold">Processing Image...</div></div>}
 
             {contextMenu && (
@@ -1763,7 +1757,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 )
             }
 
-            <main className="flex-1 relative min-w-0">
+            <main className="flex-1 relative min-w-0" data-role="background">
                 <PixelGridEditor
                     data={projectData}
                     yarnPalette={project.yarnPalette}
