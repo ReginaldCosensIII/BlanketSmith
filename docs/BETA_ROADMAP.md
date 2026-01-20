@@ -64,6 +64,7 @@ Milestones are ordered for delivery efficiency. Tasks can move between milestone
 - **UX-001:** Mobile/tablet usable editor experience (Blocker)
 - **UX-002:** Non-mouse zoom/navigation controls (Blocker)
 - **ZOOM-001 / ZOOM-002 / GRID-001:** Zoom + gridline behavior polish (Medium)
+- **UX-003:** Click Background to Deselect Selection (Done)
 
 ---
 
@@ -153,6 +154,7 @@ Add items freely; keep IDs stable once created. Promote to Blocker list when nee
 - [ ] **CHART-001:** New chart type integrated into export + UI (Status: Not Started)
 
 ### Medium Priority
+- [x] **UX-003:** Click Background to Deselect Selection (Status: Done)
 - [ ] **ZOOM-001:** Zoom lock + control layout stability (Status: Not Started)
 - [ ] **ZOOM-002:** Zoom slider behavior across pages (Status: Not Started)
 - [ ] **GRID-001:** Gridline visibility thresholds by zoom (Status: Not Started)

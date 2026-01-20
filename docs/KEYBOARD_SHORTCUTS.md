@@ -2,6 +2,7 @@
 
 BlanketSmith supports the following keyboard shortcuts to help speed up your workflow.
 
+## Tool & System Shortcuts
 | Category | Action | Shortcut(s) |
 | :--- | :--- | :--- |
 | **Tools** | Brush | `B` |
@@ -24,6 +25,15 @@ BlanketSmith supports the following keyboard shortcuts to help speed up your wor
 | **Navigation** | Zoom In | `=` , `+` |
 | | Zoom Out | `-` , `_` |
 | | Reset Zoom | `0` |
-| **UI** | Toggle Wheel Mode (Zoom/Pan) | `Ctrl`+`.` (or `Cmd`+`.`) |
+| **UI** | Toggle Wheel Mode | `Ctrl`+`.` (or `Cmd`+`.`) |
 
-> Note: Shortcuts work when the main canvas or tool area is focused. They are disabled when typing in text fields.
+## Mouse & Navigation
+BlanketSmith offers two navigation modes for the scroll wheel, toggled via **Settings** or the shortcut `Ctrl` + `.` .
+
+| Action | Standard Mode (Default) | Pan Mode (Inverted) |
+| :--- | :--- | :--- |
+| **Scroll Wheel** | Zoom Canvas | Pan Vertical |
+| **Ctrl + Wheel** | Pan Vertical | Zoom Canvas |
+| **Shift + Wheel** | Pan Horizontal | Pan Horizontal |
+
+> **Tip:** You can toggle between these modes instantly using `Ctrl` + `.` (Cmd + . on Mac).

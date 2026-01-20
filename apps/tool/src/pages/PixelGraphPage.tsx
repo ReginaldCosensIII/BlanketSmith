@@ -458,7 +458,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         }
     }, [floatingSelection]);
 
-    // UX-003: Background Click Handler (Exclusion Strategy)
+
     // UX-003: Background Click Handler (Explicit Inclusion Strategy)
     const handleMainClick = (e: React.MouseEvent) => {
         const target = e.target as HTMLElement;
