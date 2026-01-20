@@ -82,7 +82,7 @@ export const Sidebar: React.FC = () => (
     </aside>
 );
 
-export const Footer: React.FC<{ zoom: number, onZoomChange: (newZoom: number) => void }> = ({ zoom, onZoomChange }) => {
+export const Footer: React.FC<{ zoom: number, onZoomChange: (newZoom: number) => void, isZoomLocked?: boolean, onToggleZoomLock?: () => void }> = ({ zoom, onZoomChange, isZoomLocked, onToggleZoomLock }) => {
     const { state, dispatch } = useProject();
     const { hasFloatingSelection, performUndo, performRedo } = useFloatingSelection();
 
@@ -116,10 +116,11 @@ export const Footer: React.FC<{ zoom: number, onZoomChange: (newZoom: number) =>
                 <Button variant="secondary" onClick={handleRedo} disabled={!canRedo && !hasFloatingSelection}><Icon name="redo" size="md" /> <span className="hidden md:inline">Redo</span></Button>
             </div>
             <div className="flex items-center gap-2">
+
                 <Button variant="secondary" onClick={handleZoomOut} className="p-2"><Icon name="zoom-out" size="md" /></Button>
                 <input type="range" min={MIN_ZOOM * 100} max={MAX_ZOOM * 100} value={zoom * 100} onChange={handleSliderChange} className="w-24 md:w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
                 <Button variant="secondary" onClick={handleZoomIn} className="p-2"><Icon name="zoom-in" size="md" /></Button>
-                <span className="text-sm font-mono text-gray-600 w-16 text-center">{Math.round(zoom * 100)}%</span>
+                <span className="text-sm font-mono text-gray-600 w-16 text-center hidden md:inline">{Math.round(zoom * 100)}%</span>
             </div>
         </footer>
     );

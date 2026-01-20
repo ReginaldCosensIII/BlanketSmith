@@ -6,6 +6,7 @@ import { Header, Sidebar, Footer } from './components/layout/Layout';
 import { PatternBookPage } from './pages/PatternBookPage';
 import { PixelGraphPage } from './pages/PixelGraphPage';
 import { ExportEngineTestPage } from './pages/ExportEngineTestPage';
+import { MIN_ZOOM, MAX_ZOOM } from './constants';
 
 // --- STATIC PAGES ---
 const PlaceholderPage: React.FC<{ title: string }> = ({ title }) => (
@@ -35,6 +36,7 @@ const App: React.FC = () => {
     });
     const [isLeftHanded, setIsLeftHanded] = useState(() => localStorage.getItem('app_isLeftHanded') === 'true'); // Default false
     const [zoom, setZoom] = useState(1);
+    const [isZoomLocked, setIsZoomLocked] = useState(false);
 
     useEffect(() => { localStorage.setItem('app_isSidebarVisible', String(isSidebarVisible)); }, [isSidebarVisible]);
     useEffect(() => { localStorage.setItem('app_isLeftHanded', String(isLeftHanded)); }, [isLeftHanded]);
@@ -84,7 +86,16 @@ const App: React.FC = () => {
                             </div>
 
                             <Routes>
-                                <Route path="/" element={<PixelGraphPage zoom={zoom} onZoomChange={setZoom} isLeftHanded={isLeftHanded} onToggleLeftHanded={() => setIsLeftHanded(!isLeftHanded)} />} />
+                                <Route path="/" element={
+                                    <PixelGraphPage
+                                        zoom={zoom}
+                                        onZoomChange={setZoom}
+                                        isLeftHanded={isLeftHanded}
+                                        onToggleLeftHanded={() => setIsLeftHanded(!isLeftHanded)}
+                                        isZoomLocked={isZoomLocked}
+                                        onToggleZoomLock={() => setIsZoomLocked(!isZoomLocked)}
+                                    />
+                                } />
                                 <Route path="/projects" element={<PatternBookPage />} />
                                 <Route path="/c2c" element={<PlaceholderPage title="C2C Crochet" />} />
                                 <Route path="/stripes" element={<PlaceholderPage title="Stripe Generator" />} />
@@ -99,7 +110,12 @@ const App: React.FC = () => {
                             </Routes>
                         </div>
 
-                        <Footer zoom={zoom} onZoomChange={setZoom} />
+                        <Footer
+                            zoom={zoom}
+                            onZoomChange={setZoom}
+                            isZoomLocked={isZoomLocked}
+                            onToggleZoomLock={() => setIsZoomLocked(!isZoomLocked)}
+                        />
                     </div>
                 </HashRouter>
             </FloatingSelectionProvider>

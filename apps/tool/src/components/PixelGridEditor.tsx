@@ -40,6 +40,8 @@ interface PixelGridEditorProps {
     floatingSelection: { x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean } | null;
     onFloatingSelectionChange: (sel: { x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean } | null) => void;
     onContextMenu: (x: number, y: number) => void;
+    isZoomLocked: boolean;
+    onToggleZoomLock: () => void;
 }
 
 const RULER_SIZE = 2;
@@ -101,7 +103,9 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     onSelectionChange,
     floatingSelection,
     onFloatingSelectionChange,
-    onContextMenu
+    onContextMenu,
+    isZoomLocked,
+    onToggleZoomLock
 }) => {
     const { width, height, grid } = data;
     const containerRef = useRef<HTMLDivElement>(null);
@@ -1096,6 +1100,87 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         return newGrid;
     }, [grid, paintedCells, drawingButton, primaryColorId, secondaryColorId, activeTool]);
 
+    // --- WHEEL MECHANICS (Native Listener) ---
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const handleWheel = (e: WheelEvent) => {
+            // Check for pinch-zoom (ctrlKey + wheel is typical for trackpad pinch on some browsers,
+            // but standard wheel zoom is usually just wheel. We use the matrix definition.)
+            // However, browsers treat 'pinch' as Ctrl+Wheel events often.
+            // We'll stick to the Requested Matrix:
+
+            // NOTE: Chrome/Firefox use different deltaModes. We assume px (0) or lines (1).
+            // A rough normalization:
+            const delta = e.deltaY;
+            const isShift = e.shiftKey;
+            const isCtrl = e.ctrlKey || e.metaKey; // "Mod"
+
+            // 1. GLOBAL: Shift + Wheel = PAN HORIZONTAL
+            if (isShift) {
+                e.preventDefault();
+                container.scrollLeft += delta;
+                return;
+            }
+
+            // 2. LOGIC MATRIX
+            // If LOCKED:
+            //   - Wheel = Pan Vertical
+            //   - Mod + Wheel = Zoom
+            // If UNLOCKED (Default):
+            //   - Wheel = Zoom
+            //   - Mod + Wheel = Pan Vertical
+
+            let isZoomAction = false;
+
+            if (isZoomLocked) {
+                // LOCKED MODE
+                if (isCtrl) {
+                    isZoomAction = true;
+                } else {
+                    // Pan Vertical
+                    container.scrollTop += delta;
+                    e.preventDefault();
+                    return;
+                }
+            } else {
+                // UNLOCKED MODE
+                if (isCtrl) {
+                    // Pan Vertical
+                    container.scrollTop += delta;
+                    e.preventDefault();
+                    return;
+                } else {
+                    isZoomAction = true;
+                }
+            }
+
+            // 3. PERFORM ZOOM
+            if (isZoomAction) {
+                e.preventDefault();
+                // Determine direction
+                // deltaY > 0 means scrolling DOWN (pulling towards you) -> usually Zoom OUT
+                // deltaY < 0 means scrolling UP (pushing away) -> usually Zoom IN
+                // Standard mapping:
+                const zoomFactor = 1.1; // 10% change
+                let newZoom = zoom;
+
+                if (delta < 0) {
+                    newZoom = Math.min(zoom * zoomFactor, MAX_ZOOM);
+                } else {
+                    newZoom = Math.max(zoom / zoomFactor, MIN_ZOOM);
+                }
+
+                onZoomChange(newZoom);
+            }
+        };
+
+        // Non-passive to allow preventDefault
+        container.addEventListener('wheel', handleWheel, { passive: false });
+        return () => container.removeEventListener('wheel', handleWheel);
+    }, [zoom, onZoomChange, isZoomLocked]);
+
     const getCursor = () => {
         if (activeTool === 'select') {
             if (floatingSelection && hoveredCell) {
@@ -1238,7 +1323,6 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 ref={containerRef}
                 className="w-full h-full bg-gray-200 overflow-auto grid place-items-center touch-none"
                 style={{ cursor: getCursor() }}
-                onWheel={handleWheel}
                 onContextMenu={handleContextMenu}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}

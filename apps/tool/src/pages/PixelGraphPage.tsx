@@ -5,6 +5,9 @@ import { PixelGridEditor } from '../components/PixelGridEditor';
 import { SelectToolbar } from '../components/editor/SelectToolbar';
 import { exportPixelGridToPDF, exportPixelGridToImage } from '../services/exportService';
 import { getDefaultChartOnlyExportOptionsV3, getDefaultPatternPackExportOptionsV3 } from '../services/exportDefaultsV3';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { SHORTCUTS } from '../config/shortcutConfig';
+import { MIN_ZOOM, MAX_ZOOM } from '../constants';
 
 import { processImageToGrid, findClosestYarnColor } from '../services/projectService';
 import { Button, Icon, ContextMenu, Modal } from '../components/ui/SharedComponents';
@@ -67,7 +70,7 @@ const hslToRgb = (h: number, s: number, l: number): [number, number, number] => 
     return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
 }
 
-export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) => void; isLeftHanded: boolean; onToggleLeftHanded: () => void; }> = ({ zoom, onZoomChange, isLeftHanded, onToggleLeftHanded }) => {
+export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) => void; isLeftHanded: boolean; onToggleLeftHanded: () => void; isZoomLocked: boolean; onToggleZoomLock: () => void; }> = ({ zoom, onZoomChange, isLeftHanded, onToggleLeftHanded, isZoomLocked, onToggleZoomLock }) => {
     type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column' | 'eyedropper' | 'text' | 'select';
     type MirrorDirection = 'left-to-right' | 'right-to-left' | 'top-to-bottom' | 'bottom-to-top';
     type ColorMode = 'HEX' | 'RGB' | 'HSL';
@@ -125,7 +128,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [preRotationState, setPreRotationState] = useState<{ grid: CellData[], selection: { x: number, y: number, w: number, h: number } } | null>(null);
     const [toolbarPosition, setToolbarPosition] = useState<{ x: number, y: number } | null>(null);
 
-    const { setHasFloatingSelection, registerUndoHandler, registerRedoHandler } = useFloatingSelection();
+    const { hasFloatingSelection, performUndo, performRedo, setHasFloatingSelection, registerUndoHandler, registerRedoHandler } = useFloatingSelection();
 
     // Sync floating selection presence with global context
     useEffect(() => {
@@ -235,6 +238,52 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const prevCoModeRef = useRef<typeof coMode>(coMode);
     // Store non-stitch visual settings to restore them when leaving stitch mode
     const lastNonStitchVisualRef = useRef<{ showSymbols: boolean; showBackgrounds: boolean } | null>(null);
+
+    // --- KEYBOARD SHORTCUTS WIRING ---
+    useKeyboardShortcuts({
+        // Tools
+        'tool-brush': () => setActiveTool('brush'),
+        'tool-fill': () => setActiveTool('fill'),
+        'tool-replace': () => setActiveTool('replace'),
+        'tool-eyedropper': () => setActiveTool('eyedropper'),
+        'tool-select': () => setActiveTool('select'),
+        'tool-text': () => setActiveTool('text'),
+        'tool-fill-row': () => setActiveTool('fill-row'),
+        'tool-fill-column': () => setActiveTool('fill-column'),
+
+        // Clipboard (Local Handlers)
+        'clipboard-copy': () => handleCopy(),
+        'clipboard-cut': () => handleCut(),
+        'clipboard-paste': () => handlePaste(),
+
+        // System
+        'system-undo': () => {
+            if (hasFloatingSelection) {
+                performUndo();
+            } else {
+                dispatch({ type: 'UNDO' });
+            }
+        },
+        'system-redo': () => {
+            if (hasFloatingSelection) {
+                performRedo();
+            } else {
+                dispatch({ type: 'REDO' });
+            }
+        },
+        'system-save': () => console.log('Save triggered (shortcut)'), // Placeholder as requested
+        'system-select-all': () => handleSelectAll(),
+        'system-delete': () => handleClearSelection(),
+        'system-deselect': () => handleDeselect(),
+
+        // Nav
+        'nav-zoom-in': () => onZoomChange(Math.min(zoom * 1.25, MAX_ZOOM)),
+        'nav-zoom-out': () => onZoomChange(Math.max(zoom / 1.25, MIN_ZOOM)),
+        'nav-reset-zoom': () => onZoomChange(1),
+
+        // UI
+        'ui-toggle-zoom-lock': onToggleZoomLock,
+    });
 
     // --- TOOL CHANGE HANDLER (Transition Logic) ---
     const handleToolChange = (newTool: Tool) => {
@@ -399,6 +448,15 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         }
         updateGrid(newGrid);
     }, [selection, projectData, floatingSelection, updateGrid]);
+
+    const handleDeselect = useCallback(() => {
+        if (floatingSelection) {
+            setFloatingSelection(null);
+            setSelection(null);
+        } else {
+            setSelection(null);
+        }
+    }, [floatingSelection]);
 
     const handleCut = () => { handleCopy(); handleClearSelection(); };
 
@@ -1707,6 +1765,8 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                     floatingSelection={floatingSelection}
                     onFloatingSelectionChange={handleFloatingSelectionChange}
                     onContextMenu={handleOpenContextMenu}
+                    isZoomLocked={isZoomLocked}
+                    onToggleZoomLock={onToggleZoomLock}
                 />
 
                 {activeTool === 'select' && (
@@ -2096,6 +2156,10 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                         <label className="flex items-center gap-2 mt-2">
                             <input type="checkbox" checked={showCenterGuides} onChange={(e) => setShowCenterGuides(e.target.checked)} />
                             <span className="text-sm text-gray-700">Show Center Guides</span>
+                        </label>
+                        <label className="flex items-center gap-2 mt-2">
+                            <input type="checkbox" checked={isZoomLocked} onChange={onToggleZoomLock} />
+                            <span className="text-sm text-gray-700">Invert Mouse Wheel (Wheel to Pan)</span>
                         </label>
                         <label className="flex items-center gap-2 mt-2">
                             <input type="checkbox" checked={isLeftHanded} onChange={onToggleLeftHanded} />
