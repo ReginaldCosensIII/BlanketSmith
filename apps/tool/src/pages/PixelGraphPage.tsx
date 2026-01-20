@@ -67,7 +67,7 @@ const hslToRgb = (h: number, s: number, l: number): [number, number, number] => 
     return [Math.round(r * 255), Math.round(g * 255), Math.round(b * 255)];
 }
 
-export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) => void; isLeftHanded: boolean; onToggleLeftHanded: () => void; }> = ({ zoom, onZoomChange, isLeftHanded, onToggleLeftHanded }) => {
+export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: number) => void; isLeftHanded: boolean; onToggleLeftHanded: () => void; isZoomLocked: boolean; onToggleZoomLock: () => void; }> = ({ zoom, onZoomChange, isLeftHanded, onToggleLeftHanded, isZoomLocked, onToggleZoomLock }) => {
     type Tool = 'brush' | 'fill' | 'replace' | 'fill-row' | 'fill-column' | 'eyedropper' | 'text' | 'select';
     type MirrorDirection = 'left-to-right' | 'right-to-left' | 'top-to-bottom' | 'bottom-to-top';
     type ColorMode = 'HEX' | 'RGB' | 'HSL';
@@ -1707,6 +1707,8 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                     floatingSelection={floatingSelection}
                     onFloatingSelectionChange={handleFloatingSelectionChange}
                     onContextMenu={handleOpenContextMenu}
+                    isZoomLocked={isZoomLocked}
+                    onToggleZoomLock={onToggleZoomLock}
                 />
 
                 {activeTool === 'select' && (

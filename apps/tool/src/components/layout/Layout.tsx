@@ -82,7 +82,7 @@ export const Sidebar: React.FC = () => (
     </aside>
 );
 
-export const Footer: React.FC<{ zoom: number, onZoomChange: (newZoom: number) => void }> = ({ zoom, onZoomChange }) => {
+export const Footer: React.FC<{ zoom: number, onZoomChange: (newZoom: number) => void, isZoomLocked?: boolean, onToggleZoomLock?: () => void }> = ({ zoom, onZoomChange, isZoomLocked, onToggleZoomLock }) => {
     const { state, dispatch } = useProject();
     const { hasFloatingSelection, performUndo, performRedo } = useFloatingSelection();
 

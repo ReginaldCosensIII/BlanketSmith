@@ -134,7 +134,8 @@ Add items freely; keep IDs stable once created. Promote to Blocker list when nee
 ### Beta Blockers (Must-Have)
 - [x] **LOG-001:** Professional logging + error handling baseline (Status: Done)
 - [x] **UX-001:** Mobile/tablet usable editor experience (Status: Done)
-- [ ] **UX-002:** Non-mouse zoom/navigation controls (Status: Not Started)
+- [ ] **UX-002:** Non-mouse zoom/navigation controls (Status: In Progress)
+    - [x] Stage 1: Shortcut Engine & Documentation
 - [ ] **INS-001:** Instructions Engine v2 (Status: Not Started)
 - [ ] **RPT-001:** Feedback/bug reporting mechanism (Status: Not Started)
 - [ ] **ROT-001:** Rotate/select tool data integrity + undo/redo compatibility (Status: Not Started)

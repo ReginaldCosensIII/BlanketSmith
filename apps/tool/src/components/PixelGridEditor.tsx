@@ -40,6 +40,8 @@ interface PixelGridEditorProps {
     floatingSelection: { x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean } | null;
     onFloatingSelectionChange: (sel: { x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean } | null) => void;
     onContextMenu: (x: number, y: number) => void;
+    isZoomLocked: boolean;
+    onToggleZoomLock: () => void;
 }
 
 const RULER_SIZE = 2;
@@ -101,7 +103,9 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     onSelectionChange,
     floatingSelection,
     onFloatingSelectionChange,
-    onContextMenu
+    onContextMenu,
+    isZoomLocked,
+    onToggleZoomLock
 }) => {
     const { width, height, grid } = data;
     const containerRef = useRef<HTMLDivElement>(null);

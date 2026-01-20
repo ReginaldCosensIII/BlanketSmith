@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Logging & Error Handling (LOG-001)**: Implemented professional observability baseline:
     - Centralized `logger` utility with production gating.
     - App-wide `ErrorBoundary` with actionable fallback UI (Reload/Home).
+- **Shortcuts System**: Added foundation for keyboard shortcuts (navigation, tools, system actions) and centralized config.
+    - Added `apps/tool/src/config/shortcutConfig.ts`.
+    - Added `KEYBOARD_SHORTCUTS.md` documentation.
+
 ### Fixed
 - **Mobile/Tablet**: Structurally isolated fullscreen button to prevent event bleed and touch unresponsiveness on mobile.
 - **Icon System**: Created `SharedComponents.tsx` with a lightweight, zero-dependency SVG `Icon` component.
