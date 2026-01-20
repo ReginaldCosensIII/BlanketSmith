@@ -5,6 +5,9 @@ import { PixelGridEditor } from '../components/PixelGridEditor';
 import { SelectToolbar } from '../components/editor/SelectToolbar';
 import { exportPixelGridToPDF, exportPixelGridToImage } from '../services/exportService';
 import { getDefaultChartOnlyExportOptionsV3, getDefaultPatternPackExportOptionsV3 } from '../services/exportDefaultsV3';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
+import { SHORTCUTS } from '../config/shortcutConfig';
+import { MIN_ZOOM, MAX_ZOOM } from '../constants';
 
 import { processImageToGrid, findClosestYarnColor } from '../services/projectService';
 import { Button, Icon, ContextMenu, Modal } from '../components/ui/SharedComponents';
@@ -235,6 +238,43 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const prevCoModeRef = useRef<typeof coMode>(coMode);
     // Store non-stitch visual settings to restore them when leaving stitch mode
     const lastNonStitchVisualRef = useRef<{ showSymbols: boolean; showBackgrounds: boolean } | null>(null);
+
+    // --- KEYBOARD SHORTCUTS WIRING ---
+    useKeyboardShortcuts({
+        // Tools
+        'tool-brush': () => setActiveTool('brush'),
+        'tool-fill': () => setActiveTool('fill'),
+        'tool-replace': () => setActiveTool('replace'),
+        'tool-eyedropper': () => setActiveTool('eyedropper'),
+        'tool-select': () => setActiveTool('select'),
+        'tool-text': () => setActiveTool('text'),
+        'tool-fill-row': () => setActiveTool('fill-row'),
+        'tool-fill-column': () => setActiveTool('fill-column'),
+
+        // System
+        'system-undo': () => {
+            if (floatingSelection) {
+                // handled by hook automatically if registered, but explicit call logic for context:
+                // FloatingSelectionContext handles its own undo stack if active
+                // But here we rely on the component usage or global dispatch
+                dispatch({ type: 'UNDO' });
+            } else {
+                dispatch({ type: 'UNDO' });
+            }
+        },
+        'system-redo': () => dispatch({ type: 'REDO' }),
+        'system-save': () => console.log('Save triggered (shortcut)'), // Placeholder as requested
+        'system-select-all': () => handleSelectAll(),
+        'system-delete': () => handleClearSelection(),
+
+        // Nav
+        'nav-zoom-in': () => onZoomChange(Math.min(zoom * 1.25, MAX_ZOOM)),
+        'nav-zoom-out': () => onZoomChange(Math.max(zoom / 1.25, MIN_ZOOM)),
+        'nav-reset-zoom': () => onZoomChange(1),
+
+        // UI
+        'ui-toggle-zoom-lock': onToggleZoomLock,
+    });
 
     // --- TOOL CHANGE HANDLER (Transition Logic) ---
     const handleToolChange = (newTool: Tool) => {

@@ -23,7 +23,6 @@ BlanketSmith supports the following keyboard shortcuts to help speed up your wor
 | **Navigation** | Zoom In | `=` , `+` |
 | | Zoom Out | `-` , `_` |
 | | Reset Zoom | `0` |
-| **UI** | Toggle Sidebar | `Tab` |
-| | Toggle UI Lock | `Ctrl`+`.` (or `Cmd`+`.`) |
+| **UI** | Toggle UI Lock | `Ctrl`+`.` (or `Cmd`+`.`) |
 
 > Note: Shortcuts work when the main canvas or tool area is focused. They are disabled when typing in text fields.

@@ -6,8 +6,6 @@ import { Header, Sidebar, Footer } from './components/layout/Layout';
 import { PatternBookPage } from './pages/PatternBookPage';
 import { PixelGraphPage } from './pages/PixelGraphPage';
 import { ExportEngineTestPage } from './pages/ExportEngineTestPage';
-import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
-import { SHORTCUTS } from './config/shortcutConfig';
 import { MIN_ZOOM, MAX_ZOOM } from './constants';
 
 // --- STATIC PAGES ---
@@ -39,15 +37,6 @@ const App: React.FC = () => {
     const [isLeftHanded, setIsLeftHanded] = useState(() => localStorage.getItem('app_isLeftHanded') === 'true'); // Default false
     const [zoom, setZoom] = useState(1);
     const [isZoomLocked, setIsZoomLocked] = useState(false);
-
-    // --- KEYBOARD SHORTCUTS ---
-    useKeyboardShortcuts({
-        'nav-zoom-in': () => setZoom(z => Math.min(z * 1.25, MAX_ZOOM)),
-        'nav-zoom-out': () => setZoom(z => Math.max(z / 1.25, MIN_ZOOM)),
-        'nav-reset-zoom': () => setZoom(1),
-        'ui-toggle-sidebar': () => setIsSidebarVisible(prev => !prev),
-        'ui-toggle-zoom-lock': () => setIsZoomLocked(prev => !prev),
-    });
 
     useEffect(() => { localStorage.setItem('app_isSidebarVisible', String(isSidebarVisible)); }, [isSidebarVisible]);
     useEffect(() => { localStorage.setItem('app_isLeftHanded', String(isLeftHanded)); }, [isLeftHanded]);

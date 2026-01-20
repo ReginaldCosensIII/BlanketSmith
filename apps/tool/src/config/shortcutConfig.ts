@@ -27,7 +27,6 @@ export const SHORTCUTS = {
     'nav-reset-zoom': ['0'],
 
     // UI
-    'ui-toggle-sidebar': ['tab'],
     'ui-toggle-zoom-lock': ['mod+period'],
 };
 
