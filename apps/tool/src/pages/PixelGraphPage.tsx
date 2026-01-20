@@ -128,7 +128,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [preRotationState, setPreRotationState] = useState<{ grid: CellData[], selection: { x: number, y: number, w: number, h: number } } | null>(null);
     const [toolbarPosition, setToolbarPosition] = useState<{ x: number, y: number } | null>(null);
 
-    const { setHasFloatingSelection, registerUndoHandler, registerRedoHandler } = useFloatingSelection();
+    const { hasFloatingSelection, performUndo, performRedo, setHasFloatingSelection, registerUndoHandler, registerRedoHandler } = useFloatingSelection();
 
     // Sync floating selection presence with global context
     useEffect(() => {
@@ -258,16 +258,19 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
         // System
         'system-undo': () => {
-            if (floatingSelection) {
-                // handled by hook automatically if registered, but explicit call logic for context:
-                // FloatingSelectionContext handles its own undo stack if active
-                // But here we rely on the component usage or global dispatch
-                dispatch({ type: 'UNDO' });
+            if (hasFloatingSelection) {
+                performUndo();
             } else {
                 dispatch({ type: 'UNDO' });
             }
         },
-        'system-redo': () => dispatch({ type: 'REDO' }),
+        'system-redo': () => {
+            if (hasFloatingSelection) {
+                performRedo();
+            } else {
+                dispatch({ type: 'REDO' });
+            }
+        },
         'system-save': () => console.log('Save triggered (shortcut)'), // Placeholder as requested
         'system-select-all': () => handleSelectAll(),
         'system-delete': () => handleClearSelection(),
