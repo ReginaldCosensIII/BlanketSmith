@@ -458,6 +458,22 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         }
     }, [floatingSelection]);
 
+    // UX-003: Background Click Handler (Exclusion Strategy)
+    const handleMainClick = (e: React.MouseEvent) => {
+        if (!selection) return;
+
+        const target = e.target as HTMLElement;
+
+        // 1. Ignore Canvas clicks (handled by handleCanvasClick)
+        if (target.tagName === 'CANVAS') return;
+
+        // 2. Ignore Interactive Elements (Buttons, Inputs, etc.)
+        if (target.closest('button, input, select, a, [role="button"]')) return;
+
+        // 3. If we safely clicked "void" or structural wrappers, drop selection
+        handleDeselect();
+    };
+
     const handleCut = () => { handleCopy(); handleClearSelection(); };
 
     const handleFlipSelection = (direction: 'horizontal' | 'vertical') => {
@@ -972,6 +988,16 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
     const handleCanvasClick = (gridX: number, gridY: number, isRightClick: boolean) => {
         if (!projectData) return;
+
+        // UX-003: Click outside selection to deselect (if not using Select tool)
+        if (selection && activeTool !== 'select') {
+            const { x, y, w, h } = selection;
+            if (gridX < x || gridX >= x + w || gridY < y || gridY >= y + h) {
+                handleDeselect();
+                return;
+            }
+        }
+
         const { width, height, grid } = projectData;
         const index = gridY * width + gridX;
         const clickedColorId = grid[index].colorId;
@@ -1303,7 +1329,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const toggleSymmetry = (mode: 'vertical' | 'horizontal') => { setSymmetry(prev => ({ ...prev, [mode]: !prev[mode] })); }
 
     return (
-        <div className="flex-1 flex h-full overflow-hidden relative">
+        <div className="flex-1 flex h-full overflow-hidden relative" onClick={handleMainClick}>
             {isProcessing && <div className="absolute inset-0 bg-white/70 z-30 flex items-center justify-center"><div className="text-lg font-semibold">Processing Image...</div></div>}
 
             {contextMenu && (
