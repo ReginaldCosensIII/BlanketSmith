@@ -1313,7 +1313,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     return (
         <>
             {isFullscreenSupported && (
-                <div className="absolute top-4 left-4 z-10">
+                <div className="absolute top-4 left-4 z-10" data-role="ui-interaction">
                     <Button variant="secondary" onClick={toggleFullscreen} className="p-2 shadow-md hover:shadow-lg opacity-80 hover:opacity-100 transition-all font-sans font-medium hover:bg-white bg-white/90" aria-label={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}>
                         <Icon name={isFullscreen ? "minimize" : "maximize"} size="md" />
                     </Button>

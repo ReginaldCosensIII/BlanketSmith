@@ -1816,7 +1816,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 )}
             </main>
 
-            <aside className={`bg-white border-l shadow-xl z-20 transition-all duration-300 flex flex-col ${isPanelOpen ? 'w-80' : 'w-0 overflow-hidden'}`}>
+            <aside className={`bg-white border-l shadow-xl z-20 transition-all duration-300 flex flex-col ${isPanelOpen ? 'w-80' : 'w-0 overflow-hidden'}`} data-role="ui-interaction">
                 <div className="p-4 border-b flex justify-between items-center bg-gray-50">
                     <h3 className="font-bold text-gray-700">Tools</h3>
                     <button onClick={() => setIsPanelOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors"><Icon name="close" size="lg" /></button>
@@ -2056,7 +2056,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
             {
                 !isPanelOpen && (
-                    <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
+                    <div className="absolute top-4 right-4 z-20 flex flex-col gap-2" data-role="ui-interaction">
                         <Button onClick={() => setIsPanelOpen(true)} className="shadow-lg"><Icon name="brush" size="md" className="mr-2" /> Tools</Button>
                     </div>
                 )
