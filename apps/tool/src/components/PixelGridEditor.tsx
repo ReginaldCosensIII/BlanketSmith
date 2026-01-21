@@ -1328,6 +1328,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 onMouseMove={handleMouseMove}
                 onMouseUp={handleMouseUp}
                 onMouseLeave={handleMouseLeave}
+                data-role="background"
             >
                 <svg
                     ref={svgRef}
@@ -1335,6 +1336,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                     height={svgTotalHeight * zoom}
                     viewBox={`0 0 ${svgTotalWidth} ${svgTotalHeight}`}
                     shapeRendering="crispEdges"
+                    data-role="canvas-interaction"
                 >
                     <Rulers
                         width={width}

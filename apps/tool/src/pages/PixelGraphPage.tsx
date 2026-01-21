@@ -459,11 +459,23 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     }, [floatingSelection]);
 
 
-    // UX-003: Background Click Handler (Explicit Inclusion Strategy)
+    // UX-004: Global Deselect Strategy (Role-Based Event Delegation)
     const handleMainClick = (e: React.MouseEvent) => {
         const target = e.target as HTMLElement;
-        // Only fire if the clicked element explicitly identifies itself as the background
-        if (target.getAttribute('data-role') === 'background' && selection) {
+        const roleElement = target.closest('[data-role]');
+
+        if (!roleElement) return; // No role found, safe to ignore
+
+        const role = roleElement.getAttribute('data-role');
+
+        // Priority 1: UI Interaction (Toolbar, Buttons) -> IGNORE
+        if (role === 'ui-interaction') return;
+
+        // Priority 2: Canvas Interaction (Painting, Dragging) -> IGNORE
+        if (role === 'canvas-interaction') return;
+
+        // Priority 3: Background -> DESELECT
+        if (role === 'background' && selection) {
             handleDeselect();
         }
     };

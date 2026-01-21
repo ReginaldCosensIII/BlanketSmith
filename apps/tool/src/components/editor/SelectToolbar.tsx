@@ -252,6 +252,7 @@ export const SelectToolbar: React.FC<SelectToolbarProps> = ({
             onPointerMove={handlePointerMove}
             onPointerUp={handlePointerUp}
             data-testid="select-toolbar"
+            data-role="ui-interaction"
         >
             {/*
                 HEADER SECTION
