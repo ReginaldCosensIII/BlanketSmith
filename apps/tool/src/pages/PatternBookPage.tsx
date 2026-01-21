@@ -134,10 +134,14 @@ export const PatternBookPage: React.FC = () => {
     );
 
     return (
-        <div className="p-4 sm:p-6 lg:p-8">
+        <div className="flex flex-col w-full h-full overflow-hidden">
             <input type="file" ref={importFileRef} className="hidden" accept=".json,.bsmith.json" onChange={handleFileImport} />
-            <div className="flex justify-between items-center mb-6">
+
+            {/* Header Section - Fixed */}
+            <div className="flex justify-between items-center mb-6 px-4 sm:px-6 lg:px-8 pt-4 sm:pt-6 lg:pt-8 flex-shrink-0">
                 <h2 className="text-2xl font-bold text-gray-800">My Pattern Book</h2>
+
+                {/* Header Buttons - Always visible */}
                 <div className="flex items-center gap-2">
                     <Button variant="secondary" onClick={() => importFileRef.current?.click()}>
                         <Icon name="import" size="md" className="mr-2" /> <span className="hidden md:inline">Import Pattern</span>
@@ -147,24 +151,38 @@ export const PatternBookPage: React.FC = () => {
                     </Button>
                 </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-                {projects.map(p => (
-                    <div key={p.id} className="bg-white border rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300 flex flex-col overflow-hidden">
-                        <div className="p-4 flex-1">
-                            <div className="flex justify-between items-start mb-2">
-                                <h3 className="font-bold text-lg text-gray-900 truncate" title={p.name}>{p.name}</h3>
-                                <span className="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs rounded-full capitalize">{p.type}</span>
-                            </div>
-                            {(p.data as PixelGridData).width && <p className="text-sm text-gray-500">{(p.data as PixelGridData).width} x {(p.data as PixelGridData).height} stitches</p>}
-                            <p className="text-xs text-gray-400 mt-4">Updated: {new Date(p.updatedAt).toLocaleDateString()}</p>
-                        </div>
-                        <div className="p-2 border-t bg-gray-50 flex gap-2">
-                            <Button variant="secondary" className="flex-1 text-xs justify-center" onClick={() => handleLoadProject(p)}>Open</Button>
-                            <Button variant="secondary" className="p-2" onClick={(e) => handleExportProject(e, p)} title="Export Pattern JSON"> <Icon name="export-json" size={18} /> </Button>
-                            <Button variant="danger" className="p-2" onClick={(e) => handleDeleteProject(e, p.id)} title="Delete Pattern"> <Icon name="trash" size={18} /> </Button>
-                        </div>
+
+            {/* Scrollable Content Section */}
+            <div className="flex-1 overflow-y-auto min-h-0 px-4 sm:px-6 lg:px-8 pb-4 sm:pb-6 lg:pb-8">
+                {projects.length === 0 ? (
+                    // Empty State - Simplified
+                    <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                        <Icon name="pattern-book" size="xl" className="mb-4 opacity-20" />
+                        <h3 className="text-xl font-medium">No patterns yet</h3>
+                        <p className="mt-2 text-sm">Create or import a pattern to get started.</p>
                     </div>
-                ))}
+                ) : (
+                    // Grid View - Wider cards (max 3 cols)
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {projects.map(p => (
+                            <div key={p.id} className="bg-white border rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300 flex flex-col overflow-hidden w-full">
+                                <div className="p-4 flex-1">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <h3 className="font-bold text-lg text-gray-900 truncate" title={p.name}>{p.name}</h3>
+                                        <span className="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs rounded-full capitalize">{p.type}</span>
+                                    </div>
+                                    {(p.data as PixelGridData).width && <p className="text-sm text-gray-500">{(p.data as PixelGridData).width} x {(p.data as PixelGridData).height} stitches</p>}
+                                    <p className="text-xs text-gray-400 mt-4">Updated: {new Date(p.updatedAt).toLocaleDateString()}</p>
+                                </div>
+                                <div className="p-2 border-t bg-gray-50 flex gap-2">
+                                    <Button variant="secondary" className="flex-1 text-xs justify-center" onClick={() => handleLoadProject(p)}>Open</Button>
+                                    <Button variant="secondary" className="p-2" onClick={(e) => handleExportProject(e, p)} title="Export Pattern JSON"> <Icon name="export-json" size={18} /> </Button>
+                                    <Button variant="danger" className="p-2" onClick={(e) => handleDeleteProject(e, p.id)} title="Delete Pattern"> <Icon name="trash" size={18} /> </Button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
             </div>
             <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Create New Pattern">
                 {modalStep === 1 && (
