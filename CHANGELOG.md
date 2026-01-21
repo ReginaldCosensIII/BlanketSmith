@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **Wheel Mechanics**: Fixed native wheel events for smoother zoom; added **Wheel Mode Toggle** (Ctrl+.) to invert zoom/pan logic.
 
 ### Fixed
-- **UX-003: Background Deselect**: Implemented robust "Click-to-Deselect" for all tools using explicit background detection, fixing the `Ctrl+A` deselect issue.
+- **UX-003: Background Deselect**: Resolved UX-003: Global click-to-deselect using robust role-based event delegation.
 - **Navigation Docs**: Updated `KEYBOARD_SHORTCUTS.md` with Mouse Interaction table.
 - **Mobile/Tablet**: Structurally isolated fullscreen button to prevent event bleed and touch unresponsiveness on mobile.
 - **Icon System**: Created `SharedComponents.tsx` with a lightweight, zero-dependency SVG `Icon` component.

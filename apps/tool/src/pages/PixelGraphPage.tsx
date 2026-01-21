@@ -459,7 +459,8 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     }, [floatingSelection]);
 
 
-    // UX-004: Global Deselect Strategy (Role-Based Event Delegation)
+    // UX-003: Global Deselect Strategy (Role-Based Event Delegation)
+    // Priority: UI > Canvas > Background
     const handleMainClick = (e: React.MouseEvent) => {
         const target = e.target as HTMLElement;
         const roleElement = target.closest('[data-role]');
