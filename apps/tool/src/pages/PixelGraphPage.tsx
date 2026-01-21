@@ -458,6 +458,29 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         }
     }, [floatingSelection]);
 
+
+    // UX-003: Global Deselect Strategy (Role-Based Event Delegation)
+    // Priority: UI > Canvas > Background
+    const handleMainClick = (e: React.MouseEvent) => {
+        const target = e.target as HTMLElement;
+        const roleElement = target.closest('[data-role]');
+
+        if (!roleElement) return; // No role found, safe to ignore
+
+        const role = roleElement.getAttribute('data-role');
+
+        // Priority 1: UI Interaction (Toolbar, Buttons) -> IGNORE
+        if (role === 'ui-interaction') return;
+
+        // Priority 2: Canvas Interaction (Painting, Dragging) -> IGNORE
+        if (role === 'canvas-interaction') return;
+
+        // Priority 3: Background -> DESELECT
+        if (role === 'background' && selection) {
+            handleDeselect();
+        }
+    };
+
     const handleCut = () => { handleCopy(); handleClearSelection(); };
 
     const handleFlipSelection = (direction: 'horizontal' | 'vertical') => {
@@ -972,6 +995,16 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
     const handleCanvasClick = (gridX: number, gridY: number, isRightClick: boolean) => {
         if (!projectData) return;
+
+        // UX-003: Click outside selection to deselect (if not using Select tool)
+        if (selection && activeTool !== 'select') {
+            const { x, y, w, h } = selection;
+            if (gridX < x || gridX >= x + w || gridY < y || gridY >= y + h) {
+                handleDeselect();
+                return;
+            }
+        }
+
         const { width, height, grid } = projectData;
         const index = gridY * width + gridX;
         const clickedColorId = grid[index].colorId;
@@ -1303,7 +1336,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const toggleSymmetry = (mode: 'vertical' | 'horizontal') => { setSymmetry(prev => ({ ...prev, [mode]: !prev[mode] })); }
 
     return (
-        <div className="flex-1 flex h-full overflow-hidden relative">
+        <div className="flex-1 flex h-full overflow-hidden relative" onClick={handleMainClick} data-role="background">
             {isProcessing && <div className="absolute inset-0 bg-white/70 z-30 flex items-center justify-center"><div className="text-lg font-semibold">Processing Image...</div></div>}
 
             {contextMenu && (
@@ -1737,7 +1770,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 )
             }
 
-            <main className="flex-1 relative min-w-0">
+            <main className="flex-1 relative min-w-0" data-role="background">
                 <PixelGridEditor
                     data={projectData}
                     yarnPalette={project.yarnPalette}
@@ -1784,7 +1817,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 )}
             </main>
 
-            <aside className={`bg-white border-l shadow-xl z-20 transition-all duration-300 flex flex-col ${isPanelOpen ? 'w-80' : 'w-0 overflow-hidden'}`}>
+            <aside className={`bg-white border-l shadow-xl z-20 transition-all duration-300 flex flex-col ${isPanelOpen ? 'w-80' : 'w-0 overflow-hidden'}`} data-role="ui-interaction">
                 <div className="p-4 border-b flex justify-between items-center bg-gray-50">
                     <h3 className="font-bold text-gray-700">Tools</h3>
                     <button onClick={() => setIsPanelOpen(false)} className="text-gray-400 hover:text-gray-600 transition-colors"><Icon name="close" size="lg" /></button>
@@ -2024,7 +2057,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
             {
                 !isPanelOpen && (
-                    <div className="absolute top-4 right-4 z-20 flex flex-col gap-2">
+                    <div className="absolute top-4 right-4 z-20 flex flex-col gap-2" data-role="ui-interaction">
                         <Button onClick={() => setIsPanelOpen(true)} className="shadow-lg"><Icon name="brush" size="md" className="mr-2" /> Tools</Button>
                     </div>
                 )
