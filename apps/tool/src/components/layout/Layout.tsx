@@ -120,7 +120,7 @@ export const Footer: React.FC<{ zoom: number, onZoomChange: (newZoom: number) =>
                 <Button variant="secondary" onClick={handleZoomOut} className="p-2"><Icon name="zoom-out" size="md" /></Button>
                 <input type="range" min={MIN_ZOOM * 100} max={MAX_ZOOM * 100} value={zoom * 100} onChange={handleSliderChange} className="w-24 md:w-32 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
                 <Button variant="secondary" onClick={handleZoomIn} className="p-2"><Icon name="zoom-in" size="md" /></Button>
-                <span className="text-sm font-mono text-gray-600 w-16 text-center hidden md:inline">{Math.round(zoom * 100)}%</span>
+                <span className="text-sm font-mono text-gray-600 w-20 flex-shrink-0 text-center hidden md:inline">{Math.round(zoom * 100)}%</span>
             </div>
         </footer>
     );

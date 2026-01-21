@@ -24,7 +24,7 @@
     select,
     textarea {
         @apply bg-white border-2 border-gray-300 text-gray-700 font-sans rounded-md shadow-sm outline-none transition-colors duration-200;
-        @apply focus:border-brand-cyan focus:ring-2 focus:ring-brand-cyan focus:ring-opacity-50;
+        @apply focus:border-brand-purple focus:ring-2 focus:ring-brand-purple focus:ring-opacity-50;
     }
 
 }
