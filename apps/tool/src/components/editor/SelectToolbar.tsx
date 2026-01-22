@@ -29,7 +29,7 @@ export const SelectToolbar: React.FC<SelectToolbarProps> = ({
 }) => {
     // --- STATE ---
     const [layoutMode, setLayoutMode] = useState<LayoutMode>(() => {
-        return (localStorage.getItem('selectToolbar_layout') as LayoutMode) || 'horizontal';
+        return (localStorage.getItem('selectToolbar_layout') as LayoutMode) || 'vertical';
     });
 
     // Persist layout

@@ -121,7 +121,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [settingsForm, setSettingsForm] = useState({ unit: 'in', stitchesPerUnit: 4, rowsPerUnit: 4, hookSize: '', yarnPerStitch: 1 });
     const [selection, setSelection] = useState<{ x: number, y: number, w: number, h: number } | null>(null);
     const [clipboard, setClipboard] = useState<{ width: number, height: number, data: CellData[] } | null>(null);
-    const [showCenterGuides, setShowCenterGuides] = useState(() => localStorage.getItem('editor_showCenterGuides') === 'true');
+    const [showCenterGuides, setShowCenterGuides] = useState(() => localStorage.getItem('editor_showCenterGuides') !== 'false');
 
     // --- RESTORED SELECTION STATE ---
     const [floatingSelection, setFloatingSelection] = useState<{ x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean } | null>(null);
@@ -1419,7 +1419,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wider">Chart Style</h4>
                             {selectedExportType === 'pattern-pack' ? (
                                 <div className="flex flex-col gap-2">
-                                    <label className="flex items-center cursor-pointer text-sm p-2 border rounded hover:bg-gray-50">
+                                    <label className={`flex items-center cursor-pointer text-sm p-2 border rounded ${ppIncludeColor ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 bg-white hover:bg-gray-50'}`}>
                                         <input
                                             type="checkbox"
                                             className="mr-3 h-4 w-4 text-indigo-600"
@@ -1431,7 +1431,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                             <p className="text-xs text-gray-500">Standard colored grid.</p>
                                         </div>
                                     </label>
-                                    <label className="flex items-center cursor-pointer text-sm p-2 border rounded hover:bg-gray-50">
+                                    <label className={`flex items-center cursor-pointer text-sm p-2 border rounded ${ppIncludeStitch ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 bg-white hover:bg-gray-50'}`}>
                                         <input
                                             type="checkbox"
                                             className="mr-3 h-4 w-4 text-indigo-600"
@@ -1444,7 +1444,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                         </div>
                                     </label>
                                     {/* Commit 2: Added Hybrid Toggle */}
-                                    <label className="flex items-center cursor-pointer text-sm p-2 border rounded hover:bg-gray-50">
+                                    <label className={`flex items-center cursor-pointer text-sm p-2 border rounded ${ppIncludeHybrid ? 'border-indigo-500 bg-indigo-50' : 'border-gray-200 bg-white hover:bg-gray-50'}`}>
                                         <input
                                             type="checkbox"
                                             className="mr-3 h-4 w-4 text-indigo-600"
@@ -1907,7 +1907,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             <button
                                 onClick={(e) => handlePaletteClick(null, e)}
                                 onContextMenu={(e) => handlePaletteClick(null, e)}
-                                className={`w-8 h-8 rounded border-2 relative overflow-hidden ${primaryColorId === null ? 'ring-2 ring-brand-midBlue ring-offset-1 z-10' : 'border-gray-200'} ${secondaryColorId === null ? 'ring-2 ring-brand-purple ring-offset-1' : ''}`}
+                                className={`w-8 h-8 rounded border-2 relative overflow-hidden ${primaryColorId === null ? 'ring-2 ring-brand-midBlue ring-offset-1 z-10' : 'border-gray-200'} ${secondaryColorId === null ? 'md:ring-2 md:ring-brand-purple md:ring-offset-1' : ''}`}
                                 title="Eraser (Left: Primary, Right: Secondary)"
                             >
                                 <div className="absolute inset-0 bg-white opacity-50" style={{ backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)', backgroundSize: '8px 8px', backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px' }}></div>
@@ -1918,7 +1918,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                                     key={yarn.id}
                                     onClick={(e) => handlePaletteClick(yarn.id, e)}
                                     onContextMenu={(e) => handlePaletteClick(yarn.id, e)}
-                                    className={`w-8 h-8 rounded border-2 ${primaryColorId === yarn.id ? 'ring-2 ring-brand-midBlue ring-offset-1 z-10' : 'border-gray-200'} ${secondaryColorId === yarn.id ? 'ring-2 ring-brand-purple ring-offset-1' : ''}`}
+                                    className={`w-8 h-8 rounded border-2 ${primaryColorId === yarn.id ? 'ring-2 ring-brand-midBlue ring-offset-1 z-10' : 'border-gray-200'} ${secondaryColorId === yarn.id ? 'md:ring-2 md:ring-brand-purple md:ring-offset-1' : ''}`}
                                     style={{ backgroundColor: yarn.hex }}
                                     title={`${yarn.name} (${yarn.brand})`}
                                 />
