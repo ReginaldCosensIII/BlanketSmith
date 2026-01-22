@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **UI Polish & Defaults (Batch 2)**:
+    - **Fresh Start**: Updated new-user defaults: Center Guides are now ON, and the Select Toolbar is Vertical, matching documented best practices.
+    - **Export UI**: Unified the visual style of "Pattern Pack" options to match the "Radio Card" look of Chart-Only options, while preserving checkbox functionality.
+    - **Mobile Palette**: Hid the desktop-only Secondary Color ring indicator on mobile devices (`<768px`) to reduce visual noise.
+    - **Touch Tuning**: Adjusted gesture thresholds in `PixelGridEditor` (Zoom: 20px, Pan: 30px) to prevent accidental panning when attempting to zoom.
+
 ### Added
 - **Logging & Error Handling (LOG-001)**: Implemented professional observability baseline:
     - Centralized `logger` utility with production gating.

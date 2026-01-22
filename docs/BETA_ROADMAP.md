@@ -143,7 +143,7 @@ Add items freely; keep IDs stable once created. Promote to Blocker list when nee
 
 ### High Priority
 - [ ] **EXP-001:** Export pipeline hardening (Status: Not Started)
-- [ ] **EXP-002:** Export Center UI alignment (Status: Not Started)
+- [x] **EXP-002:** Export Center UI alignment (Status: Done)
 - [ ] **STCH-001:** Expand default stitch library (Status: Not Started)
 - [ ] **STCH-002:** Custom stitches (Status: Not Started)
 - [ ] **OVR-001:** Stitch icons + overlays (Status: Initially completed; enhancement pass TBD)
