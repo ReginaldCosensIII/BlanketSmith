@@ -15,6 +15,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **Touch Tuning**: Adjusted gesture thresholds in `PixelGridEditor` (Zoom: 20px, Pan: 30px) to prevent accidental panning when attempting to zoom.
 
 ### Added
+- **Instructions Engine v2 (INS-001)**: Complete rewrite of the instructions generation pipeline.
+    - **Stitch Registry**: Expanded default library with "Beta Set" (~14 stitches) including linguistic data.
+    - **Row Walker**: New core service handling Zig-Zag winding (RS/WS) and Run-Length Encoding (RLE) for grid-to-text conversion.
+    - **Text Generator**: Robust "Natural Language" synthesis for row instructions (e.g. "Row 1 (RS): With Color A, 5 sc. Turn.").
 - **Logging & Error Handling (LOG-001)**: Implemented professional observability baseline:
     - Centralized `logger` utility with production gating.
     - App-wide `ErrorBoundary` with actionable fallback UI (Reload/Home).

@@ -26,16 +26,24 @@ type InstructionBlock =
 ## Architecture
 
 ### Registry (`services/instructions/registry.ts`)
-A singleton registry that provides stitch definitions. It maps Stitch IDs (e.g., 'sc', 'dc') to full metadata (Name, Abbreviation, Description).
+A singleton registry that provides stitch definitions. It maps Stitch IDs (e.g., 'sc', 'dc') to full metadata (Name, Abbreviation, Description, Instruction Text).
 - **Extensibility**: Designed to support hundreds of stitches.
 - **Lookup**: Handles unknown stitch IDs gracefully.
+- **Beta Set**: Includes ~14 stitches (Basic, Variant, Complex).
+
+### Row Walker (`services/instructions/rowWalker.ts`) [NEW]
+Intermediate Representation (IR) layer that converts 2D grids into linear instruction rows.
+- **Zig-Zag Logic**: Handles Crochet winding (Odd=L->R, Even=R->L) automatically.
+- **RLE Compression**: Groups adjacent identical stitches (e.g., "5 sc").
+- **Null Handling**: Skips empty cells.
 
 ### Generator (`services/instructions/generator.ts`)
 A deterministic function that analyzes the project state to produce an initial `InstructionDoc`.
 - **Input**: `AnyProject` (Grid, Palette, Settings).
 - **Output**: `InstructionDoc` with:
     - **Materials**: Derived from Yarn Palette.
-    - **Stitch Key**: Derived from used stitches in the grid.
+    - **Notes**: Contextual winding info (RS/WS).
+    - **Instructions**: Row-by-row text generation (e.g. "Row 1 (RS): With Color A, 5 sc. Turn.").
     - **Finishing**: Generic boilerplate.
 - **Philosophy**: Factual, concise, and deterministic. No "AI" guessing.
 

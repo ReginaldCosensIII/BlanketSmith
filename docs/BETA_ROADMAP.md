@@ -137,7 +137,7 @@ Add items freely; keep IDs stable once created. Promote to Blocker list when nee
 - [x] **UX-001:** Mobile/tablet usable editor experience (Status: Done)
 - [x] **UX-002:** Non-mouse zoom/navigation controls (Status: Done)
     - [x] Stage 1: Shortcut Engine & Documentation
-- [ ] **INS-001:** Instructions Engine v2 (Status: Not Started)
+- [x] **INS-001:** Instructions Engine v2 (Status: Done)
 - [ ] **RPT-001:** Feedback/bug reporting mechanism (Status: Not Started)
 - [ ] **ROT-001:** Rotate/select tool data integrity + undo/redo compatibility (Status: Not Started)
 
