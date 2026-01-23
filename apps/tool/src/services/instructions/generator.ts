@@ -158,7 +158,7 @@ export const generateCrochetInstructionDoc = (project: AnyProject): InstructionD
 
     if (rowLines.length > 0) {
         blocks.push({
-            type: 'list-ol', // Ordered list for rows
+            type: 'list-ul', // Unordered list for rows to avoid double numbering
             content: rowLines
         });
     } else {
