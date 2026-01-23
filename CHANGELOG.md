@@ -13,6 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **Export UI**: Unified the visual style of "Pattern Pack" options to match the "Radio Card" look of Chart-Only options, while preserving checkbox functionality.
     - **Mobile Palette**: Hid the desktop-only Secondary Color ring indicator on mobile devices (`<768px`) to reduce visual noise.
     - **Touch Tuning**: Adjusted gesture thresholds in `PixelGridEditor` (Zoom: 20px, Pan: 30px) to prevent accidental panning when attempting to zoom.
+    - **Export Center**: New 'Pagination Strategy' control (Auto vs Fixed N Pages).
+    - **Export Engine**: Deterministic atlas planning for fixed page counts.
 
 ### Added
 - **Instructions Engine v2 (INS-001)**: Complete rewrite of the instructions generation pipeline.

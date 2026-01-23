@@ -10,6 +10,10 @@ export const getDefaultChartOnlyExportOptionsV3 = (): ExportOptions => {
         chartOnlyMode: 'color',
         forceSinglePage: false, // Default to false, let engine decide or user override
 
+        // Atlas (Exp-003)
+        atlasMode: 'auto',
+        atlasPages: 1,
+
         // Layout / Sections
         includeCoverPage: false,
         includeYarnRequirements: true, // "Materials & Stitch Key"

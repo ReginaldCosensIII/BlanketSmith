@@ -3,7 +3,7 @@ import { PixelGridData, YarnColor, CellData, Symmetry, ContextMenuItem, ExportTy
 import { useProject } from '../context/ProjectContext';
 import { PixelGridEditor } from '../components/PixelGridEditor';
 import { SelectToolbar } from '../components/editor/SelectToolbar';
-import { exportPixelGridToPDF, exportPixelGridToImage } from '../services/exportService';
+import { exportPixelGridToPDF, exportPixelGridToImage, getValidPageCounts } from '../services/exportService';
 import { getDefaultChartOnlyExportOptionsV3, getDefaultPatternPackExportOptionsV3 } from '../services/exportDefaultsV3';
 import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts';
 import { SHORTCUTS } from '../config/shortcutConfig';
@@ -180,10 +180,13 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [ppIncludeCover, setPpIncludeCover] = useState(ppDefaults.includeCoverPage || false);
     const [ppIncludeYarn, setPpIncludeYarn] = useState(ppDefaults.includeYarnRequirements || false);
 
+
     // Instructions (Pattern Pack)
     const [ppIncludeInstructions, setPpIncludeInstructions] = useState(ppDefaults.includeInstructions || false);
 
-    // Removed: Default Layout Options Effect (caused leakage)
+    // Atlas Controls (Exp-003)
+    const [atlasMode, setAtlasMode] = useState<'auto' | 'fixed'>('auto');
+    const [atlasPages, setAtlasPages] = useState<number>(1);
 
     // Hydrate export settings from project
     useEffect(() => {
@@ -889,6 +892,8 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                     showCellBackgrounds: showCellBackgrounds,
                     symbolMode: effectiveSymbolMode,
                 },
+                atlasMode: atlasMode,
+                atlasPages: atlasPages,
             };
         } else {
             // Chart Only
@@ -919,6 +924,8 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                     showCellBackgrounds: showCellBackgrounds,
                     symbolMode: effectiveSymbolMode,
                 },
+                atlasMode: atlasMode,
+                atlasPages: atlasPages,
             };
         }
     };
@@ -1602,6 +1609,45 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                             </div>
                         </div>
 
+
+                        {/* SECTION C-2: ATLAS PAGINATION (Exp-003) */}
+                        <div>
+                            <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 tracking-wider">Pagination Strategy</h4>
+                            <div className="pl-1 space-y-2">
+                                <div className="flex items-center gap-2">
+                                    <select
+                                        className="text-sm border rounded px-2 py-1 bg-white flex-1"
+                                        value={atlasMode === 'auto' ? 'auto' : `fixed-${atlasPages}`}
+                                        onChange={(e) => {
+                                            const val = e.target.value;
+                                            if (val === 'auto') {
+                                                setAtlasMode('auto');
+                                                setAtlasPages(1);
+                                            } else {
+                                                const parts = val.split('-');
+                                                if (parts[0] === 'fixed') {
+                                                    setAtlasMode('fixed');
+                                                    setAtlasPages(Number(parts[1]));
+                                                }
+                                            }
+                                        }}
+                                    >
+                                        <option value="auto">Auto (Best Fit)</option>
+                                        <option value="fixed-1">Force 1 Page (If Possible)</option>
+                                        {projectData && getValidPageCounts(projectData.width, projectData.height)
+                                            .filter(n => n > 1)
+                                            .map(n => (
+                                                <option key={n} value={`fixed-${n}`}>Force {n} Pages</option>
+                                            ))
+                                        }
+                                    </select>
+                                </div>
+                                <p className="text-xs text-gray-500">
+                                    "Auto" uses the largest readable cell size. "Force N Pages" tries to split the chart into exactly N pages.
+                                </p>
+                            </div>
+                        </div>
+
                         {/* SECTION E: INSTRUCTIONS (Pattern Pack Only) */}
                         {selectedExportType === 'pattern-pack' && (
                             <div>
@@ -1666,10 +1712,10 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                         </div>
                     </div>
                 </div>
-            </Modal>
+            </Modal >
 
             {/* Instructions Editor Modal */}
-            <InstructionsEditorModal
+            < InstructionsEditorModal
                 isOpen={isInstructionsModalOpen}
                 onClose={() => setIsInstructionsModalOpen(false)}
                 doc={project?.instructionDoc}

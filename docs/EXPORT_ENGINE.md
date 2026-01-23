@@ -33,6 +33,12 @@ The Pattern Overview (atlas map) supports three explicit modes:
 - **Always**: Overview appears even for single-page charts.
 - **Never**: Overview is suppressed even for multi-page charts.
 
+### Atlas Mode (Pagination Strategy)
+The system supports two atlas modes for controlling pagination:
+- **Auto**: The engine calculates the optimal cell size and page count based on `MIN_READABLE_CELL_SIZE`.
+- **Fixed**: The engine attempts to fit the chart into exactly `N` pages (e.g. "Force 2 Pages") using a "Best Fit Topology" search.
+  - **Constraint**: If the requested page count results in a cell size smaller than `MIN_READABLE_CELL_SIZE` (8pt), the engine automatically falls back to Auto mode to preserve readability.
+
 ## Non-Negotiable Beta Rules
 
 ### Fresh-Page Chart Rule

@@ -20,6 +20,7 @@ The `PixelGraphPage.tsx` UI layer enforces specific policies over the raw engine
 - **Restore Defaults Behavior**:
   - **Action**: Resets all sections (Layout, Branding, Instructions).
   - **Chart Selection**: Explicitly resets to enable **ALL THREE** charts (Color, Stitch, and Hybrid) to encourage exploring all available outputs.
+  - **Pagination Strategy**: Resets to "Auto" (Best Fit).
 
 ### 2. Chart-Only Policy
 - **Capabilities**: Single-diagram focus (Color, Stitch, or Hybrid).

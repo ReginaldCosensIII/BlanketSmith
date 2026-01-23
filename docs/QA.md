@@ -40,6 +40,12 @@ Before merging export changes, verify:
 - [ ] **Hybrid Only**: Only Hybrid chart appears (Color and Stitch suppressed)
 - [ ] **Independent Toggles**: Each chart type can be enabled/disabled independently
 
+### Pagination Strategy (Atlas)
+- [ ] **Auto (Best Fit)**: Large charts split comfortably; small charts fit on one page.
+- [ ] **Fixed (Force N)**: Large chart forced into N pages (e.g. 2 pages).
+  - Verify result strictly equals requested page count.
+  - Verify cells are readable (>= 8pt).
+
 ### Overview Tri-State
 - [ ] **Auto (Small Chart)**: No overview for single-page charts
 - [ ] **Auto (Large Chart)**: Overview appears for multi-page atlases
