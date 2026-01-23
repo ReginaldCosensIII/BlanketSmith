@@ -418,6 +418,18 @@ const SCENARIOS: Scenario[] = [
             includeCoverPage: false, // Force Header to start on P1 to crowd Materials
             instructionDoc: MOCK_INSTRUCTION_DOC
         })
+    },
+    {
+        id: 'v3_fixed_2pages',
+        name: '20. Fixed: Force 2 Pages',
+        description: 'Large grid (50x50), Force 2 Pages.',
+        expected: 'Charts: Saved as 2 pages exactly.',
+        baseType: 'pattern-pack',
+        gridConfig: { width: 50, height: 50, patternType: 'checker' },
+        overrides: buildPP({
+            atlasMode: 'fixed',
+            atlasPages: 2
+        })
     }
 ];
 
