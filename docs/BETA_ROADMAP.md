@@ -159,7 +159,7 @@ Add items freely; keep IDs stable once created. Promote to Blocker list when nee
 - [ ] **ZOOM-002:** Zoom slider behavior across pages (Status: Not Started)
 - [ ] **GRID-001:** Gridline visibility thresholds by zoom (Status: Not Started)
 - [ ] **INFO-001:** Contextual info hint system (Status: Not Started)
-- [ ] **EXP-003:** PDF page-count presets (“N pages”) (Status: Not Started)
+- [x] **EXP-003:** PDF page-count presets (“N pages”) (Status: Done)
 - [ ] **EXP-004:** PNG export (Status: Not Started)
 - [ ] **EXP-005:** SVG export (Status: Not Started)
 - [ ] **EXP-006:** Text pattern generation (scope definition required) (Status: Not Started)
