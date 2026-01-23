@@ -128,7 +128,7 @@ export const InstructionsEditorModal: React.FC<InstructionsEditorModalProps> = (
                         title="Generate instructions based on project data"
                     >
                         <Icon name="zap" size="md" />
-                        Generate (v1)
+                        Generate (v2)
                     </button>
                 </div>
 

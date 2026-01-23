@@ -1,9 +1,78 @@
-import { AnyProject, InstructionDoc, InstructionBlock, PixelGridData, Project } from '../../types';
+import { AnyProject, InstructionDoc, InstructionBlock, PixelGridData, YarnColor } from '../../types';
 import { StitchRegistry } from './registry';
+import { RowWalker, InstructionRow, InstructionSegment } from './rowWalker';
 
-export interface InstructionGenerator {
-    generate(project: AnyProject): InstructionDoc;
-}
+/**
+ * Generates a single text line for a row of instructions.
+ * e.g. "With Color A, 5 sc, switch to Color B, 2 dc. Turn."
+ */
+const generateInstructionTextForRow = (
+    row: InstructionRow,
+    yarnPalette: YarnColor[],
+    registry: StitchRegistry,
+    isLastRow: boolean
+): string => {
+    const parts: string[] = [];
+    let currentColorId: string | null = null;
+
+    // Helper to get safe color name
+    const getColorName = (id: string): string => {
+        const color = yarnPalette.find(c => c.id === id);
+        if (color && color.name && color.name.trim().length > 0) {
+            return color.name;
+        }
+        // Fallback
+        const index = yarnPalette.findIndex(c => c.id === id);
+        if (index >= 0) return `Color ${index + 1}`;
+        return `Unknown Color (${id})`;
+    };
+
+    row.segments.forEach((segment, index) => {
+        const isFirstSegment = index === 0;
+
+        // Color Change Logic
+        if (segment.colorId !== currentColorId) {
+            const colorName = getColorName(segment.colorId);
+            if (isFirstSegment) {
+                parts.push(`With ${colorName}`);
+            } else {
+                parts.push(`switch to ${colorName}`);
+            }
+            currentColorId = segment.colorId;
+        }
+
+        // Stitch Text Logic
+        const stitchDef = registry.getStitch(segment.stitchId);
+        const count = segment.count;
+        let stitchName = segment.stitchId; // Fallback
+
+        if (stitchDef) {
+            if (count === 1) {
+                stitchName = stitchDef.instruction || stitchDef.name.toLowerCase();
+            } else {
+                stitchName = stitchDef.instructionPlural ||
+                    (stitchDef.instruction ? `${stitchDef.instruction}s` : `${stitchDef.name.toLowerCase()}s`);
+            }
+        } else {
+            // Fallback pluralization for unknown stitches
+            stitchName = count === 1 ? stitchName : `${stitchName}s`;
+        }
+
+        parts.push(`${count} ${stitchName}`);
+    });
+
+    // Join parts with commas and spaces
+    let rowText = parts.join(', ');
+
+    // Turning Logic
+    if (!isLastRow) {
+        rowText += '. Turn.';
+    } else {
+        rowText += '.';
+    }
+
+    return rowText;
+};
 
 /**
  * Generates a discipline-neutral InstructionDoc aimed at Crochet projects.
@@ -12,6 +81,18 @@ export interface InstructionGenerator {
 export const generateCrochetInstructionDoc = (project: AnyProject): InstructionDoc => {
     const blocks: InstructionBlock[] = [];
     const registry = StitchRegistry.getInstance();
+    const projectData = project.data as PixelGridData; // Assuming PixelGridData for crochet
+
+    // Safety check for grid data
+    if (!projectData || !Array.isArray(projectData.grid)) {
+        return {
+            title: project.name || 'Pattern Instructions',
+            blocks: [{
+                type: 'paragraph',
+                content: ['Error: No valid grid data found for this project.']
+            }]
+        };
+    }
 
     // 1. Materials & Setup Block
     blocks.push({
@@ -21,15 +102,9 @@ export const generateCrochetInstructionDoc = (project: AnyProject): InstructionD
 
     // Calculate actual usage for Yarn count
     const usedColorIds = new Set<string>();
-    const projectData = project.data as any; // Cast generic data safely
-
-    if (projectData && Array.isArray(projectData.grid)) {
-        projectData.grid.forEach((cell: any) => {
-            if (cell.colorId) { // Check for truthy colorId (excludes null/undefined)
-                usedColorIds.add(cell.colorId);
-            }
-        });
-    }
+    projectData.grid.forEach((cell) => {
+        if (cell.colorId) usedColorIds.add(cell.colorId);
+    });
 
     const colorCount = usedColorIds.size;
 
@@ -43,62 +118,57 @@ export const generateCrochetInstructionDoc = (project: AnyProject): InstructionD
         ]
     });
 
-    // 2. Stitch Key (Dynamic)
-    // We need to check if the project HAS grid data with stitches
-    // Supports: PixelGridData (most common)
-    // Future: Gradient / C2C might have different data shapes
-    let usedStitchIds = new Set<string>();
+    // 2. Pattern Notes
+    blocks.push({
+        type: 'heading',
+        content: ['Pattern Notes']
+    });
 
-    // Type Guard for PixelGridData (has 'grid' array)
-    if (projectData && Array.isArray(projectData.grid)) {
-        const grid = projectData.grid;
-        grid.forEach((cell: any) => {
-            if (cell.stitchId) {
-                usedStitchIds.add(cell.stitchId);
-            }
-        });
-    }
+    // Check strict left-handed mode from somewhere? 
+    // Usually passed in props or context, but here we generate static doc.
+    // For now, we assume Standard (Right-Handed) unless we pull a setting from project?
+    // Project doesn't store 'isLeftHanded' (it's a UI preference usually).
+    // so we document Standard behavior.
+    blocks.push({
+        type: 'list-ul',
+        content: [
+            'Row 1 is the Right Side (RS).',
+            'Odd numbered rows are worked Right-to-Left (Standard).',
+            'Even numbered rows are worked Left-to-Right.',
+            'Chain 1 at the start of each row (does not count as a stitch) unless otherwise specified.'
+        ]
+    });
 
-    // Checking project settings overrides or explicit enables
-    if (project.settings?.stitchesEnabled && Array.isArray(project.settings.stitchesEnabled)) {
-        project.settings.stitchesEnabled.forEach(id => usedStitchIds.add(id));
-    }
+    // 3. Instructions (Row-by-Row)
+    blocks.push({
+        type: 'heading',
+        content: ['Instructions']
+    });
 
-    if (usedStitchIds.size > 0) {
+    const instructionRows = RowWalker.convertGridToRows(projectData, false); // Standard winding
+    const rowLines: string[] = [];
+
+    instructionRows.forEach((instRow, index) => {
+        const isLastRow = index === instructionRows.length - 1;
+        const text = generateInstructionTextForRow(instRow, project.yarnPalette, registry, isLastRow);
+
+        const sideLabel = instRow.rowNumber % 2 !== 0 ? 'RS' : 'WS';
+        rowLines.push(`Row ${instRow.rowNumber} (${sideLabel}): ${text}`);
+    });
+
+    if (rowLines.length > 0) {
         blocks.push({
-            type: 'heading',
-            content: ['Stitch Key']
+            type: 'list-ul', // Unordered list for rows to avoid double numbering
+            content: rowLines
         });
-
-        const stitchList: string[] = [];
-        usedStitchIds.forEach(id => {
-            const def = registry.getStitch(id);
-            if (def) {
-                stitchList.push(`${def.name} (${def.shortCode})`);
-            } else {
-                stitchList.push(`Unknown Stitch: ${id}`);
-            }
-        });
-
-        if (stitchList.length > 0) {
-            blocks.push({
-                type: 'list-ul',
-                content: stitchList.sort()
-            });
-        }
     } else {
-        // Fallback if no stitches found (e.g. Color only project)
-        blocks.push({
-            type: 'heading',
-            content: ['Pattern Notes']
-        });
         blocks.push({
             type: 'paragraph',
-            content: ['This pattern is primarily a color chart. Work in Single Crochet (SC) or your preferred stitch method for each pixel unit.']
+            content: ['No printable rows generated. Grid may be empty.']
         });
     }
 
-    // 3. Finishing / Generic
+    // 4. Finishing
     blocks.push({
         type: 'heading',
         content: ['Finishing']
