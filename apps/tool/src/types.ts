@@ -140,6 +140,11 @@ export interface ExportOptions {
   chartMode?: 'color' | 'stitch' | 'hybrid'; // Legacy/Rendering field (passed to renderer)
   forceSinglePage?: boolean;
 
+  // -- Atlas Control (Exp-003) --
+  atlasMode?: 'auto' | 'fixed';
+  atlasPages?: number; // Target N pages (if fixed)
+
+
   // -- Pattern Pack Options --
   includeColorChart?: boolean;
   includeStitchChart?: boolean;

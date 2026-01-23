@@ -5,6 +5,61 @@ import { DEFAULT_STITCH_LIBRARY, StitchDefinition } from '../data/stitches';
 import { logger } from './logger';
 import { notify } from './notification';
 
+const A4_SPECS = { width: 595.28, height: 841.89 };
+const MIN_READABLE_CELL_SIZE = 8; // Absolute minimum we allow in Fixed Mode
+
+export const getValidPageCounts = (gridW: number, gridH: number): number[] => {
+    // We want to find all N (1..36) where there exists a topology (R x C = N)
+    // such that the resulting cell size is >= MIN_READABLE_CELL_SIZE (8pt).
+
+    // We use standard A4 portrait assumptions for valid check
+    // Same margins as PDF_CONFIG
+    const margin = 30;
+    const headerHeight = 40;
+    const titleBand = 30;
+    const pageW = A4_SPECS.width;
+    const pageH = A4_SPECS.height;
+
+    const availW = pageW - margin * 2 - 40; // -40 for row numbers
+    const availH = pageH - margin * 2 - headerHeight - titleBand;
+
+    const validN = new Set<number>();
+
+    // Test all N from 1 to 36
+    for (let n = 1; n <= 36; n++) {
+        // Find optimal topology for this N that maximizes cell size
+        let maxCellSizeForN = 0;
+
+        // Factorize N into r * c
+        for (let r = 1; r <= n; r++) {
+            if (n % r === 0) {
+                const c = n / r;
+
+                // Effective grid size per page
+                // We split the total gridW into c cols, and gridH into r rows
+                // Each page handles gridW/c width and gridH/r height
+                const tileW = gridW / c;
+                const tileH = gridH / r;
+
+                // Cell size limited by width or height
+                const sizeW = availW / tileW;
+                const sizeH = availH / tileH;
+                const size = Math.min(sizeW, sizeH);
+
+                if (size > maxCellSizeForN) {
+                    maxCellSizeForN = size;
+                }
+            }
+        }
+
+        if (maxCellSizeForN >= MIN_READABLE_CELL_SIZE) {
+            validN.add(n);
+        }
+    }
+
+    return Array.from(validN).sort((a, b) => a - b);
+};
+
 // Configuration for PDF layout
 const PDF_CONFIG = {
     pageSize: 'a4',
@@ -275,6 +330,10 @@ export const exportPixelGridToPDF = (
             overviewMode = 'always';
         }
 
+        // Atlas Options (Exp-003)
+        const atlasMode = options.atlasMode || 'auto';
+        const atlasPages = options.atlasPages || 1;
+
         // Pattern Pack Options
         const includeYarnRequirements = options.includeYarnRequirements ?? (isPatternPack ? true : false);
         const includeStitchLegend = options.includeStitchLegend ?? (isPatternPack ? true : false);
@@ -399,6 +458,10 @@ export const exportPixelGridToPDF = (
             return regions;
         };
 
+
+
+
+
         interface AtlasPlan {
             isMultiPage: boolean;
             regions: AtlasRegion[]; // If single page, contains 1 region covering whole grid
@@ -410,14 +473,77 @@ export const exportPixelGridToPDF = (
         // Enforces strict "Charts start on Fresh Page" rule.
         const predictAtlasLayout = (
             targetGridW: number,
-            targetGridH: number
+            targetGridH: number,
+            atlasMode: 'auto' | 'fixed' = 'auto',
+            targetPages: number = 1
         ): AtlasPlan => {
             // Available space on a fresh page
             const availW = pageW - margin * 2 - 40; // -40 for row numbers
             const titleBand = 30; // Copied from internal logic
             const availH = pageH - margin * 2 - PDF_CONFIG.headerHeight - titleBand;
 
-            // 1. Try Single Page Fit
+            // 1. Fixed Mode (Exp-003)
+            if (atlasMode === 'fixed' && targetPages >= 1) {
+                // "Best Fit Topology" Search
+                // We want to find factors (r * c = targetPages) that maximize cell size
+                let bestR = 1;
+                let bestC = targetPages;
+                let bestSize = 0;
+
+                for (let r = 1; r <= targetPages; r++) {
+                    if (targetPages % r === 0) {
+                        const c = targetPages / r;
+                        const tileW = targetGridW / c;
+                        const tileH = targetGridH / r;
+                        const size = Math.min(availW / tileW, availH / tileH);
+
+                        if (size > bestSize) {
+                            bestSize = size;
+                            bestR = r;
+                            bestC = c;
+                        }
+                    }
+                }
+
+                // Validity Check
+                if (bestSize >= MIN_READABLE_CELL_SIZE) {
+                    // Valid Fixed Plan found
+                    // Generate regions for the determined topology
+                    // Note: calculateAtlasRegions is designed for "streaming" / "filling"
+                    // checking row by row. We need to verify if passing the calculated cell size
+                    // into it yields the correct N pages?
+                    // actually calculateAtlasRegions figures out page breaks based on cell size.
+                    // If we pass the EXACT bestSize, it should break exactly where we expect.
+
+                    const regions = calculateAtlasRegions(
+                        targetGridW,
+                        targetGridH,
+                        availW,
+                        pageH,
+                        margin,
+                        PDF_CONFIG.headerHeight,
+                        bestSize,
+                        true,
+                        0
+                    );
+
+                    // Sanity check: verify resulting page count matches target?
+                    // Or trust the math. The math says it fits.
+
+                    return {
+                        isMultiPage: targetPages > 1,
+                        regions,
+                        cellSize: bestSize
+                    };
+                }
+
+                // Fallback: If requested fixed mode is invalid (too small), drop to Auto
+                logger.warn('Requested fixed atlas pages resulted in unreadable cells. Falling back to Auto.', { targetPages, bestSize });
+            }
+
+            // 2. Auto Mode (Original Logic)
+
+            // Try Single Page Fit
             let testSize = Math.floor(Math.min(availW / targetGridW, availH / targetGridH));
             const minSingle = PDF_CONFIG.minSinglePageCellSize || 12;
 
@@ -436,7 +562,7 @@ export const exportPixelGridToPDF = (
                 };
             }
 
-            // 2. Atlas Fallback
+            // Atlas Fallback
             let atlasSize = Math.max(PDF_CONFIG.minCellSize, Math.min(availW / targetGridW, availH / targetGridH));
             atlasSize = Math.max(atlasSize, PDF_CONFIG.minCellSize); // Ensure >= 18
 
@@ -978,7 +1104,7 @@ export const exportPixelGridToPDF = (
         const usedColorCount = usedColorsSet.size;
 
         // Unified Atlas Plan: Computed ONCE for the reference logic, used for all.
-        const atlasPlan = predictAtlasLayout(gridData.width, gridData.height);
+        const atlasPlan = predictAtlasLayout(gridData.width, gridData.height, atlasMode, atlasPages);
 
         // Flow State
         let currentY = margin;

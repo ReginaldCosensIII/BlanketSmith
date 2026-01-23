@@ -1,0 +1,10 @@
+App.tsx(3,116): error TS2307: Cannot find module './types' or its corresponding type declarations.
+App.tsx(4,95): error TS2307: Cannot find module './services/projectService' or its corresponding type declarations.
+App.tsx(5,38): error TS2307: Cannot find module './services/exportService' or its corresponding type declarations.
+App.tsx(6,67): error TS2307: Cannot find module './components/ui/SharedComponents' or its corresponding type declarations.
+App.tsx(7,33): error TS2307: Cannot find module './components/PixelGridEditor' or its corresponding type declarations.
+App.tsx(8,63): error TS2307: Cannot find module './constants' or its corresponding type declarations.
+App.tsx(9,32): error TS2307: Cannot find module './hooks/useCanvasLogic' or its corresponding type declarations.
+src/App.tsx(107,47): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
+src/pages/ExportEngineTestPage.tsx(7,28): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
+src/services/logger.ts(16,34): error TS2339: Property 'env' does not exist on type 'ImportMeta'.
