@@ -162,6 +162,16 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     // FIX for GEN-001: Store new colors for preview rendering
     const [previewNewColors, setPreviewNewColors] = useState<YarnColor[]>([]);
 
+    const resetGenerationState = useCallback(() => {
+        setImportFile(null);
+        setPreviewGrid(null);
+        setPreviewNewColors([]);
+        setGenMode('match');
+        setGenBrandKey('default');
+        setGenDithering(false);
+        setGenMaxColors(32);
+    }, []);
+
     // --- EXPORT STATE ---
     const [selectedExportType, setSelectedExportType] = useState<ExportType>('pattern-pack');
     const [exportDesignerName, setExportDesignerName] = useState<string>('');
@@ -1170,7 +1180,12 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
                 setPreviewNewColors(result.newColors); // Update Colors
                 setPreviewGrid(previewWithColors as PixelGridData); // Update Grid (Triggers Render)
-                setIsGeneratingPreview(false);
+
+                // UX FIX: Keep spinner visible for 500ms to cover the heavy DOM mounting/rendering of the new grid
+                // This prevents the "blank flash" and makes the transition look deliberate.
+                setTimeout(() => {
+                    setIsGeneratingPreview(false);
+                }, 500);
             };
             img.src = event.target?.result as string;
         };
@@ -1205,32 +1220,26 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             ctx.clearRect(0, 0, scaledWidth, scaledHeight);
 
             // Draw pixels
+            // Draw pixels
+            // FIX: Create merged map for lookup once
+            const previewMap = new Map<string, YarnColor>();
+            // 1. Add existing project colors
+            project?.yarnPalette.forEach(y => previewMap.set(y.id, y));
+            // 2. Add preview specific colors (overriding or appending)
+            previewNewColors.forEach(y => previewMap.set(y.id, y));
+
             previewGrid.grid.forEach((cell, i) => {
                 if (cell.colorId) {
                     const x = (i % previewGrid.width) * scale;
                     const y = Math.floor(i / previewGrid.width) * scale;
-                    // Draw pixels
-                    // FIX: Create merged map for lookup
-                    const previewMap = new Map<string, YarnColor>();
-                    // 1. Add existing project colors
-                    project?.yarnPalette.forEach(y => previewMap.set(y.id, y));
-                    // 2. Add preview specific colors (overriding or appending)
-                    previewNewColors.forEach(y => previewMap.set(y.id, y));
 
-                    previewGrid.grid.forEach((cell, i) => {
-                        if (cell.colorId) {
-                            const x = (i % previewGrid.width) * scale;
-                            const y = Math.floor(i / previewGrid.width) * scale;
+                    // Use preview map instead of global map
+                    const color = previewMap.get(cell.colorId);
 
-                            // Use preview map instead of global map
-                            const color = previewMap.get(cell.colorId);
-
-                            if (color) {
-                                ctx.fillStyle = color.hex;
-                                ctx.fillRect(x, y, scale, scale);
-                            }
-                        }
-                    });
+                    if (color) {
+                        ctx.fillStyle = color.hex;
+                        ctx.fillRect(x, y, scale, scale);
+                    }
                 }
             });
 
@@ -1422,9 +1431,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
             dispatch({ type: 'UPDATE_PROJECT_DATA', payload: previewGrid });
             setIsGenerateModalOpen(false);
-            setImportFile(null);
-            setPreviewGrid(null);
-            setPreviewNewColors([]);
+            resetGenerationState();
         }
     };
     const handleResize = () => { if (!projectData || !project || newWidth <= 0 || newHeight <= 0) return; if (projectData.width === newWidth && projectData.height === newHeight) return; const oldWidth = projectData.width; const oldHeight = projectData.height; const oldGrid = projectData.grid; const newGrid = Array.from({ length: newWidth * newHeight }, () => ({ colorId: null })); const offsetX = Math.floor((newWidth - oldWidth) / 2); const offsetY = Math.floor((newHeight - oldHeight) / 2); for (let y = 0; y < oldHeight; y++) { for (let x = 0; x < oldWidth; x++) { const newX = x + offsetX; const newY = y + offsetY; if (newX >= 0 && newX < newWidth && newY >= 0 && newY < newHeight) { const oldIndex = y * oldWidth + x; const newIndex = newY * newWidth + newX; newGrid[newIndex] = oldGrid[oldIndex]; } } } dispatch({ type: 'UPDATE_PROJECT_DATA', payload: { width: newWidth, height: newHeight, grid: newGrid as CellData[] } }); };
@@ -1857,7 +1864,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             />
 
             {/* Generate Pattern Modal */}
-            < Modal isOpen={isGenerateModalOpen} onClose={() => setIsGenerateModalOpen(false)} title="Generate Pattern from Image" >
+            < Modal isOpen={isGenerateModalOpen} onClose={() => { setIsGenerateModalOpen(false); resetGenerationState(); }} title="Generate Pattern from Image" >
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">1. Upload Image</label>
@@ -1969,7 +1976,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                     </div>
 
                     <div className="flex justify-end gap-2 pt-4">
-                        <Button variant="secondary" onClick={() => { setIsGenerateModalOpen(false); setPreviewNewColors([]); }}>Cancel</Button>
+                        <Button variant="secondary" onClick={() => { setIsGenerateModalOpen(false); resetGenerationState(); }}>Cancel</Button>
                         <Button variant="primary" onClick={handleImportConfirm} disabled={!previewGrid}>Import Pattern</Button>
                     </div>
                 </div>
