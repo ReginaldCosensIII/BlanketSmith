@@ -1276,7 +1276,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             const showGridLines = scale >= 5; // Show grid lines if cells are >= 5px
             renderToCanvas(fullScreenCanvasRef.current, showGridLines, scale);
         }
-    }, [previewGrid, isGenerateModalOpen, isPreviewFullScreen, yarnColorMap, previewZoom, project, previewNewColors]);
+    }, [previewGrid, isGenerateModalOpen, isPreviewFullScreen, yarnColorMap, previewZoom, project, previewNewColors, isGeneratingPreview]);
 
     // Reset zoom when opening full screen
     useEffect(() => {
