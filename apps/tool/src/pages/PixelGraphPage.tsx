@@ -1407,11 +1407,15 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 // Or, I will just emit the grid update and Log a warning if I can't update palette.
                 // BUT, for GEN-001 "Extract", this is critical.
 
-                // I'll try to dispatch `UPDATE_PROJECT` with the full merged palette if the reducer allows.
-                // `type: 'LOAD_PROJECT'` ?
-
                 // Let's try: dispatch({ type: 'UPDATE_YARN_PALETTE', payload: [...project.yarnPalette, ...newColors] });
-                dispatch({ type: 'SET_PALETTE', payload: [...(project!.yarnPalette), ...pGrid._newColors] });
+
+                // Smart Merge: Only add colors that don't exist in the current project palette
+                const existingIds = new Set(project!.yarnPalette.map(y => y.id));
+                const uniqueNewColors = pGrid._newColors.filter((y: any) => !existingIds.has(y.id));
+
+                if (uniqueNewColors.length > 0) {
+                    dispatch({ type: 'SET_PALETTE', payload: [...(project!.yarnPalette), ...uniqueNewColors] });
+                }
             }
 
             dispatch({ type: 'UPDATE_PROJECT_DATA', payload: previewGrid });

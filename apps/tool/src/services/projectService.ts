@@ -189,16 +189,13 @@ export const processImageToGrid = async (
     let finalPaletteIds: string[] = [];
 
     if (options.paletteMode === 'extract') {
-      // EXTRACT MODE: The generator created new YarnColor objects. We return them.
-      // We do NOT map to existing palette.
+      // EXTRACT MODE: The generator created new YarnColor objects.
       newColors = usedPalette;
       finalPaletteIds = usedPalette.map(y => y.id);
-      // Grid already uses these IDs.
     } else {
-      // MATCH MODE: The generator used the targetPalette (existing yarns).
-      // We just need to ensure the grid uses valid IDs.
-      // In V2 generator, 'match' mode returns the subset of proper YarnColors used.
-      // no "new" colors to add to the project.
+      // MATCH MODE: The generator used the targetPalette (existing yarns OR external brand).
+      // We MUST return these as "newColors" so the UI can decide if they need to be added to the project.
+      newColors = usedPalette;
       finalPaletteIds = usedPalette.map(y => y.id);
     }
 
