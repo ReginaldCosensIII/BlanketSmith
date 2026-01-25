@@ -150,7 +150,7 @@ Add items freely; keep IDs stable once created. Promote to Blocker list when nee
 - [ ] **PERF-001:** Large-grid performance pass (Status: Not Started; schedule near release)
 - [ ] **HLP-001:** Help/Docs/FAQs page (tool) (Status: Not Started)
 - [ ] **TOUR-001:** Interactive guided tour (Status: Not Started)
-- [ ] **GEN-001:** Generate Pattern v2 (advanced settings + improved algorithms) (Status: Not Started)
+- [x] **GEN-001:** Generate Pattern v2 (advanced settings + improved algorithms) (Status: Done)
 - [ ] **CHART-001:** New chart type integrated into export + UI (Status: Not Started)
 
 ### Medium Priority
