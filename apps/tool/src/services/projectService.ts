@@ -131,13 +131,13 @@ export const findClosestYarnColor = (rgb: [number, number, number], yarnPalette:
 };
 
 // --- NEW HYBRID IMAGE PROCESSING ---
+// --- NEW HYBRID IMAGE PROCESSING ---
 export const processImageToGrid = async (
   imageData: ImageData,
   gridWidth: number,
   gridHeight: number,
-  maxColors: number,
-  yarnPalette: YarnColor[]
-): Promise<Partial<PixelGridData>> => {
+  options: import('./patternGenerator').GenerationOptions
+): Promise<{ gridPart: Partial<PixelGridData>, newColors: YarnColor[] }> => {
   try {
     // 1. Downsample (Average into new Uint8ClampedArray)
     const dsWidth = gridWidth;
@@ -181,43 +181,48 @@ export const processImageToGrid = async (
     const downsampledImage = new ImageData(dsBuffer, dsWidth, dsHeight);
 
     // 2. Generate Pattern
-    // Use 'extract' mode to quantize valid colors to the maxColors limit.
-    const { grid, usedPalette: extractedPalette } = await generatePattern(downsampledImage, {
-      paletteMode: 'extract',
-      maxColors: maxColors
-    });
+    const { grid, usedPalette } = await generatePattern(downsampledImage, options);
 
-    // 3. Map extracted auto-colors to Yarn Palette
-    const colorMap = new Map<string, string>();
-    const finalUsedIds = new Set<string>();
+    // 3. Handle Result based on Mode
+    let finalGrid: CellData[] = grid;
+    let newColors: YarnColor[] = [];
+    let finalPaletteIds: string[] = [];
 
-    extractedPalette.forEach(p => {
-      const closest = findClosestYarnColor(p.rgb, yarnPalette);
-      colorMap.set(p.id, closest.id);
-    });
-
-    // 4. Update Grid
-    const finalGrid = grid.map(cell => {
-      if (!cell.colorId) return cell;
-      const mappedId = colorMap.get(cell.colorId);
-      if (mappedId) finalUsedIds.add(mappedId);
-      return { ...cell, colorId: mappedId || null };
-    });
+    if (options.paletteMode === 'extract') {
+      // EXTRACT MODE: The generator created new YarnColor objects. We return them.
+      // We do NOT map to existing palette.
+      newColors = usedPalette;
+      finalPaletteIds = usedPalette.map(y => y.id);
+      // Grid already uses these IDs.
+    } else {
+      // MATCH MODE: The generator used the targetPalette (existing yarns).
+      // We just need to ensure the grid uses valid IDs.
+      // In V2 generator, 'match' mode returns the subset of proper YarnColors used.
+      // no "new" colors to add to the project.
+      finalPaletteIds = usedPalette.map(y => y.id);
+    }
 
     return {
-      width: gridWidth,
-      height: gridHeight,
-      grid: finalGrid,
-      palette: Array.from(finalUsedIds)
+      gridPart: {
+        width: gridWidth,
+        height: gridHeight,
+        grid: finalGrid,
+        palette: finalPaletteIds
+      },
+      newColors
     };
+
   } catch (error) {
     logger.error('processImageToGrid failed', { error });
     // Return empty result to stop spinner
     return {
-      width: gridWidth,
-      height: gridHeight,
-      grid: Array(gridWidth * gridHeight).fill({ colorId: null }),
-      palette: []
+      gridPart: {
+        width: gridWidth,
+        height: gridHeight,
+        grid: Array(gridWidth * gridHeight).fill({ colorId: null }),
+        palette: []
+      },
+      newColors: []
     };
   }
 };
