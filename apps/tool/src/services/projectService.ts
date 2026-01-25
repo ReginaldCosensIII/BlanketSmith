@@ -3,6 +3,7 @@ import { AnyProject, PatternType, PixelGridData, YarnColor, CellData } from '../
 import { YARN_PALETTE } from '../constants';
 import { logger } from './logger';
 import { notify } from './notification';
+import { generatePattern } from './patternGenerator';
 
 const PROJECTS_KEY = 'blanketsmith_projects';
 
@@ -130,100 +131,83 @@ export const findClosestYarnColor = (rgb: [number, number, number], yarnPalette:
 };
 
 // --- NEW HYBRID IMAGE PROCESSING ---
-export const processImageToGrid = (
+export const processImageToGrid = async (
   imageData: ImageData,
   gridWidth: number,
   gridHeight: number,
   maxColors: number,
   yarnPalette: YarnColor[]
 ): Promise<Partial<PixelGridData>> => {
-  return new Promise((resolve) => {
-    // --- STAGE 1: High-Fidelity Pattern Generation (Cell-by-cell averaging) ---
-    const highFidelityGrid: (string | null)[] = Array(gridWidth * gridHeight).fill(null);
-    const cellWidth = imageData.width / gridWidth;
-    const cellHeight = imageData.height / gridHeight;
-    const colorUsageCount = new Map<string, number>();
+  // 1. Downsample (Average into new Uint8ClampedArray)
+  const dsWidth = gridWidth;
+  const dsHeight = gridHeight;
+  const dsBuffer = new Uint8ClampedArray(dsWidth * dsHeight * 4);
 
-    for (let y = 0; y < gridHeight; y++) {
-      for (let x = 0; x < gridWidth; x++) {
-        // Calculate average color for the block
-        const startX = Math.floor(x * cellWidth);
-        const startY = Math.floor(y * cellHeight);
-        const endX = Math.min(imageData.width, Math.floor((x + 1) * cellWidth));
-        const endY = Math.min(imageData.height, Math.floor((y + 1) * cellHeight));
+  const cellWidth = imageData.width / gridWidth;
+  const cellHeight = imageData.height / gridHeight;
 
-        let r_sum = 0, g_sum = 0, b_sum = 0;
-        let pixel_count = 0;
+  for (let y = 0; y < dsHeight; y++) {
+    for (let x = 0; x < dsWidth; x++) {
+      const startX = Math.floor(x * cellWidth);
+      const startY = Math.floor(y * cellHeight);
+      const endX = Math.min(imageData.width, Math.floor((x + 1) * cellWidth));
+      const endY = Math.min(imageData.height, Math.floor((y + 1) * cellHeight));
 
-        for (let iy = startY; iy < endY; iy++) {
-          for (let ix = startX; ix < endX; ix++) {
-            const i = (iy * imageData.width + ix) * 4;
-            r_sum += imageData.data[i];
-            g_sum += imageData.data[i + 1];
-            b_sum += imageData.data[i + 2];
-            pixel_count++;
-          }
-        }
-
-        if (pixel_count > 0) {
-          const avg_r = Math.round(r_sum / pixel_count);
-          const avg_g = Math.round(g_sum / pixel_count);
-          const avg_b = Math.round(b_sum / pixel_count);
-
-          const closestYarn = findClosestYarnColor([avg_r, avg_g, avg_b], yarnPalette);
-          const yarnId = closestYarn.id;
-
-          highFidelityGrid[y * gridWidth + x] = yarnId;
-          colorUsageCount.set(yarnId, (colorUsageCount.get(yarnId) || 0) + 1);
-        }
-      }
-    }
-
-    // --- STAGE 2: Intelligent Color Reduction ---
-    let finalGrid = highFidelityGrid;
-    const uniqueColorsUsed = Array.from(colorUsageCount.keys());
-
-    if (uniqueColorsUsed.length > maxColors) {
-      // Determine the final palette (top N most used colors)
-      const sortedColors = uniqueColorsUsed.sort((a, b) => (colorUsageCount.get(b) || 0) - (colorUsageCount.get(a) || 0));
-      const finalPaletteIds = new Set(sortedColors.slice(0, maxColors));
-      const finalPaletteYarns = yarnPalette.filter(y => finalPaletteIds.has(y.id));
-
-      // Create a map to remap culled colors to their closest color in the final palette
-      const remapping = new Map<string, string>();
-
-      for (const yarnId of uniqueColorsUsed) {
-        if (!finalPaletteIds.has(yarnId)) {
-          const originalYarn = yarnPalette.find(y => y.id === yarnId);
-          if (originalYarn && finalPaletteYarns.length > 0) {
-            const closestInFinalPalette = findClosestYarnColor(originalYarn.rgb, finalPaletteYarns);
-            remapping.set(yarnId, closestInFinalPalette.id);
-          }
+      let r_sum = 0, g_sum = 0, b_sum = 0, count = 0;
+      for (let iy = startY; iy < endY; iy++) {
+        for (let ix = startX; ix < endX; ix++) {
+          const idx = (iy * imageData.width + ix) * 4;
+          r_sum += imageData.data[idx];
+          g_sum += imageData.data[idx + 1];
+          b_sum += imageData.data[idx + 2];
+          count++;
         }
       }
 
-      // Apply the remapping to the grid
-      finalGrid = highFidelityGrid.map(yarnId => {
-        if (yarnId && remapping.has(yarnId)) {
-          return remapping.get(yarnId)!;
-        }
-        return yarnId;
-      });
+      const destIdx = (y * dsWidth + x) * 4;
+      if (count > 0) {
+        dsBuffer[destIdx] = Math.round(r_sum / count);
+        dsBuffer[destIdx + 1] = Math.round(g_sum / count);
+        dsBuffer[destIdx + 2] = Math.round(b_sum / count);
+        dsBuffer[destIdx + 3] = 255;
+      } else {
+        // Transparent/Empty
+        dsBuffer[destIdx + 3] = 0;
+      }
     }
+  }
 
-    const finalUsedYarnSet = new Set<string>();
-    finalGrid.forEach(cell => {
-      if (cell) finalUsedYarnSet.add(cell);
-    });
+  const downsampledImage = new ImageData(dsBuffer, dsWidth, dsHeight);
 
-    // Convert string grid to CellData grid
-    const objectGrid = finalGrid.map(colorId => ({ colorId }));
-
-    resolve({
-      width: gridWidth,
-      height: gridHeight,
-      grid: objectGrid,
-      palette: Array.from(finalUsedYarnSet),
-    });
+  // 2. Generate Pattern
+  // Use 'extract' mode to quantize valid colors to the maxColors limit.
+  const { grid, usedPalette: extractedPalette } = await generatePattern(downsampledImage, {
+    paletteMode: 'extract',
+    maxColors: maxColors
   });
+
+  // 3. Map extracted auto-colors to Yarn Palette
+  const colorMap = new Map<string, string>();
+  const finalUsedIds = new Set<string>();
+
+  extractedPalette.forEach(p => {
+    const closest = findClosestYarnColor(p.rgb, yarnPalette);
+    colorMap.set(p.id, closest.id);
+  });
+
+  // 4. Update Grid
+  const finalGrid = grid.map(cell => {
+    if (!cell.colorId) return cell;
+    const mappedId = colorMap.get(cell.colorId);
+    if (mappedId) finalUsedIds.add(mappedId);
+    return { ...cell, colorId: mappedId || null };
+  });
+
+  return {
+    width: gridWidth,
+    height: gridHeight,
+    grid: finalGrid,
+    palette: Array.from(finalUsedIds)
+  };
 };
+
