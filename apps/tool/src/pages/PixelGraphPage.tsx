@@ -1122,7 +1122,12 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const generatePreview = useCallback(async () => {
         if (!importFile || !projectData || !project) return;
         setIsGeneratingPreview(true);
-        setPreviewNewColors([]); // Reset previous preview colors
+
+        // UX FIX: Yield to Main Thread to allow "Loading" spinner to render before heavy processing
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Note: We deliberately do NOT clear the old preview here to avoid a "blink" of blank space.
+        // We will swap it out transactionally when the new one is ready.
 
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -1144,6 +1149,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                     ? (BRAND_PALETTES[genBrandKey]?.colors || project.yarnPalette)
                     : project.yarnPalette; // Ignored in extract mode
 
+                // Heavy CPU process
                 const result = await processImageToGrid(
                     imageData,
                     projectData.width,
@@ -1157,17 +1163,13 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 );
 
                 // Store temporary result on the preview grid object for confirmation handling
-                // We cast to any to attach the newColors property temporarily, or we could handle it in state.
-                // Better to handle in state, but previewGrid is PixelGridData.
-                // Let's attach it to the previewGrid state indirectly or use a ref. 
-                // Creating a hybrid object for the preview state:
                 const previewWithColors = {
                     ...result.gridPart,
                     _newColors: result.newColors
                 };
 
-                setPreviewNewColors(result.newColors); // FIX: Set state for renderer
-                setPreviewGrid(previewWithColors as PixelGridData);
+                setPreviewNewColors(result.newColors); // Update Colors
+                setPreviewGrid(previewWithColors as PixelGridData); // Update Grid (Triggers Render)
                 setIsGeneratingPreview(false);
             };
             img.src = event.target?.result as string;
