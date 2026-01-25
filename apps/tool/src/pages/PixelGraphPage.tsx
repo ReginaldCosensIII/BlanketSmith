@@ -1429,7 +1429,8 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 }
             }
 
-            dispatch({ type: 'UPDATE_PROJECT_DATA', payload: previewGrid });
+            // Perform Hard Replace to prevent ghosting
+            dispatch({ type: 'UPDATE_PROJECT_DATA', payload: { ...previewGrid, _replace: true } as any });
             setIsGenerateModalOpen(false);
             resetGenerationState();
         }

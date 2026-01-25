@@ -86,7 +86,9 @@ export const generatePattern = async (
   const usedColorIds = new Set<string>();
 
   // Map imageq Points back to IDs
+  // Map imageq Points back to IDs
   const paletteLookup = new Map<string, string>();
+  const timestamp = Date.now();
 
   if (options.paletteMode === 'match') {
     options.targetPalette?.forEach(yarn => {
@@ -99,7 +101,7 @@ export const generatePattern = async (
     palettePoints.forEach((p, index) => {
       const r = p.r, g = p.g, b = p.b;
       const key = `${r},${g},${b}`;
-      const stableId = `auto-gen-${index}`;
+      const stableId = `auto-${timestamp}-${index}`;
       paletteLookup.set(key, stableId);
     });
   }
@@ -119,7 +121,10 @@ export const generatePattern = async (
         const hex = c.toString(16);
         return hex.length === 1 ? '0' + hex : hex;
       };
-      const id = `auto-gen-${index}`;
+      // FIX: Use same unique ID logic as above or pass it down. 
+      // Since we are iterating the same array in same order, we can regenerate if careful, 
+      // OR better: define timestamp once at top.
+      const id = `auto-${timestamp}-${index}`;
       return {
         id,
         brand: 'Generated',
