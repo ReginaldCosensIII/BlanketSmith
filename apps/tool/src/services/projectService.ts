@@ -138,76 +138,87 @@ export const processImageToGrid = async (
   maxColors: number,
   yarnPalette: YarnColor[]
 ): Promise<Partial<PixelGridData>> => {
-  // 1. Downsample (Average into new Uint8ClampedArray)
-  const dsWidth = gridWidth;
-  const dsHeight = gridHeight;
-  const dsBuffer = new Uint8ClampedArray(dsWidth * dsHeight * 4);
+  try {
+    // 1. Downsample (Average into new Uint8ClampedArray)
+    const dsWidth = gridWidth;
+    const dsHeight = gridHeight;
+    const dsBuffer = new Uint8ClampedArray(dsWidth * dsHeight * 4);
 
-  const cellWidth = imageData.width / gridWidth;
-  const cellHeight = imageData.height / gridHeight;
+    const cellWidth = imageData.width / gridWidth;
+    const cellHeight = imageData.height / gridHeight;
 
-  for (let y = 0; y < dsHeight; y++) {
-    for (let x = 0; x < dsWidth; x++) {
-      const startX = Math.floor(x * cellWidth);
-      const startY = Math.floor(y * cellHeight);
-      const endX = Math.min(imageData.width, Math.floor((x + 1) * cellWidth));
-      const endY = Math.min(imageData.height, Math.floor((y + 1) * cellHeight));
+    for (let y = 0; y < dsHeight; y++) {
+      for (let x = 0; x < dsWidth; x++) {
+        const startX = Math.floor(x * cellWidth);
+        const startY = Math.floor(y * cellHeight);
+        const endX = Math.min(imageData.width, Math.floor((x + 1) * cellWidth));
+        const endY = Math.min(imageData.height, Math.floor((y + 1) * cellHeight));
 
-      let r_sum = 0, g_sum = 0, b_sum = 0, count = 0;
-      for (let iy = startY; iy < endY; iy++) {
-        for (let ix = startX; ix < endX; ix++) {
-          const idx = (iy * imageData.width + ix) * 4;
-          r_sum += imageData.data[idx];
-          g_sum += imageData.data[idx + 1];
-          b_sum += imageData.data[idx + 2];
-          count++;
+        let r_sum = 0, g_sum = 0, b_sum = 0, count = 0;
+        for (let iy = startY; iy < endY; iy++) {
+          for (let ix = startX; ix < endX; ix++) {
+            const idx = (iy * imageData.width + ix) * 4;
+            r_sum += imageData.data[idx];
+            g_sum += imageData.data[idx + 1];
+            b_sum += imageData.data[idx + 2];
+            count++;
+          }
+        }
+
+        const destIdx = (y * dsWidth + x) * 4;
+        if (count > 0) {
+          dsBuffer[destIdx] = Math.round(r_sum / count);
+          dsBuffer[destIdx + 1] = Math.round(g_sum / count);
+          dsBuffer[destIdx + 2] = Math.round(b_sum / count);
+          dsBuffer[destIdx + 3] = 255;
+        } else {
+          // Transparent/Empty
+          dsBuffer[destIdx + 3] = 0;
         }
       }
-
-      const destIdx = (y * dsWidth + x) * 4;
-      if (count > 0) {
-        dsBuffer[destIdx] = Math.round(r_sum / count);
-        dsBuffer[destIdx + 1] = Math.round(g_sum / count);
-        dsBuffer[destIdx + 2] = Math.round(b_sum / count);
-        dsBuffer[destIdx + 3] = 255;
-      } else {
-        // Transparent/Empty
-        dsBuffer[destIdx + 3] = 0;
-      }
     }
+
+    const downsampledImage = new ImageData(dsBuffer, dsWidth, dsHeight);
+
+    // 2. Generate Pattern
+    // Use 'extract' mode to quantize valid colors to the maxColors limit.
+    const { grid, usedPalette: extractedPalette } = await generatePattern(downsampledImage, {
+      paletteMode: 'extract',
+      maxColors: maxColors
+    });
+
+    // 3. Map extracted auto-colors to Yarn Palette
+    const colorMap = new Map<string, string>();
+    const finalUsedIds = new Set<string>();
+
+    extractedPalette.forEach(p => {
+      const closest = findClosestYarnColor(p.rgb, yarnPalette);
+      colorMap.set(p.id, closest.id);
+    });
+
+    // 4. Update Grid
+    const finalGrid = grid.map(cell => {
+      if (!cell.colorId) return cell;
+      const mappedId = colorMap.get(cell.colorId);
+      if (mappedId) finalUsedIds.add(mappedId);
+      return { ...cell, colorId: mappedId || null };
+    });
+
+    return {
+      width: gridWidth,
+      height: gridHeight,
+      grid: finalGrid,
+      palette: Array.from(finalUsedIds)
+    };
+  } catch (error) {
+    logger.error('processImageToGrid failed', { error });
+    // Return empty result to stop spinner
+    return {
+      width: gridWidth,
+      height: gridHeight,
+      grid: Array(gridWidth * gridHeight).fill({ colorId: null }),
+      palette: []
+    };
   }
-
-  const downsampledImage = new ImageData(dsBuffer, dsWidth, dsHeight);
-
-  // 2. Generate Pattern
-  // Use 'extract' mode to quantize valid colors to the maxColors limit.
-  const { grid, usedPalette: extractedPalette } = await generatePattern(downsampledImage, {
-    paletteMode: 'extract',
-    maxColors: maxColors
-  });
-
-  // 3. Map extracted auto-colors to Yarn Palette
-  const colorMap = new Map<string, string>();
-  const finalUsedIds = new Set<string>();
-
-  extractedPalette.forEach(p => {
-    const closest = findClosestYarnColor(p.rgb, yarnPalette);
-    colorMap.set(p.id, closest.id);
-  });
-
-  // 4. Update Grid
-  const finalGrid = grid.map(cell => {
-    if (!cell.colorId) return cell;
-    const mappedId = colorMap.get(cell.colorId);
-    if (mappedId) finalUsedIds.add(mappedId);
-    return { ...cell, colorId: mappedId || null };
-  });
-
-  return {
-    width: gridWidth,
-    height: gridHeight,
-    grid: finalGrid,
-    palette: Array.from(finalUsedIds)
-  };
 };
 
