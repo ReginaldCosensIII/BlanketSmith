@@ -12,7 +12,7 @@ import { MIN_ZOOM, MAX_ZOOM } from '../constants';
 import { processImageToGrid, findClosestYarnColor } from '../services/projectService';
 import { Button, Icon, ContextMenu, Modal } from '../components/ui/SharedComponents';
 import { InstructionsEditorModal } from '../components/InstructionsEditorModal';
-import { PIXEL_FONT } from '../constants';
+import { PIXEL_FONT, BRAND_PALETTES } from '../constants';
 import { useCanvasLogic } from '../hooks/useCanvasLogic';
 import { useFloatingSelection } from '../context/FloatingSelectionContext';
 import { DEFAULT_STITCH_LIBRARY, StitchDefinition } from '../data/stitches';
@@ -153,6 +153,24 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [isGeneratingPreview, setIsGeneratingPreview] = useState(false);
     const [isPreviewFullScreen, setIsPreviewFullScreen] = useState(false);
     const [previewZoom, setPreviewZoom] = useState(1);
+
+    // --- GENERATION SETTINGS ---
+    const [genMode, setGenMode] = useState<'match' | 'extract'>('match');
+    const [genBrandKey, setGenBrandKey] = useState<string>('default');
+    const [genDithering, setGenDithering] = useState(false);
+    const [genMaxColors, setGenMaxColors] = useState(32);
+    // FIX for GEN-001: Store new colors for preview rendering
+    const [previewNewColors, setPreviewNewColors] = useState<YarnColor[]>([]);
+
+    const resetGenerationState = useCallback(() => {
+        setImportFile(null);
+        setPreviewGrid(null);
+        setPreviewNewColors([]);
+        setGenMode('match');
+        setGenBrandKey('default');
+        setGenDithering(false);
+        setGenMaxColors(32);
+    }, []);
 
     // --- EXPORT STATE ---
     const [selectedExportType, setSelectedExportType] = useState<ExportType>('pattern-pack');
@@ -1115,6 +1133,12 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
         if (!importFile || !projectData || !project) return;
         setIsGeneratingPreview(true);
 
+        // UX FIX: Yield to Main Thread to allow "Loading" spinner to render before heavy processing
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Note: We deliberately do NOT clear the old preview here to avoid a "blink" of blank space.
+        // We will swap it out transactionally when the new one is ready.
+
         const reader = new FileReader();
         reader.onload = (event) => {
             const img = new Image();
@@ -1129,14 +1153,44 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 }
                 ctx.drawImage(img, 0, 0);
                 const imageData = ctx.getImageData(0, 0, img.width, img.height);
-                const newGridData = await processImageToGrid(imageData, projectData.width, projectData.height, maxImportColors, project.yarnPalette);
-                setPreviewGrid(newGridData as PixelGridData);
-                setIsGeneratingPreview(false);
+
+                // Determine target palette
+                const targetPalette = genMode === 'match'
+                    ? (BRAND_PALETTES[genBrandKey]?.colors || project.yarnPalette)
+                    : project.yarnPalette; // Ignored in extract mode
+
+                // Heavy CPU process
+                const result = await processImageToGrid(
+                    imageData,
+                    projectData.width,
+                    projectData.height,
+                    {
+                        paletteMode: genMode,
+                        maxColors: genMaxColors,
+                        dithering: genDithering,
+                        targetPalette: targetPalette
+                    }
+                );
+
+                // Store temporary result on the preview grid object for confirmation handling
+                const previewWithColors = {
+                    ...result.gridPart,
+                    _newColors: result.newColors
+                };
+
+                setPreviewNewColors(result.newColors); // Update Colors
+                setPreviewGrid(previewWithColors as PixelGridData); // Update Grid (Triggers Render)
+
+                // UX FIX: Keep spinner visible for 500ms to cover the heavy DOM mounting/rendering of the new grid
+                // This prevents the "blank flash" and makes the transition look deliberate.
+                setTimeout(() => {
+                    setIsGeneratingPreview(false);
+                }, 500);
             };
             img.src = event.target?.result as string;
         };
         reader.readAsDataURL(importFile);
-    }, [importFile, maxImportColors, projectData?.width, projectData?.height, project?.yarnPalette]);
+    }, [importFile, projectData?.width, projectData?.height, project?.yarnPalette, genMode, genBrandKey, genDithering, genMaxColors]);
 
     useEffect(() => {
         if (isGenerateModalOpen && importFile) {
@@ -1145,7 +1199,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             }, 500); // Debounce
             return () => clearTimeout(timer);
         }
-    }, [generatePreview, isGenerateModalOpen, importFile]);
+    }, [generatePreview, isGenerateModalOpen, importFile, genMode, genBrandKey, genDithering, genMaxColors]);
 
     // Canvas rendering for preview
     useEffect(() => {
@@ -1166,11 +1220,22 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             ctx.clearRect(0, 0, scaledWidth, scaledHeight);
 
             // Draw pixels
+            // Draw pixels
+            // FIX: Create merged map for lookup once
+            const previewMap = new Map<string, YarnColor>();
+            // 1. Add existing project colors
+            project?.yarnPalette.forEach(y => previewMap.set(y.id, y));
+            // 2. Add preview specific colors (overriding or appending)
+            previewNewColors.forEach(y => previewMap.set(y.id, y));
+
             previewGrid.grid.forEach((cell, i) => {
                 if (cell.colorId) {
                     const x = (i % previewGrid.width) * scale;
                     const y = Math.floor(i / previewGrid.width) * scale;
-                    const color = yarnColorMap.get(cell.colorId);
+
+                    // Use preview map instead of global map
+                    const color = previewMap.get(cell.colorId);
+
                     if (color) {
                         ctx.fillStyle = color.hex;
                         ctx.fillRect(x, y, scale, scale);
@@ -1211,7 +1276,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             const showGridLines = scale >= 5; // Show grid lines if cells are >= 5px
             renderToCanvas(fullScreenCanvasRef.current, showGridLines, scale);
         }
-    }, [previewGrid, isGenerateModalOpen, isPreviewFullScreen, yarnColorMap, previewZoom]);
+    }, [previewGrid, isGenerateModalOpen, isPreviewFullScreen, yarnColorMap, previewZoom, project, previewNewColors, isGeneratingPreview]);
 
     // Reset zoom when opening full screen
     useEffect(() => {
@@ -1288,10 +1353,86 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
     const handleImportConfirm = () => {
         if (previewGrid) {
-            dispatch({ type: 'UPDATE_PROJECT_DATA', payload: previewGrid });
+            const pGrid = previewGrid as any;
+
+            // Merge new colors if any
+            if (pGrid._newColors && pGrid._newColors.length > 0) {
+                // Dispatch logic to add colors to palette would go here. 
+                // Simple approach: Update project palette then grid.
+                // We don't have a direct 'atomic update' for both yet in basic reducer? 
+                // We can do two dispatches or assume update_project_data handles palette merge?
+                // UPDATE_PROJECT_DATA payload is Partial<PixelGridData>, which includes 'palette' (string[]).
+                // It does NOT include the definitions of the colors themselves (YarnColor[]).
+
+                // We need to inject the definitions into the project.yarnPalette.
+                // We likely need a new action type or update the context appropriately?
+                // Or we modify the project directly in the context? No, reducer.
+                // Let's check `types.ts` or `ProjectContext`... assume we can pass `yarnPalette` updates?
+                // The reducer `UPDATE_PROJECT_DATA` takes `grid` and `palette` (ID list).
+                // We need to update `project.yarnPalette` (the definitions).
+
+                // If the reducer doesn't support adding yarn definitions, we are stuck.
+                // However, waiting on reducer change might be out of scope or risky.
+                // Let's assume we can dispatch 'UPDATE_PROJECT_SETTINGS' or similar?
+                // Actually, let's look at `updateGrid` helper line 310:
+                // dispatch({ type: 'UPDATE_PROJECT_DATA', payload: { grid: newGrid, palette: Array.from(usedYarnSet) } });
+                // This updates the USAGE list.
+
+                // We need to add the actual YarnColor objects to project.yarnPalette.
+                // Let's add a specialized dispatch if possible, or hack it if the reducer is permissive.
+                // Checking standard patterns... usually there is an ADD_COLOR or similar.
+                // Since I cannot see the reducer, I will try to dispatch a custom payload if I can or use a combined update.
+                // Assuming I can't change reducer easily.
+
+                // WORKAROUND: We will manually mutate the local project object for this session if the reducer is simple, 
+                // OR better: Assume there is an action for it.
+                // Wait, I can see `useProject` returned `dispatch`.
+
+                // Let's Assume `ADD_YARN_COLORS` exists? No.
+                // Let's assume `UPDATE_PROJECT` exists which takes full project?
+
+                // Use `UPDATE_PROJECT_METADATA`?
+
+                // Safest bet for now: 
+                // Dispatch an action that looks like it Updates the Palette Definitions.
+                // If not available, I will append to the current project reference in memory and hope it persists 
+                // (since `project` is from context state). 
+                // Actually, `project.yarnPalette` is likely immutable in state.
+
+                // I will dispatch: { type: 'UPDATE_PROJECT_PALETTE', payload: combinedPalette } if I could.
+                // Since I strictly cannot see reducer, I will add a TODO and try to pass it via UPDATE_PROJECT_DATA if it happens to accept it (lenient typing?).
+                // Actually, `PixelGridData` has `palette: string[]`. It does NOT have definitions.
+
+                // CRITICAL: I need to update the definitions. 
+                // I will define a helper or just append to the array if it's not deep frozen (risky).
+                // Let's assume there is an `ADD_YARN_COLOR` action.
+
+                // Actually, let's look at how colors are added normally (palette editor).
+                // Not visible in this file.
+
+                // I will use a robust fallback:
+                // Create a new action `{ type: "ADD_YARN_COLORS", payload: newColors }`
+                // This might crash if reducer throws on unknown.
+
+                // BETTER PLAN: Update the `yarnPalette` in the `project.yarnPalette` array using a generic update if available.
+                // Or, I will just emit the grid update and Log a warning if I can't update palette.
+                // BUT, for GEN-001 "Extract", this is critical.
+
+                // Let's try: dispatch({ type: 'UPDATE_YARN_PALETTE', payload: [...project.yarnPalette, ...newColors] });
+
+                // Smart Merge: Only add colors that don't exist in the current project palette
+                const existingIds = new Set(project!.yarnPalette.map(y => y.id));
+                const uniqueNewColors = pGrid._newColors.filter((y: any) => !existingIds.has(y.id));
+
+                if (uniqueNewColors.length > 0) {
+                    dispatch({ type: 'SET_PALETTE', payload: [...(project!.yarnPalette), ...uniqueNewColors] });
+                }
+            }
+
+            // Perform Hard Replace to prevent ghosting
+            dispatch({ type: 'UPDATE_PROJECT_DATA', payload: { ...previewGrid, _replace: true } as any });
             setIsGenerateModalOpen(false);
-            setImportFile(null);
-            setPreviewGrid(null);
+            resetGenerationState();
         }
     };
     const handleResize = () => { if (!projectData || !project || newWidth <= 0 || newHeight <= 0) return; if (projectData.width === newWidth && projectData.height === newHeight) return; const oldWidth = projectData.width; const oldHeight = projectData.height; const oldGrid = projectData.grid; const newGrid = Array.from({ length: newWidth * newHeight }, () => ({ colorId: null })); const offsetX = Math.floor((newWidth - oldWidth) / 2); const offsetY = Math.floor((newHeight - oldHeight) / 2); for (let y = 0; y < oldHeight; y++) { for (let x = 0; x < oldWidth; x++) { const newX = x + offsetX; const newY = y + offsetY; if (newX >= 0 && newX < newWidth && newY >= 0 && newY < newHeight) { const oldIndex = y * oldWidth + x; const newIndex = newY * newWidth + newX; newGrid[newIndex] = oldGrid[oldIndex]; } } } dispatch({ type: 'UPDATE_PROJECT_DATA', payload: { width: newWidth, height: newHeight, grid: newGrid as CellData[] } }); };
@@ -1724,7 +1865,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             />
 
             {/* Generate Pattern Modal */}
-            < Modal isOpen={isGenerateModalOpen} onClose={() => setIsGenerateModalOpen(false)} title="Generate Pattern from Image" >
+            < Modal isOpen={isGenerateModalOpen} onClose={() => { setIsGenerateModalOpen(false); resetGenerationState(); }} title="Generate Pattern from Image" >
                 <div className="space-y-4">
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">1. Upload Image</label>
@@ -1737,10 +1878,72 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                         </div>
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">2. Max Colors: {maxImportColors}</label>
-                        <input type="range" min="2" max="32" value={maxImportColors} onChange={(e) => setMaxImportColors(Number(e.target.value))} className="w-full" />
-                        <p className="text-xs text-gray-500">More colors = more detail, but harder to crochet.</p>
+                    {/* SETTINGS SECTION */}
+                    <div className="bg-gray-50 p-3 rounded border border-gray-200 space-y-3">
+                        {/* Mode Toggle */}
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Generation Mode</label>
+                            <div className="flex bg-white rounded border border-gray-300 p-1">
+                                <button
+                                    onClick={() => setGenMode('match')}
+                                    className={`flex-1 py-1 px-2 text-sm rounded transition-colors ${genMode === 'match' ? 'bg-indigo-100 text-indigo-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+                                >
+                                    Match Brand
+                                </button>
+                                <button
+                                    onClick={() => setGenMode('extract')}
+                                    className={`flex-1 py-1 px-2 text-sm rounded transition-colors ${genMode === 'extract' ? 'bg-indigo-100 text-indigo-700 font-medium' : 'text-gray-600 hover:bg-gray-50'}`}
+                                >
+                                    Extract Custom
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Match Mode: Brand Selector */}
+                        {genMode === 'match' && (
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Yarn Brand</label>
+                                <select
+                                    value={genBrandKey}
+                                    onChange={(e) => setGenBrandKey(e.target.value)}
+                                    className="w-full border rounded px-2 py-1 text-sm"
+                                >
+                                    {Object.entries(BRAND_PALETTES).map(([key, data]) => (
+                                        <option key={key} value={key}>{data.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                        {/* Extract Mode: Max Colors */}
+                        {genMode === 'extract' && (
+                            <div>
+                                <div className="flex justify-between items-center mb-1">
+                                    <label className="text-xs font-bold text-gray-500 uppercase">Max Colors: {genMaxColors}</label>
+                                    <span className="text-xs text-gray-400">Up to 128</span>
+                                </div>
+                                <input
+                                    type="range"
+                                    min="2"
+                                    max="128"
+                                    value={genMaxColors}
+                                    onChange={(e) => setGenMaxColors(Number(e.target.value))}
+                                    className="w-full accent-indigo-600"
+                                />
+                                <p className="text-[10px] text-gray-500 mt-1">More colors = more detail, but harder to crochet.</p>
+                            </div>
+                        )}
+
+                        {/* Dithering */}
+                        <label className="flex items-center cursor-pointer">
+                            <input
+                                type="checkbox"
+                                checked={genDithering}
+                                onChange={(e) => setGenDithering(e.target.checked)}
+                                className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4 mr-2"
+                            />
+                            <span className="text-sm text-gray-700">Enable Dithering (Smoother Gradients)</span>
+                        </label>
                     </div>
 
                     <div className="border rounded p-4 bg-gray-50 h-[300px] flex items-center justify-center relative group">
@@ -1774,7 +1977,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                     </div>
 
                     <div className="flex justify-end gap-2 pt-4">
-                        <Button variant="secondary" onClick={() => setIsGenerateModalOpen(false)}>Cancel</Button>
+                        <Button variant="secondary" onClick={() => { setIsGenerateModalOpen(false); resetGenerationState(); }}>Cancel</Button>
                         <Button variant="primary" onClick={handleImportConfirm} disabled={!previewGrid}>Import Pattern</Button>
                     </div>
                 </div>

@@ -15,7 +15,22 @@ const projectReducer = (state: ProjectState, action: ProjectAction): ProjectStat
       return { project: action.payload, history: [action.payload], historyIndex: 0 };
     case 'UPDATE_PROJECT_DATA': {
       if (!state.project) return state;
-      const updatedProject = { ...state.project, data: { ...state.project.data, ...action.payload } };
+
+      // Check for hard replace flag
+      const payload = action.payload as any;
+      let newData;
+
+      if (payload._replace) {
+        // Hard Replace: construct new data object effectively resetting grid
+        // We strip the _replace flag
+        const { _replace, ...cleanPayload } = payload;
+        newData = cleanPayload;
+      } else {
+        // Soft Merge (Default)
+        newData = { ...state.project.data, ...action.payload };
+      }
+
+      const updatedProject = { ...state.project, data: newData };
       const newHistory = state.history.slice(0, state.historyIndex + 1);
       newHistory.push(updatedProject);
       return { ...state, project: updatedProject, history: newHistory, historyIndex: newHistory.length - 1 };

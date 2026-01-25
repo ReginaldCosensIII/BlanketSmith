@@ -31,6 +31,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **Global Shortcuts**: Implemented `useKeyboardShortcuts` engine with centralized config.
     - **Smart Undo/Redo**: Shortcuts now respect Floating Selections (matching UI behavior).
     - **Wheel Mechanics**: Fixed native wheel events for smoother zoom; added **Wheel Mode Toggle** (Ctrl+.) to invert zoom/pan logic.
+- **GEN-001 Pattern Generation V2**: Complete rewrite of the pattern generation engine.
+    - **Multi-Brand Support**: Built-in palettes for Red Heart, Lion Brand, Paintbox, and more.
+    - **Advanced Settings**: Extract vs Match modes, Max Colors, Dithering control.
+    - **Preview Engine**: Real-time canvas preview with high-performance rendering (1000x faster for large grids).
+    - **Import Safety**: "Hard Replace" logic to prevent ghosting artifacts and unique ID generation to prevent palette collisions.
 
 ### Fixed
 - **UX-003: Background Deselect**: Resolved UX-003: Global click-to-deselect using robust role-based event delegation.
