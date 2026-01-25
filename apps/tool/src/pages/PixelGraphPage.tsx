@@ -159,6 +159,8 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [genBrandKey, setGenBrandKey] = useState<string>('default');
     const [genDithering, setGenDithering] = useState(false);
     const [genMaxColors, setGenMaxColors] = useState(32);
+    // FIX for GEN-001: Store new colors for preview rendering
+    const [previewNewColors, setPreviewNewColors] = useState<YarnColor[]>([]);
 
     // --- EXPORT STATE ---
     const [selectedExportType, setSelectedExportType] = useState<ExportType>('pattern-pack');
@@ -1120,6 +1122,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const generatePreview = useCallback(async () => {
         if (!importFile || !projectData || !project) return;
         setIsGeneratingPreview(true);
+        setPreviewNewColors([]); // Reset previous preview colors
 
         const reader = new FileReader();
         reader.onload = (event) => {
@@ -1163,6 +1166,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                     _newColors: result.newColors
                 };
 
+                setPreviewNewColors(result.newColors); // FIX: Set state for renderer
                 setPreviewGrid(previewWithColors as PixelGridData);
                 setIsGeneratingPreview(false);
             };
@@ -1203,11 +1207,28 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                 if (cell.colorId) {
                     const x = (i % previewGrid.width) * scale;
                     const y = Math.floor(i / previewGrid.width) * scale;
-                    const color = yarnColorMap.get(cell.colorId);
-                    if (color) {
-                        ctx.fillStyle = color.hex;
-                        ctx.fillRect(x, y, scale, scale);
-                    }
+                    // Draw pixels
+                    // FIX: Create merged map for lookup
+                    const previewMap = new Map<string, YarnColor>();
+                    // 1. Add existing project colors
+                    project?.yarnPalette.forEach(y => previewMap.set(y.id, y));
+                    // 2. Add preview specific colors (overriding or appending)
+                    previewNewColors.forEach(y => previewMap.set(y.id, y));
+
+                    previewGrid.grid.forEach((cell, i) => {
+                        if (cell.colorId) {
+                            const x = (i % previewGrid.width) * scale;
+                            const y = Math.floor(i / previewGrid.width) * scale;
+
+                            // Use preview map instead of global map
+                            const color = previewMap.get(cell.colorId);
+
+                            if (color) {
+                                ctx.fillStyle = color.hex;
+                                ctx.fillRect(x, y, scale, scale);
+                            }
+                        }
+                    });
                 }
             });
 
@@ -1244,7 +1265,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             const showGridLines = scale >= 5; // Show grid lines if cells are >= 5px
             renderToCanvas(fullScreenCanvasRef.current, showGridLines, scale);
         }
-    }, [previewGrid, isGenerateModalOpen, isPreviewFullScreen, yarnColorMap, previewZoom]);
+    }, [previewGrid, isGenerateModalOpen, isPreviewFullScreen, yarnColorMap, previewZoom, project, previewNewColors]);
 
     // Reset zoom when opening full screen
     useEffect(() => {
@@ -1397,6 +1418,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             setIsGenerateModalOpen(false);
             setImportFile(null);
             setPreviewGrid(null);
+            setPreviewNewColors([]);
         }
     };
     const handleResize = () => { if (!projectData || !project || newWidth <= 0 || newHeight <= 0) return; if (projectData.width === newWidth && projectData.height === newHeight) return; const oldWidth = projectData.width; const oldHeight = projectData.height; const oldGrid = projectData.grid; const newGrid = Array.from({ length: newWidth * newHeight }, () => ({ colorId: null })); const offsetX = Math.floor((newWidth - oldWidth) / 2); const offsetY = Math.floor((newHeight - oldHeight) / 2); for (let y = 0; y < oldHeight; y++) { for (let x = 0; x < oldWidth; x++) { const newX = x + offsetX; const newY = y + offsetY; if (newX >= 0 && newX < newWidth && newY >= 0 && newY < newHeight) { const oldIndex = y * oldWidth + x; const newIndex = newY * newWidth + newX; newGrid[newIndex] = oldGrid[oldIndex]; } } } dispatch({ type: 'UPDATE_PROJECT_DATA', payload: { width: newWidth, height: newHeight, grid: newGrid as CellData[] } }); };
@@ -1941,7 +1963,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
                     </div>
 
                     <div className="flex justify-end gap-2 pt-4">
-                        <Button variant="secondary" onClick={() => setIsGenerateModalOpen(false)}>Cancel</Button>
+                        <Button variant="secondary" onClick={() => { setIsGenerateModalOpen(false); setPreviewNewColors([]); }}>Cancel</Button>
                         <Button variant="primary" onClick={handleImportConfirm} disabled={!previewGrid}>Import Pattern</Button>
                     </div>
                 </div>
