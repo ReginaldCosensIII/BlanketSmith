@@ -81,7 +81,9 @@ Milestones are ordered for delivery efficiency. Tasks can move between milestone
 **Outcome:** Beta users can report issues quickly with useful diagnostic context.
 
 - **RPT-001:** Feedback/bug reporting mechanism (Blocker)
-- Beta Landing Page import + deploy work (Landing page tasks tracked here once available in monorepo)
+- [x] **Landing Scaffolding**: Import & configure landing page workspace (Done).
+- [ ] **Supabase Integration**: Wire up contact form & backend (Active Focus).
+- [ ] **Deployment**: Deploy landing page sub-directory (Pending).
 
 ---
 

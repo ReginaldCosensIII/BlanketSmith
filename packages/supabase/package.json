@@ -1,12 +1,11 @@
 {
-    "name": "@blanketsmith/ui",
+    "name": "@blanketsmith/supabase",
     "version": "0.0.0",
-    "main": "index.tsx",
+    "main": "./index.ts",
     "scripts": {
         "build": "echo 'no build step required'"
     },
-    "types": "index.tsx",
     "dependencies": {
-        "react": "^18"
+        "@supabase/supabase-js": "^2.39.0"
     }
 }
