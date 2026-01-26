@@ -1,0 +1,37 @@
+# Block all crawlers during development
+User-agent: *
+Disallow: /
+
+# Block specific bots explicitly
+User-agent: Googlebot
+Disallow: /
+
+User-agent: Bingbot
+Disallow: /
+
+User-agent: Slurp
+Disallow: /
+
+User-agent: DuckDuckBot
+Disallow: /
+
+User-agent: Baiduspider
+Disallow: /
+
+User-agent: YandexBot
+Disallow: /
+
+User-agent: facebookexternalhit
+Disallow: /
+
+User-agent: Twitterbot
+Disallow: /
+
+User-agent: LinkedInBot
+Disallow: /
+
+User-agent: Pinterest
+Disallow: /
+
+# No sitemap during development
+# Sitemap: https://blanketsmith.com/sitemap.xml
