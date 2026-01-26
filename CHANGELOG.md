@@ -5,9 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+### [Unreleased]
 
-### Changed
+### Chore
+- **Landing Page Scaffolding**: Initialized `@blanketsmith/landing-page` workspace with React/Vite/SWC config.
+    - Integrated standard dependency suite (Radix UI, Framer Motion, Tanstack Query).
+    - Registered `@blanketsmith/supabase` package for future backend connections.
+- **Build System**: Refactored root `build` script to use `--workspaces` for improved parallelization.
+
 - **UI Polish & Defaults (Batch 2)**:
     - **Fresh Start**: Updated new-user defaults: Center Guides are now ON, and the Select Toolbar is Vertical, matching documented best practices.
     - **Export UI**: Unified the visual style of "Pattern Pack" options to match the "Radio Card" look of Chart-Only options, while preserving checkbox functionality.
