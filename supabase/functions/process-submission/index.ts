@@ -1,4 +1,4 @@
-import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
+import nodemailer from "npm:nodemailer@6.9.16";
 
 // Mock Deno types for the editor's benefit
 declare const Deno: any;
@@ -81,28 +81,34 @@ Deno.serve(async (req: Request) => {
 </html>
         `;
 
-                // Live SMTP Delivery
-                const client = new SmtpClient();
+                // Live SMTP Delivery (Nodemailer for Deno 2.x Compat)
+                const hostname = Deno.env.get("SMTP_HOSTNAME");
+                const port = parseInt(Deno.env.get("SMTP_PORT") || "587");
+                const username = Deno.env.get("SMTP_USERNAME");
+                const password = Deno.env.get("SMTP_PASSWORD");
+
+                console.log(`Connecting to SMTP: ${hostname}:${port}`);
+
+                const transporter = nodemailer.createTransport({
+                    host: hostname,
+                    port: port,
+                    secure: port === 465, // true for 465, false for other ports
+                    auth: {
+                        user: username,
+                        pass: password,
+                    },
+                });
 
                 try {
-                    await client.connect({
-                        hostname: Deno.env.get("SMTP_HOSTNAME") || "",
-                        port: parseInt(Deno.env.get("SMTP_PORT") || "587"),
-                        username: Deno.env.get("SMTP_USERNAME") || "",
-                        password: Deno.env.get("SMTP_PASSWORD") || "",
-                    });
-
-                    await client.send({
+                    await transporter.sendMail({
                         from: "info@BlanketSmith.com",
                         to: "info@BlanketSmith.com", // Hardcoded per requirements
                         replyTo: "info@BlanketSmith.com",
                         subject: "Welcome to BlanketSmith Beta",
-                        content: htmlEmail,
                         html: htmlEmail,
                     });
 
-                    await client.close();
-                    console.log("Email sent successfully via SMTP.");
+                    console.log("Email sent successfully via SMTP (Nodemailer).");
 
                     return new Response(JSON.stringify({
                         message: 'Email processed successfully (SMTP)',
