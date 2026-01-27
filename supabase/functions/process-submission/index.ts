@@ -16,7 +16,6 @@ Deno.serve(async (req: Request) => {
 
     try {
         const payload = await req.json();
-        console.log("Full Payload:", JSON.stringify(payload));
 
         // Check if this is a database webhook payload (INSERT)
         // Structure: { type: 'INSERT', table: 'contact_submissions', record: { ... }, schema: 'public' }
@@ -29,6 +28,18 @@ Deno.serve(async (req: Request) => {
                 record.type === 'beta_signup';
 
             if (isBetaSignup) {
+                // Guard: Ensure email exists
+                if (!record.email) {
+                    console.warn("Warning: No recipient email found in record");
+                    return new Response(JSON.stringify({
+                        status: "skipped",
+                        message: "No recipient email"
+                    }), {
+                        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                        status: 200,
+                    });
+                }
+
                 const metadata = record.metadata || {};
                 const firstName = metadata.firstName || (record.full_name || record.name || '').split(' ')[0] || 'Maker';
 
@@ -87,8 +98,6 @@ Deno.serve(async (req: Request) => {
                 const username = Deno.env.get("SMTP_USERNAME");
                 const password = Deno.env.get("SMTP_PASSWORD");
 
-                console.log(`Connecting to SMTP: ${hostname}:${port}`);
-
                 const transporter = nodemailer.createTransport({
                     host: hostname,
                     port: port,
@@ -102,7 +111,7 @@ Deno.serve(async (req: Request) => {
                 try {
                     await transporter.sendMail({
                         from: "info@BlanketSmith.com",
-                        to: "info@BlanketSmith.com", // Hardcoded per requirements
+                        to: record.email, // Dynamic recipient
                         replyTo: "info@BlanketSmith.com",
                         subject: "Welcome to BlanketSmith Beta",
                         html: htmlEmail,
