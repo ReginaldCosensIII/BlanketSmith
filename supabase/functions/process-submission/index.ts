@@ -1,3 +1,4 @@
+import { SmtpClient } from "https://deno.land/x/smtp@v0.7.0/mod.ts";
 
 // Mock Deno types for the editor's benefit
 declare const Deno: any;
@@ -75,21 +76,47 @@ Deno.serve(async (req: Request) => {
 </html>
         `;
 
-                // Mock Mailer: Log the email delivery
-                console.log("--- START MOCK EMAIL DELIVERY ---");
-                console.log(`To: ${record.email}`);
-                console.log(`Subject: Welcome to BlanketSmith Beta`);
-                console.log("--- HTML CONTENT ---");
-                console.log(htmlEmail);
-                console.log("--- END MOCK EMAIL DELIVERY ---");
+                // Live SMTP Delivery
+                const client = new SmtpClient();
 
-                return new Response(JSON.stringify({
-                    message: 'Email processed successfully (Mock)',
-                    success: true
-                }), {
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-                    status: 200,
-                });
+                try {
+                    await client.connect({
+                        hostname: Deno.env.get("SMTP_HOSTNAME") || "",
+                        port: parseInt(Deno.env.get("SMTP_PORT") || "587"),
+                        username: Deno.env.get("SMTP_USERNAME") || "",
+                        password: Deno.env.get("SMTP_PASSWORD") || "",
+                    });
+
+                    await client.send({
+                        from: "info@BlanketSmith.com",
+                        to: "info@BlanketSmith.com", // Hardcoded per requirements
+                        replyTo: "info@BlanketSmith.com",
+                        subject: "Welcome to BlanketSmith Beta",
+                        content: htmlEmail,
+                        html: htmlEmail,
+                    });
+
+                    await client.close();
+                    console.log("Email sent successfully via SMTP.");
+
+                    return new Response(JSON.stringify({
+                        message: 'Email processed successfully (SMTP)',
+                        success: true
+                    }), {
+                        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                        status: 200,
+                    });
+
+                } catch (smtpError: any) {
+                    console.error("SMTP Error:", smtpError);
+                    return new Response(JSON.stringify({
+                        error: "SMTP Handshake/Send Failed",
+                        details: smtpError?.message || String(smtpError)
+                    }), {
+                        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                        status: 500
+                    });
+                }
             }
         }
 
@@ -99,9 +126,9 @@ Deno.serve(async (req: Request) => {
             status: 200,
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error processing webhook:', error);
-        return new Response(JSON.stringify({ error: error.message }), {
+        return new Response(JSON.stringify({ error: error?.message || String(error) }), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             status: 400,
         });
