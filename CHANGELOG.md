@@ -20,6 +20,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **Touch Tuning**: Adjusted gesture thresholds in `PixelGridEditor` (Zoom: 20px, Pan: 30px) to prevent accidental panning when attempting to zoom.
     - **Export Center**: New 'Pagination Strategy' control (Auto vs Fixed N Pages).
     - **Export Engine**: Deterministic atlas planning for fixed page counts.
+    - **Supabase Integration**: Maintained distinct workspaces for backend logic (`packages/supabase`) and Edge Functions (`supabase/functions`).
+        - **Unified Backend**: Implemented `process-submission` Edge Function for automated, branded HTML emails.
+        - **Multi-Form Architecture**: Wired 4 landing page forms (Beta, Partner, Feedback, Contact) to a unified `contact_submissions` table via `full_name` mapping and metadata columns.
+        - **Security**: Configured strict Row Level Security (RLS) with `security definer` views for safe public access.
 
 ### Added
 - **Instructions Engine v2 (INS-001)**: Complete rewrite of the instructions generation pipeline.

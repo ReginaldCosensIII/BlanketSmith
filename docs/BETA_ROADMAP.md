@@ -82,7 +82,8 @@ Milestones are ordered for delivery efficiency. Tasks can move between milestone
 
 - **RPT-001:** Feedback/bug reporting mechanism (Blocker)
 - [x] **Landing Scaffolding**: Import & configure landing page workspace (Done).
-- [ ] **Supabase Integration**: Wire up contact form & backend (Active Focus).
+- [x] **Supabase Integration**: Wire up contact form & backend (Done).
+- [ ] **Vercel Secrets Config**: Configure env vars for Supabase connectivity (Next).
 - [ ] **Deployment**: Deploy landing page sub-directory (Pending).
 
 ---
