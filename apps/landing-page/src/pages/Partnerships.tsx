@@ -42,8 +42,8 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 15 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const }
   },
@@ -58,15 +58,49 @@ export default function Partnerships() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    toast({
-      title: "Partnership inquiry submitted!",
-      description: "We'll review your proposal and get back to you soon.",
-    });
+
+    try {
+      const formData = new FormData(e.currentTarget);
+      const name = formData.get("name") as string;
+      const email = formData.get("email") as string;
+      const company = formData.get("company") as string;
+      const website = formData.get("website") as string;
+      const audience = formData.get("audience") as string;
+      const proposal = formData.get("proposal") as string;
+
+      // Dynamic import
+      const { supabase } = await import("@blanketsmith/supabase");
+
+      const { error } = await supabase.from("contact_submissions").insert({
+        type: "partnership",
+        email,
+        full_name: name,
+        metadata: {
+          partnerType: selectedType,
+          company,
+          website,
+          audience,
+          proposal
+        }
+      });
+
+      if (error) throw error;
+
+      setIsSubmitted(true);
+      toast({
+        title: "Partnership inquiry submitted!",
+        description: "We'll review your proposal and get back to you soon.",
+      });
+    } catch (error) {
+      console.error("Submission error:", error);
+      toast({
+        variant: "destructive",
+        title: "Something went wrong.",
+        description: "Please try again later.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isSubmitted) {
@@ -75,13 +109,13 @@ export default function Partnerships() {
         <section className="py-16 lg:py-24 relative">
           <div className="absolute inset-0 radial-gradient-wash pointer-events-none" aria-hidden="true" />
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
               className="max-w-xl mx-auto text-center"
             >
-              <motion.div 
+              <motion.div
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.1 }}
@@ -93,8 +127,8 @@ export default function Partnerships() {
                 Thank you for reaching out!
               </h1>
               <p className="text-muted-foreground mb-8">
-                We've received your partnership inquiry and are excited to explore 
-                potential collaboration. Our team will review your submission and 
+                We've received your partnership inquiry and are excited to explore
+                potential collaboration. Our team will review your submission and
                 respond within 3-5 business days.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -104,7 +138,7 @@ export default function Partnerships() {
                     Back to Home
                   </a>
                 </Button>
-                <Button 
+                <Button
                   size="lg"
                   className="bg-background text-foreground hover:bg-background/90 hover:scale-[1.02] active:scale-[0.98] shadow-lg border border-border"
                   onClick={() => setIsSubmitted(false)}
@@ -124,7 +158,7 @@ export default function Partnerships() {
       <section className="py-16 lg:py-24 relative">
         <div className="absolute inset-0 radial-gradient-wash pointer-events-none" aria-hidden="true" />
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
@@ -136,8 +170,8 @@ export default function Partnerships() {
                 Partner with BlanketSmith
               </h1>
               <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                We're building partnerships with creators, designers, and businesses 
-                who share our passion for empowering makers. Let's create something 
+                We're building partnerships with creators, designers, and businesses
+                who share our passion for empowering makers. Let's create something
                 meaningful together.
               </p>
             </div>
@@ -149,17 +183,15 @@ export default function Partnerships() {
                   key={type.id}
                   type="button"
                   onClick={() => setSelectedType(type.id)}
-                  className={`group p-5 rounded-xl text-left transition-all glass ${
-                    selectedType === type.id
-                      ? "!border-primary !bg-primary/10 ring-2 ring-primary/20"
-                      : "hover:border-primary/30"
-                  }`}
+                  className={`group p-5 rounded-xl text-left transition-all glass ${selectedType === type.id
+                    ? "!border-primary !bg-primary/10 ring-2 ring-primary/20"
+                    : "hover:border-primary/30"
+                    }`}
                 >
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 transition-all duration-300 ease-out ${
-                    selectedType === type.id 
-                      ? "bg-gradient-to-br from-brand-purple via-brand-midblue to-brand-cyan" 
-                      : "bg-gradient-to-br from-brand-midblue/10 to-brand-cyan/10 border border-brand-purple/30 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(92,174,255,0.4)] group-hover:border-brand-midblue/50"
-                  }`}>
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 transition-all duration-300 ease-out ${selectedType === type.id
+                    ? "bg-gradient-to-br from-brand-purple via-brand-midblue to-brand-cyan"
+                    : "bg-gradient-to-br from-brand-midblue/10 to-brand-cyan/10 border border-brand-purple/30 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(92,174,255,0.4)] group-hover:border-brand-midblue/50"
+                    }`}>
                     <type.icon className={`w-5 h-5 ${selectedType === type.id ? "text-white" : "text-brand-midblue"}`} />
                   </div>
                   <h3 className="font-medium text-foreground mb-1">{type.title}</h3>
@@ -169,7 +201,7 @@ export default function Partnerships() {
             </div>
 
             {/* Form */}
-            <motion.form 
+            <motion.form
               onSubmit={handleSubmit}
               className="rounded-2xl glass p-8"
               variants={containerVariants}
@@ -179,20 +211,22 @@ export default function Partnerships() {
               <motion.div variants={itemVariants} className="grid sm:grid-cols-2 gap-4 mb-5">
                 <div className="space-y-2">
                   <Label htmlFor="name">Your name</Label>
-                  <Input 
-                    id="name" 
-                    placeholder="Jane Maker" 
-                    required 
+                  <Input
+                    id="name"
+                    name="name"
+                    placeholder="Jane Maker"
+                    required
                     maxLength={100}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email address</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="jane@example.com" 
-                    required 
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="jane@example.com"
+                    required
                     maxLength={255}
                   />
                 </div>
@@ -201,41 +235,45 @@ export default function Partnerships() {
               <motion.div variants={itemVariants} className="grid sm:grid-cols-2 gap-4 mb-5">
                 <div className="space-y-2">
                   <Label htmlFor="company">Company / Brand name</Label>
-                  <Input 
-                    id="company" 
+                  <Input
+                    id="company"
+                    name="company"
                     placeholder="Your brand or channel name"
-                    required 
+                    required
                     maxLength={100}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="website">Website / Social link</Label>
-                  <Input 
-                    id="website" 
-                    type="url" 
+                  <Input
+                    id="website"
+                    name="website"
+                    type="url"
                     placeholder="https://..."
                     maxLength={500}
+                    required
                   />
                 </div>
               </motion.div>
 
               <motion.div variants={itemVariants} className="space-y-2 mb-5">
                 <Label htmlFor="audience">
-                  {selectedType === "creator" 
-                    ? "Tell us about your audience" 
+                  {selectedType === "creator"
+                    ? "Tell us about your audience"
                     : selectedType === "designer"
-                    ? "Tell us about your design work"
-                    : "Tell us about your business"
+                      ? "Tell us about your design work"
+                      : "Tell us about your business"
                   }
                 </Label>
-                <Textarea 
+                <Textarea
                   id="audience"
+                  name="audience"
                   placeholder={
                     selectedType === "creator"
                       ? "Describe your platform, audience size, and content focus..."
                       : selectedType === "designer"
-                      ? "Share your design style, published patterns, and where you sell..."
-                      : "Tell us about your business, products, and customer base..."
+                        ? "Share your design style, published patterns, and where you sell..."
+                        : "Tell us about your business, products, and customer base..."
                   }
                   className="min-h-[120px]"
                   required
@@ -245,8 +283,9 @@ export default function Partnerships() {
 
               <motion.div variants={itemVariants} className="space-y-2 mb-5">
                 <Label htmlFor="proposal">Partnership ideas</Label>
-                <Textarea 
+                <Textarea
                   id="proposal"
+                  name="proposal"
                   placeholder="What kind of collaboration are you envisioning? How can we work together to serve the maker community?"
                   className="min-h-[150px]"
                   required
@@ -255,10 +294,10 @@ export default function Partnerships() {
               </motion.div>
 
               <motion.div variants={itemVariants}>
-                <Button 
-                  type="submit" 
-                  variant="gradient" 
-                  size="lg" 
+                <Button
+                  type="submit"
+                  variant="gradient"
+                  size="lg"
                   className="w-full"
                   disabled={isSubmitting}
                 >

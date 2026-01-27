@@ -42,8 +42,8 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 15 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const }
   },
@@ -58,15 +58,45 @@ export default function Contact() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    toast({
-      title: "Message sent!",
-      description: "We'll get back to you as soon as possible.",
-    });
+
+    try {
+      const formData = new FormData(e.currentTarget);
+      const name = formData.get("name") as string;
+      const email = formData.get("email") as string;
+      const subject = formData.get("subject") as string;
+      const message = formData.get("message") as string;
+
+      // Dynamic import
+      const { supabase } = await import("@blanketsmith/supabase");
+
+      const { error } = await supabase.from("contact_submissions").insert({
+        type: "contact",
+        email,
+        full_name: name,
+        message, // Direct column mapping
+        metadata: {
+          reason: selectedReason,
+          subject
+        }
+      });
+
+      if (error) throw error;
+
+      setIsSubmitted(true);
+      toast({
+        title: "Message sent!",
+        description: "We'll get back to you as soon as possible.",
+      });
+    } catch (error) {
+      console.error("Submission error:", error);
+      toast({
+        variant: "destructive",
+        title: "Something went wrong.",
+        description: "Please try again later.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isSubmitted) {
@@ -75,13 +105,13 @@ export default function Contact() {
         <section className="py-16 lg:py-24 relative">
           <div className="absolute inset-0 radial-gradient-wash pointer-events-none" aria-hidden="true" />
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
               className="max-w-xl mx-auto text-center"
             >
-              <motion.div 
+              <motion.div
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.1 }}
@@ -93,7 +123,7 @@ export default function Contact() {
                 Message received!
               </h1>
               <p className="text-muted-foreground mb-8">
-                Thank you for reaching out. We'll review your message and respond 
+                Thank you for reaching out. We'll review your message and respond
                 as quickly as possible—typically within 1-2 business days.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -103,7 +133,7 @@ export default function Contact() {
                     Back to Home
                   </a>
                 </Button>
-                <Button 
+                <Button
                   size="lg"
                   className="bg-background text-foreground hover:bg-background/90 hover:scale-[1.02] active:scale-[0.98] shadow-lg border border-border"
                   onClick={() => setIsSubmitted(false)}
@@ -123,7 +153,7 @@ export default function Contact() {
       <section className="py-16 lg:py-24 relative">
         <div className="absolute inset-0 radial-gradient-wash pointer-events-none" aria-hidden="true" />
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
@@ -135,7 +165,7 @@ export default function Contact() {
                 Get in Touch
               </h1>
               <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-                Have a question or just want to say hello? We'd love to hear from you. 
+                Have a question or just want to say hello? We'd love to hear from you.
                 Fill out the form below and we'll get back to you shortly.
               </p>
             </div>
@@ -147,17 +177,15 @@ export default function Contact() {
                   key={reason.id}
                   type="button"
                   onClick={() => setSelectedReason(reason.id)}
-                  className={`group p-5 rounded-xl text-left transition-all glass ${
-                    selectedReason === reason.id
-                      ? "!border-primary !bg-primary/10 ring-2 ring-primary/20"
-                      : "hover:border-primary/30"
-                  }`}
+                  className={`group p-5 rounded-xl text-left transition-all glass ${selectedReason === reason.id
+                    ? "!border-primary !bg-primary/10 ring-2 ring-primary/20"
+                    : "hover:border-primary/30"
+                    }`}
                 >
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 transition-all duration-300 ease-out ${
-                    selectedReason === reason.id 
-                      ? "bg-gradient-to-br from-brand-purple via-brand-midblue to-brand-cyan" 
-                      : "bg-gradient-to-br from-brand-midblue/10 to-brand-cyan/10 border border-brand-purple/30 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(92,174,255,0.4)] group-hover:border-brand-midblue/50"
-                  }`}>
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 transition-all duration-300 ease-out ${selectedReason === reason.id
+                    ? "bg-gradient-to-br from-brand-purple via-brand-midblue to-brand-cyan"
+                    : "bg-gradient-to-br from-brand-midblue/10 to-brand-cyan/10 border border-brand-purple/30 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(92,174,255,0.4)] group-hover:border-brand-midblue/50"
+                    }`}>
                     <reason.icon className={`w-5 h-5 ${selectedReason === reason.id ? "text-white" : "text-brand-midblue"}`} />
                   </div>
                   <h3 className="font-medium text-foreground mb-1">{reason.title}</h3>
@@ -167,7 +195,7 @@ export default function Contact() {
             </div>
 
             {/* Form */}
-            <motion.form 
+            <motion.form
               onSubmit={handleSubmit}
               className="rounded-2xl glass p-8"
               variants={containerVariants}
@@ -177,20 +205,22 @@ export default function Contact() {
               <motion.div variants={itemVariants} className="grid sm:grid-cols-2 gap-4 mb-5">
                 <div className="space-y-2">
                   <Label htmlFor="name">Your name</Label>
-                  <Input 
-                    id="name" 
-                    placeholder="Jane Maker" 
-                    required 
+                  <Input
+                    id="name"
+                    name="name"
+                    placeholder="Jane Maker"
+                    required
                     maxLength={100}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email address</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="jane@example.com" 
-                    required 
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="jane@example.com"
+                    required
                     maxLength={255}
                   />
                 </div>
@@ -198,18 +228,20 @@ export default function Contact() {
 
               <motion.div variants={itemVariants} className="space-y-2 mb-5">
                 <Label htmlFor="subject">Subject</Label>
-                <Input 
-                  id="subject" 
+                <Input
+                  id="subject"
+                  name="subject"
                   placeholder="What's this about?"
-                  required 
+                  required
                   maxLength={200}
                 />
               </motion.div>
 
               <motion.div variants={itemVariants} className="space-y-2 mb-5">
                 <Label htmlFor="message">Message</Label>
-                <Textarea 
+                <Textarea
                   id="message"
+                  name="message"
                   placeholder="Tell us what's on your mind..."
                   className="min-h-[180px]"
                   required
@@ -218,10 +250,10 @@ export default function Contact() {
               </motion.div>
 
               <motion.div variants={itemVariants}>
-                <Button 
-                  type="submit" 
-                  variant="gradient" 
-                  size="lg" 
+                <Button
+                  type="submit"
+                  variant="gradient"
+                  size="lg"
                   className="w-full"
                   disabled={isSubmitting}
                 >
