@@ -72,11 +72,11 @@ export default function Partnerships() {
       const { supabase } = await import("@blanketsmith/supabase");
 
       const { error } = await supabase.from("contact_submissions").insert({
-        type: "partnership",
+        category: "partnership",
+        sub_type: selectedType,
         email,
         full_name: name,
         metadata: {
-          partnerType: selectedType,
           company,
           website,
           audience,

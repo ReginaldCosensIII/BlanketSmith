@@ -21,6 +21,14 @@ VITE_SUPABASE_URL=your_project_url
 VITE_SUPABASE_ANON_KEY=your_anon_key
 ```
 
+## Backend Schema Mapping
+
+The forms map to the `contact_submissions` table (requires `PGRST204` compliance):
+
+- **Columns**: `category`, `sub_type`, `full_name`, `email`
+- **Beta Specific**: `primary_craft`, `experience_level` (top-level)
+- **Bug Reports**: `steps_to_reproduce`, `expected_behavior` (top-level)
+
 ## Local Development
 
 To run this workspace locally:

@@ -70,12 +70,12 @@ export default function Contact() {
       const { supabase } = await import("@blanketsmith/supabase");
 
       const { error } = await supabase.from("contact_submissions").insert({
-        type: "contact",
+        category: "contact",
+        sub_type: selectedReason,
         email,
         full_name: name,
         message, // Direct column mapping
         metadata: {
-          reason: selectedReason,
           subject
         }
       });

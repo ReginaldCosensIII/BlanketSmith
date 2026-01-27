@@ -58,14 +58,15 @@ export default function BetaSignup() {
       const { supabase } = await import("@blanketsmith/supabase");
 
       const { error } = await supabase.from("contact_submissions").insert({
-        type: "beta_signup",
+        category: "beta",
+        sub_type: "beta_signup",
         email,
         full_name: `${firstName} ${lastName}`.trim(),
+        primary_craft: craft,
+        experience_level: experience,
         metadata: {
           firstName,
           lastName,
-          craft,
-          experience,
           interest
         }
       });

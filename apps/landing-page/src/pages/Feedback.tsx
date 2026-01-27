@@ -71,8 +71,9 @@ export default function Feedback() {
       };
 
       if (selectedType === "bug") {
-        // metadata.steps_to_reproduce moved to top-level
-        metadata.expected_behavior = formData.get("expected") as string;
+        // metadata.steps_to_reproduce and expected_behavior moved to top-level
+        // metadata.browser stays in metadata? User said: "Ensure 'primary_craft', 'experience_level', 'steps_to_reproduce', and 'expected_behavior' are sent as top-level keys"
+        // So browser stays in metadata.
         metadata.browser = formData.get("browser") as string;
       } else {
         metadata.details = formData.get("details") as string;
@@ -82,7 +83,8 @@ export default function Feedback() {
       const { supabase } = await import("@blanketsmith/supabase");
 
       const submissionPayload: any = {
-        type: "feedback",
+        category: "feedback",
+        sub_type: selectedType,
         email,
         full_name: name,
         metadata
@@ -90,6 +92,7 @@ export default function Feedback() {
 
       if (selectedType === "bug") {
         submissionPayload.steps_to_reproduce = formData.get("steps") as string;
+        submissionPayload.expected_behavior = formData.get("expected") as string;
       }
 
       const { error } = await supabase.from("contact_submissions").insert(submissionPayload);
