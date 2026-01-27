@@ -29,8 +29,8 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 15 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const }
   },
@@ -44,16 +44,50 @@ export default function BetaSignup() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    // Simulate form submission
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    toast({
-      title: "You're on the list!",
-      description: "We'll be in touch soon with your beta access details.",
-    });
+
+    try {
+      const formData = new FormData(e.currentTarget);
+      const firstName = formData.get("firstName") as string;
+      const lastName = formData.get("lastName") as string;
+      const email = formData.get("email") as string;
+      const craft = formData.get("craft") as string;
+      const experience = formData.get("experience") as string;
+      const interest = formData.get("interest") as string;
+
+      // Dynamic import to ensure package availability
+      const { supabase } = await import("@blanketsmith/supabase");
+
+      const { error } = await supabase.from("contact_submissions").insert({
+        category: "beta",
+        sub_type: "beta_signup",
+        email,
+        full_name: `${firstName} ${lastName}`.trim(),
+        primary_craft: craft,
+        experience_level: experience,
+        metadata: {
+          firstName,
+          lastName,
+          interest
+        }
+      });
+
+      if (error) throw error;
+
+      setIsSubmitted(true);
+      toast({
+        title: "You're on the list!",
+        description: "We'll be in touch soon with your beta access details.",
+      });
+    } catch (error) {
+      console.error("Submission error:", error);
+      toast({
+        variant: "destructive",
+        title: "Something went wrong.",
+        description: "Please try again later.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -61,7 +95,7 @@ export default function BetaSignup() {
       <section className="pt-6 pb-16 lg:pt-8 lg:pb-24 relative">
         <div className="absolute inset-0 radial-gradient-wash pointer-events-none" aria-hidden="true" />
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
@@ -82,9 +116,9 @@ export default function BetaSignup() {
               {/* Left Column - Info */}
               <div>
                 <div className="mb-8 rounded-2xl overflow-hidden border border-border shadow-lg">
-                  <img 
-                    src={betaCommunityImage} 
-                    alt="Crafters collaborating on colorful blanket squares" 
+                  <img
+                    src={betaCommunityImage}
+                    alt="Crafters collaborating on colorful blanket squares"
                     className="w-full h-auto object-cover"
                   />
                 </div>
@@ -92,9 +126,9 @@ export default function BetaSignup() {
                 <h1 className="font-display text-3xl sm:text-4xl lg:text-5xl font-bold text-foreground mb-6">
                   Join the BlanketSmith Beta
                 </h1>
-                
+
                 <p className="text-muted-foreground text-lg mb-8 leading-relaxed">
-                  Be among the first to experience a new way to create blanket patterns. 
+                  Be among the first to experience a new way to create blanket patterns.
                   Get early access, shape the product, and connect directly with our team.
                 </p>
 
@@ -115,8 +149,8 @@ export default function BetaSignup() {
                     <div>
                       <p className="font-medium text-foreground mb-1">What to expect</p>
                       <p className="text-sm text-muted-foreground">
-                        After signing up, you'll receive an email with instructions to 
-                        access BlanketSmith. We'll also keep you updated on new features 
+                        After signing up, you'll receive an email with instructions to
+                        access BlanketSmith. We'll also keep you updated on new features
                         and ask for your feedback along the way.
                       </p>
                     </div>
@@ -128,7 +162,7 @@ export default function BetaSignup() {
               <div className="lg:sticky lg:top-28">
                 {isSubmitted ? (
                   <div className="rounded-2xl glass p-8 lg:p-12 text-center">
-                    <motion.div 
+                    <motion.div
                       initial={{ scale: 0, opacity: 0 }}
                       animate={{ scale: 1, opacity: 1 }}
                       transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.1 }}
@@ -140,7 +174,7 @@ export default function BetaSignup() {
                       You're on the list!
                     </h2>
                     <p className="text-muted-foreground mb-6">
-                      Thanks for joining the BlanketSmith beta. We'll send you access 
+                      Thanks for joining the BlanketSmith beta. We'll send you access
                       details and next steps to your email shortly.
                     </p>
                     <p className="text-sm text-muted-foreground">
@@ -148,7 +182,7 @@ export default function BetaSignup() {
                     </p>
                   </div>
                 ) : (
-                  <motion.form 
+                  <motion.form
                     onSubmit={handleSubmit}
                     className="rounded-2xl glass p-8 lg:p-12"
                     variants={containerVariants}
@@ -162,19 +196,21 @@ export default function BetaSignup() {
                     <motion.div variants={itemVariants} className="grid sm:grid-cols-2 gap-4 mb-5">
                       <div className="space-y-2">
                         <Label htmlFor="firstName">First name</Label>
-                        <Input 
-                          id="firstName" 
-                          placeholder="Jane" 
-                          required 
+                        <Input
+                          id="firstName"
+                          name="firstName"
+                          placeholder="Jane"
+                          required
                           maxLength={50}
                         />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="lastName">Last name</Label>
-                        <Input 
-                          id="lastName" 
-                          placeholder="Maker" 
-                          required 
+                        <Input
+                          id="lastName"
+                          name="lastName"
+                          placeholder="Maker"
+                          required
                           maxLength={50}
                         />
                       </div>
@@ -182,11 +218,12 @@ export default function BetaSignup() {
 
                     <motion.div variants={itemVariants} className="space-y-2 mb-5">
                       <Label htmlFor="email">Email address</Label>
-                      <Input 
-                        id="email" 
-                        type="email" 
-                        placeholder="jane@example.com" 
-                        required 
+                      <Input
+                        id="email"
+                        name="email"
+                        type="email"
+                        placeholder="jane@example.com"
+                        required
                         maxLength={255}
                       />
                       <p className="text-xs text-muted-foreground">
@@ -196,8 +233,9 @@ export default function BetaSignup() {
 
                     <motion.div variants={itemVariants} className="space-y-2 mb-5">
                       <Label htmlFor="craft">Primary craft</Label>
-                      <select 
+                      <select
                         id="craft"
+                        name="craft"
                         className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         required
                       >
@@ -211,8 +249,9 @@ export default function BetaSignup() {
 
                     <motion.div variants={itemVariants} className="space-y-2 mb-5">
                       <Label htmlFor="experience">Experience level</Label>
-                      <select 
+                      <select
                         id="experience"
+                        name="experience"
                         className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         required
                       >
@@ -226,8 +265,9 @@ export default function BetaSignup() {
 
                     <motion.div variants={itemVariants} className="space-y-2 mb-5">
                       <Label htmlFor="interest">What interests you most about BlanketSmith? (optional)</Label>
-                      <Textarea 
+                      <Textarea
                         id="interest"
+                        name="interest"
                         placeholder="Tell us what you're hoping to create or any features you're excited about..."
                         className="min-h-[100px] resize-none"
                         maxLength={500}
@@ -235,10 +275,10 @@ export default function BetaSignup() {
                     </motion.div>
 
                     <motion.div variants={itemVariants}>
-                      <Button 
-                        type="submit" 
-                        variant="gradient" 
-                        size="lg" 
+                      <Button
+                        type="submit"
+                        variant="gradient"
+                        size="lg"
                         className="w-full"
                         disabled={isSubmitting}
                       >
@@ -253,7 +293,7 @@ export default function BetaSignup() {
                       </Button>
 
                       <p className="text-xs text-muted-foreground text-center mt-4">
-                        By signing up, you agree to receive product updates and beta 
+                        By signing up, you agree to receive product updates and beta
                         communications from BlanketSmith.
                       </p>
                     </motion.div>

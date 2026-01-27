@@ -16,5 +16,8 @@
         "boxicons": "^2.1.4",
         "react": "^18.2.0",
         "react-dom": "^18.2.0"
+    },
+    "devDependencies": {
+        "supabase": "^2.72.8"
     }
 }

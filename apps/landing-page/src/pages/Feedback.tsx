@@ -42,8 +42,8 @@ const containerVariants = {
 
 const itemVariants = {
   hidden: { opacity: 0, y: 15 },
-  visible: { 
-    opacity: 1, 
+  visible: {
+    opacity: 1,
     y: 0,
     transition: { duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] as const }
   },
@@ -58,15 +58,62 @@ export default function Feedback() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-    
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    toast({
-      title: "Feedback submitted!",
-      description: "Thank you for helping us improve BlanketSmith.",
-    });
+
+    try {
+      const formData = new FormData(e.currentTarget);
+      const name = formData.get("name") as string;
+      const email = formData.get("email") as string;
+      const title = formData.get("title") as string;
+
+      let metadata: any = {
+        feedbackType: selectedType,
+        title
+      };
+
+      if (selectedType === "bug") {
+        // metadata.steps_to_reproduce and expected_behavior moved to top-level
+        // metadata.browser stays in metadata? User said: "Ensure 'primary_craft', 'experience_level', 'steps_to_reproduce', and 'expected_behavior' are sent as top-level keys"
+        // So browser stays in metadata.
+        metadata.browser = formData.get("browser") as string;
+      } else {
+        metadata.details = formData.get("details") as string;
+      }
+
+      // Dynamic import
+      const { supabase } = await import("@blanketsmith/supabase");
+
+      const submissionPayload: any = {
+        category: "feedback",
+        sub_type: selectedType,
+        email,
+        full_name: name,
+        metadata
+      };
+
+      if (selectedType === "bug") {
+        submissionPayload.steps_to_reproduce = formData.get("steps") as string;
+        submissionPayload.expected_behavior = formData.get("expected") as string;
+      }
+
+      const { error } = await supabase.from("contact_submissions").insert(submissionPayload);
+
+      if (error) throw error;
+
+      setIsSubmitted(true);
+      toast({
+        title: "Feedback submitted!",
+        description: "Thank you for helping us improve BlanketSmith.",
+      });
+    } catch (error) {
+      console.error("Submission error:", error);
+      toast({
+        variant: "destructive",
+        title: "Something went wrong.",
+        description: "Please try again later.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isSubmitted) {
@@ -75,13 +122,13 @@ export default function Feedback() {
         <section className="py-16 lg:py-24 relative">
           <div className="absolute inset-0 radial-gradient-wash pointer-events-none" aria-hidden="true" />
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, ease: "easeOut" }}
               className="max-w-xl mx-auto text-center"
             >
-              <motion.div 
+              <motion.div
                 initial={{ scale: 0, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.1 }}
@@ -93,7 +140,7 @@ export default function Feedback() {
                 Thank you for your feedback!
               </h1>
               <p className="text-muted-foreground mb-8">
-                Your input helps us build a better tool for the maker community. 
+                Your input helps us build a better tool for the maker community.
                 We review every submission and will follow up if we need more details.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -103,7 +150,7 @@ export default function Feedback() {
                     Back to Home
                   </a>
                 </Button>
-                <Button 
+                <Button
                   size="lg"
                   className="bg-background text-foreground hover:bg-background/90 hover:scale-[1.02] active:scale-[0.98] shadow-lg border border-border"
                   onClick={() => setIsSubmitted(false)}
@@ -123,7 +170,7 @@ export default function Feedback() {
       <section className="py-16 lg:py-24 relative">
         <div className="absolute inset-0 radial-gradient-wash pointer-events-none" aria-hidden="true" />
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
@@ -135,7 +182,7 @@ export default function Feedback() {
                 Beta Feedback & Bug Reports
               </h1>
               <p className="text-muted-foreground text-lg max-w-xl mx-auto">
-                Your feedback directly shapes BlanketSmith. Report bugs, suggest features, 
+                Your feedback directly shapes BlanketSmith. Report bugs, suggest features,
                 or share your experience—we read everything.
               </p>
             </div>
@@ -147,17 +194,15 @@ export default function Feedback() {
                   key={type.id}
                   type="button"
                   onClick={() => setSelectedType(type.id)}
-                  className={`group p-5 rounded-xl text-left transition-all glass ${
-                    selectedType === type.id
-                      ? "!border-primary !bg-primary/10 ring-2 ring-primary/20"
-                      : "hover:border-primary/30"
-                  }`}
+                  className={`group p-5 rounded-xl text-left transition-all glass ${selectedType === type.id
+                    ? "!border-primary !bg-primary/10 ring-2 ring-primary/20"
+                    : "hover:border-primary/30"
+                    }`}
                 >
-                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 transition-all duration-300 ease-out ${
-                    selectedType === type.id 
-                      ? "bg-gradient-to-br from-brand-purple via-brand-midblue to-brand-cyan" 
-                      : "bg-gradient-to-br from-brand-midblue/10 to-brand-cyan/10 border border-brand-purple/30 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(92,174,255,0.4)] group-hover:border-brand-midblue/50"
-                  }`}>
+                  <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-3 transition-all duration-300 ease-out ${selectedType === type.id
+                    ? "bg-gradient-to-br from-brand-purple via-brand-midblue to-brand-cyan"
+                    : "bg-gradient-to-br from-brand-midblue/10 to-brand-cyan/10 border border-brand-purple/30 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(92,174,255,0.4)] group-hover:border-brand-midblue/50"
+                    }`}>
                     <type.icon className={`w-5 h-5 ${selectedType === type.id ? "text-white" : "text-brand-midblue"}`} />
                   </div>
                   <h3 className="font-medium text-foreground mb-1">{type.title}</h3>
@@ -167,7 +212,7 @@ export default function Feedback() {
             </div>
 
             {/* Form */}
-            <motion.form 
+            <motion.form
               onSubmit={handleSubmit}
               className="rounded-2xl glass p-8"
               variants={containerVariants}
@@ -177,20 +222,22 @@ export default function Feedback() {
               <motion.div variants={itemVariants} className="grid sm:grid-cols-2 gap-4 mb-5">
                 <div className="space-y-2">
                   <Label htmlFor="name">Your name</Label>
-                  <Input 
-                    id="name" 
-                    placeholder="Jane Maker" 
-                    required 
+                  <Input
+                    id="name"
+                    name="name"
+                    placeholder="Jane Maker"
+                    required
                     maxLength={100}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email address</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    placeholder="jane@example.com" 
-                    required 
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="jane@example.com"
+                    required
                     maxLength={255}
                   />
                 </div>
@@ -198,54 +245,79 @@ export default function Feedback() {
 
               <motion.div variants={itemVariants} className="space-y-2 mb-5">
                 <Label htmlFor="title">
-                  {selectedType === "bug" 
-                    ? "Brief description of the issue" 
+                  {selectedType === "bug"
+                    ? "Brief description of the issue"
                     : selectedType === "feature"
-                    ? "Feature title"
-                    : "Subject"
+                      ? "Feature title"
+                      : "Subject"
                   }
                 </Label>
-                <Input 
-                  id="title" 
+                <Input
+                  id="title"
+                  name="title"
                   placeholder={
                     selectedType === "bug"
                       ? "e.g., Pattern export fails on large designs"
                       : selectedType === "feature"
-                      ? "e.g., Add color palette suggestions"
-                      : "e.g., My experience with the pattern editor"
+                        ? "e.g., Add color palette suggestions"
+                        : "e.g., My experience with the pattern editor"
                   }
-                  required 
+                  required
                   maxLength={200}
                 />
               </motion.div>
 
-              <motion.div variants={itemVariants} className="space-y-2 mb-5">
-                <Label htmlFor="details">
-                  {selectedType === "bug"
-                    ? "Steps to reproduce & expected behavior"
-                    : "Details"
-                  }
-                </Label>
-                <Textarea 
-                  id="details"
-                  placeholder={
-                    selectedType === "bug"
-                      ? "1. What were you trying to do?\n2. What happened instead?\n3. What did you expect to happen?"
-                      : selectedType === "feature"
-                      ? "Describe the feature and how it would help your workflow..."
-                      : "Share your thoughts, suggestions, or experience..."
-                  }
-                  className="min-h-[180px]"
-                  required
-                  maxLength={2000}
-                />
-              </motion.div>
+              {selectedType === "bug" ? (
+                <>
+                  <motion.div variants={itemVariants} className="space-y-2 mb-5">
+                    <Label htmlFor="steps">Steps to reproduce</Label>
+                    <Textarea
+                      id="steps"
+                      name="steps"
+                      placeholder="1. Go to... 2. Click on..."
+                      className="min-h-[100px]"
+                      required
+                      maxLength={2000}
+                    />
+                  </motion.div>
+                  <motion.div variants={itemVariants} className="space-y-2 mb-5">
+                    <Label htmlFor="expected">Expected behavior</Label>
+                    <Textarea
+                      id="expected"
+                      name="expected"
+                      placeholder="What did you expect to happen?"
+                      className="min-h-[80px]"
+                      required
+                      maxLength={1000}
+                    />
+                  </motion.div>
+                </>
+              ) : (
+                <motion.div variants={itemVariants} className="space-y-2 mb-5">
+                  <Label htmlFor="details">
+                    Details
+                  </Label>
+                  <Textarea
+                    id="details"
+                    name="details"
+                    placeholder={
+                      selectedType === "feature"
+                        ? "Describe the feature and how it would help your workflow..."
+                        : "Share your thoughts, suggestions, or experience..."
+                    }
+                    className="min-h-[180px]"
+                    required
+                    maxLength={2000}
+                  />
+                </motion.div>
+              )}
 
               {selectedType === "bug" && (
                 <motion.div variants={itemVariants} className="space-y-2 mb-5">
                   <Label htmlFor="browser">Browser & device (optional)</Label>
-                  <Input 
-                    id="browser" 
+                  <Input
+                    id="browser"
+                    name="browser"
                     placeholder="e.g., Chrome on MacBook Pro"
                     maxLength={100}
                   />
@@ -253,10 +325,10 @@ export default function Feedback() {
               )}
 
               <motion.div variants={itemVariants}>
-                <Button 
-                  type="submit" 
-                  variant="gradient" 
-                  size="lg" 
+                <Button
+                  type="submit"
+                  variant="gradient"
+                  size="lg"
                   className="w-full"
                   disabled={isSubmitting}
                 >
