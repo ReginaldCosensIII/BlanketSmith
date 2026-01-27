@@ -16,6 +16,7 @@ Deno.serve(async (req: Request) => {
 
     try {
         const payload = await req.json();
+        console.log("Full Payload:", JSON.stringify(payload));
 
         // Check if this is a database webhook payload (INSERT)
         // Structure: { type: 'INSERT', table: 'contact_submissions', record: { ... }, schema: 'public' }
@@ -23,7 +24,11 @@ Deno.serve(async (req: Request) => {
             const record = payload.record;
 
             // Only process beta_signup triggers
-            if (record.type === 'beta_signup') {
+            // Check for category 'beta' (new schema) or type 'beta_signup' (legacy)
+            const isBetaSignup = (record.category && record.category.toLowerCase() === 'beta') ||
+                record.type === 'beta_signup';
+
+            if (isBetaSignup) {
                 const metadata = record.metadata || {};
                 const firstName = metadata.firstName || (record.full_name || record.name || '').split(' ')[0] || 'Maker';
 
