@@ -84,7 +84,7 @@ Milestones are ordered for delivery efficiency. Tasks can move between milestone
 - [x] **Landing Scaffolding**: Import & configure landing page workspace (Done).
 - [x] **Supabase Integration**: Wire up contact form & backend (Done).
     - [x] Debugging `PGRST204` (Schema Cache Mismatch)
-    - [x] Email Automation: Live (SMTP) Dynamic Recipient
+    - [x] Email Automation: Live (SMTP) Dispatcher & Admin Alerts (Complete)
 - [ ] **Vercel Secrets Config**: Configure env vars for Supabase connectivity (Next).
 - [ ] **Deployment**: Deploy landing page sub-directory (Pending).
 

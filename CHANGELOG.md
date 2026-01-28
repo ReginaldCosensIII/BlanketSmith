@@ -5,7 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+
 ### [Unreleased]
+- **Email System Dispatcher (feat/email-system-dispatcher)**:
+    - Implemented multi-template email system (Beta, Partnership, Feedback, Default).
+    - Added Dual-Send logic: Users receive confirmation, Admins receive alert with full metadata.
+    - Normalized submission categories for consistent handling.
 
 
 ### Infrastructure
