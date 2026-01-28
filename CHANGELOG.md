@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### [Unreleased]
 
+
+### Infrastructure
+- **Type Checking**: Unified type-checking across the monorepo with root-level script.
+
 ### Chore
 - **Landing Page Scaffolding**: Initialized `@blanketsmith/landing-page` workspace with React/Vite/SWC config.
     - Integrated standard dependency suite (Radix UI, Framer Motion, Tanstack Query).

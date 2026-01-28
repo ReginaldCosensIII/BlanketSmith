@@ -145,6 +145,7 @@ Add items freely; keep IDs stable once created. Promote to Blocker list when nee
 - [x] **INS-001:** Instructions Engine v2 (Status: Done)
 - [ ] **RPT-001:** Feedback/bug reporting mechanism (Status: Not Started)
 - [ ] **ROT-001:** Rotate/select tool data integrity + undo/redo compatibility (Status: Not Started)
+- [x] **INFRA-001:** Global Type Checking (Status: Done)
 
 ### High Priority
 - [ ] **EXP-001:** Export pipeline hardening (Status: Not Started)
