@@ -9,6 +9,7 @@
         "dev:tool": "npm run dev -w @blanketsmith/tool",
         "dev:web": "npm run dev -w @blanketsmith/web",
         "dev:landing": "npm run dev -w @blanketsmith/landing-page",
+        "type-check": "npm run type-check --workspaces --if-present",
         "build": "npm run build --workspaces",
         "build:landing": "npm run build -w @blanketsmith/landing-page"
     },
