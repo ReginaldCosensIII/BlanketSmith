@@ -12,6 +12,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Added Dual-Send logic: Users receive confirmation, Admins receive alert with full metadata.
     - Normalized submission categories for consistent handling.
 
+- **SPA Routing**: Fixed 404 error on page refresh/direct URL access (SPA Routing issue) by adding `vercel.json` to the landing page app.
+
+
 
 ### Infrastructure
 - **Type Checking**: Unified type-checking across the monorepo with root-level script.
