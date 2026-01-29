@@ -191,13 +191,6 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
 
     // Persistence effects removed (handled by App.tsx or parent)
 
-    // [REMOVED] Old color picker state
-    // const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
-    // const [tempCustomColor, setTempCustomColor] = useState('#FF0000');
-    // const [pickerMode, setPickerMode] = useState<ColorMode>('HEX');
-    // const [hsl, setHsl] = useState<[number, number, number]>([0, 100, 50]);
-    // const colorInputRef = useRef<HTMLInputElement>(null);
-
     const [contextMenu, setContextMenu] = useState<{ x: number, y: number } | null>(null);
     const [isExportModalOpen, setIsExportModalOpen] = useState(false);
     const [isGenerateModalOpen, setIsGenerateModalOpen] = useState(false);

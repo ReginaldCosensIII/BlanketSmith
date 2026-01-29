@@ -22,7 +22,7 @@ export interface YarnBrand {
   isCustom?: boolean;
 }
 
-export interface YarnColor {
+export interface LibraryColor {
   id: string; // The unique Library ID
   brandId: string;
   code: string; // Manufacturer code
