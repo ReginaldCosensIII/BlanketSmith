@@ -1,6 +1,7 @@
 
 import { AnyProject, PatternType, PixelGridData, PatternColor, CellData } from '../types';
 import { YARN_PALETTE } from '../constants';
+import { LIBRARY_COLORS } from '../data/yarnLibrary';
 import { logger } from './logger';
 import { notify } from './notification';
 import { generatePattern } from './patternGenerator';
@@ -9,11 +10,10 @@ const PROJECTS_KEY = 'blanketsmith_projects';
 
 // Helper to migrate legacy string[] grids to CellData[] grids
 const migrateProjectData = (project: AnyProject): AnyProject => {
+  // ... (no change to migrateProjectData)
   if (project.type === 'pixel' && project.data && 'grid' in project.data) {
     const pData = project.data as any;
-    // Check if the grid contains strings or nulls directly (legacy format)
     if (pData.grid.length > 0 && (typeof pData.grid[0] === 'string' || pData.grid[0] === null) && !pData.grid[0]?.colorId) {
-      // Migrate to object format
       pData.grid = pData.grid.map((colorId: string | null) => ({ colorId, iconId: undefined }));
     }
   }
@@ -21,6 +21,7 @@ const migrateProjectData = (project: AnyProject): AnyProject => {
 };
 
 export const getProjects = (): AnyProject[] => {
+  // ... (no change)
   try {
     const projectsJson = localStorage.getItem(PROJECTS_KEY);
     const projects = projectsJson ? JSON.parse(projectsJson) : [];
@@ -33,6 +34,7 @@ export const getProjects = (): AnyProject[] => {
 };
 
 export const saveProject = (project: AnyProject): void => {
+  // ... (no change)
   const projects = getProjects();
   const existingIndex = projects.findIndex(p => p.id === project.id);
   project.updatedAt = new Date().toISOString();
@@ -51,6 +53,7 @@ export const saveProject = (project: AnyProject): void => {
 };
 
 export const deleteProject = (projectId: string): void => {
+  // ... (no change)
   let projects = getProjects();
   projects = projects.filter(p => p.id !== projectId);
   try {
@@ -69,6 +72,19 @@ export const createNewProject = (
   height: number
 ): AnyProject => {
   const now = new Date().toISOString();
+
+  // GEN-002: Default to BlanketSmith Essentials
+  const defaultPalette = LIBRARY_COLORS
+    .filter(c => c.brandId === 'brand_bs_essentials')
+    .map(c => ({
+      id: c.id,
+      brand: 'BlanketSmith Essentials', // Flatten name for pattern usage
+      name: c.name,
+      hex: c.hex,
+      rgb: undefined, // Let valid color derive this if needed or keep undefined
+      skeinLength: 295
+    } as PatternColor));
+
   const projectBase = {
     id: `proj-${Date.now()}`,
     name,
@@ -76,7 +92,7 @@ export const createNewProject = (
     createdAt: now,
     updatedAt: now,
     settings: {},
-    yarnPalette: [...YARN_PALETTE] as PatternColor[],
+    yarnPalette: defaultPalette,
   };
 
   switch (type) {

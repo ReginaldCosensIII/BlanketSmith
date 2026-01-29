@@ -1,7 +1,9 @@
 import { YarnBrand, YarnColor } from '../../types';
+import { STYLECRAFT_COLORS } from './stylecraft';
 
 export const LIBRARY_BRANDS: YarnBrand[] = [
     { id: 'brand_bs_essentials', name: 'BlanketSmith Essentials', isCustom: false },
+    { id: 'stylecraft-special-dk', name: 'Stylecraft Special DK', website: 'https://www.stylecraft-yarns.co.uk' },
     { id: 'red-heart-super-saver', name: 'Red Heart Super Saver', website: 'https://www.yarnspirations.com/red-heart' },
     { id: 'lion-brand-vannas-choice', name: "Lion Brand Vanna's Choice", website: 'https://www.lionbrand.com' },
     { id: 'bernat-blanket', name: 'Bernat Blanket', website: 'https://www.yarnspirations.com/bernat' },
@@ -25,6 +27,9 @@ export const LIBRARY_COLORS: YarnColor[] = [
     { id: 'bs-teal', brandId: 'brand_bs_essentials', code: 'BS-014', name: 'Teal', hex: '#008080', matchConfidence: 'exact' },
     { id: 'bs-navy', brandId: 'brand_bs_essentials', code: 'BS-015', name: 'Navy', hex: '#000080', matchConfidence: 'exact' },
     { id: 'bs-maroon', brandId: 'brand_bs_essentials', code: 'BS-016', name: 'Maroon', hex: '#800000', matchConfidence: 'exact' },
+
+    // --- Stylecraft Special DK ---
+    ...STYLECRAFT_COLORS,
 
     // --- Red Heart Super Saver (10 Seed Colors) ---
     { id: 'rhss-cherry-red', brandId: 'red-heart-super-saver', code: '0319', name: 'Cherry Red', hex: '#D21020', matchConfidence: 'approx' },

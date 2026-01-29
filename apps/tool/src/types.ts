@@ -110,6 +110,8 @@ export type ProjectAction =
   | { type: 'SET_PALETTE'; payload: PatternColor[] }
   | { type: 'SET_PRIMARY_COLOR'; payload: string | null }
   | { type: 'SET_SECONDARY_COLOR'; payload: string | null }
+  | { type: 'ADD_COLOR_TO_PALETTE'; payload: PatternColor }
+  | { type: 'REMOVE_COLOR_FROM_PALETTE'; payload: string }
   | { type: 'UPDATE_INSTRUCTION_DOC'; payload: InstructionDoc }
   | { type: 'UNDO' }
   | { type: 'REDO' };
