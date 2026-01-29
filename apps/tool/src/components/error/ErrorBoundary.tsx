@@ -44,8 +44,8 @@ export class ErrorBoundary extends Component<Props, State> {
                 <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
                     <div className="bg-white rounded-2xl shadow-xl p-8 max-w-lg w-full text-center border border-gray-100">
                         <div className="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-                            {/* using 'ban' as closest to error symbol in current map, or a generic warning */}
-                            <Icon name="ban" className="text-red-500 text-3xl" />
+                            {/* using 'alert-error' for error symbol */}
+                            <Icon name="alert-error" className="text-red-500 text-3xl" />
                         </div>
 
                         <h1 className="text-2xl font-bold text-gray-900 mb-2">Something went wrong</h1>

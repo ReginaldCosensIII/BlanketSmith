@@ -78,7 +78,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                         role="alert"
                     >
                         <div className="flex-shrink-0">
-                            {toast.type === 'error' && <Icon name="ban" className="text-red-500" />}
+                            {toast.type === 'error' && <Icon name="alert-error" className="text-red-500" />}
                             {toast.type === 'success' && <Icon name="check" className="text-green-500" />}
                             {toast.type === 'info' && <Icon name="info" className="text-blue-500" />}
                         </div>
