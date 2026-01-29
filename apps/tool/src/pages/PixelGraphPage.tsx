@@ -2238,42 +2238,44 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
 
                     <div className="border-t pt-4">
                         {/* GEN-002: Dual-Swatch Sidebar Header */}
-                        <div className="flex flex-col gap-3 p-4 border rounded-lg bg-stone-50 border-stone-200 mb-4 shadow-sm">
-                            <div className="flex items-center justify-center gap-4">
-                                {/* Primary Swatch (Large) Read Only */}
-                                <div className="flex flex-col items-center gap-1 group" title="Active Primary Color">
-                                    <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Primary</span>
-                                    <div
-                                        className="w-12 h-12 rounded-full shadow-lg ring-2 ring-stone-900 ring-offset-2 cursor-default border-4 border-white"
-                                        style={{ backgroundColor: primaryColorId ? yarnColorMap.get(primaryColorId)?.hex : 'transparent', backgroundImage: !primaryColorId ? 'linear-gradient(45deg, #ddd 25%, transparent 25%), linear-gradient(-45deg, #ddd 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ddd 75%), linear-gradient(-45deg, transparent 75%, #ddd 75%)' : 'none', backgroundSize: '8px 8px' }}
-                                    />
-                                    <span className="text-[10px] text-gray-500 max-w-[60px] truncate">{primaryColorId ? yarnColorMap.get(primaryColorId)?.name : 'None'}</span>
-                                </div>
-                                <button
-                                    onClick={swapColors}
-                                    className="w-8 h-8 flex items-center justify-center rounded-full text-stone-400 hover:bg-stone-200 hover:text-stone-700 transition-colors mt-4"
-                                    title="Swap Primary & Secondary (X)"
-                                >
-                                    <Icon name="swap" size="md" />
-                                </button>
-
-                                {/* Secondary Swatch (Large) Read Only */}
-                                <div className="flex flex-col items-center gap-1 group" title="Active Secondary Color">
-                                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Secondary</span>
-                                    <div
-                                        className="w-10 h-10 rounded-full shadow-md ring-1 ring-stone-300 ring-offset-2 cursor-default border-4 border-white opacity-90"
-                                        style={{ backgroundColor: secondaryColorId ? yarnColorMap.get(secondaryColorId)?.hex : 'transparent', backgroundImage: !secondaryColorId ? 'linear-gradient(45deg, #ddd 25%, transparent 25%), linear-gradient(-45deg, #ddd 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ddd 75%), linear-gradient(-45deg, transparent 75%, #ddd 75%)' : 'none', backgroundSize: '8px 8px' }}
-                                    />
-                                    <span className="text-[10px] text-gray-400 max-w-[50px] truncate">{secondaryColorId ? yarnColorMap.get(secondaryColorId)?.name : 'None'}</span>
+                        {/* GEN-002: Dual-Swatch Sidebar Header (Redesigned) */}
+                        <div className="flex flex-row items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded-lg mb-4 shadow-sm">
+                            {/* Primary Group (Left) */}
+                            <div className="flex flex-row items-center gap-2 max-w-[40%]">
+                                <div
+                                    className="w-8 h-8 rounded-full shadow-sm ring-2 ring-gray-800 ring-offset-1 shrink-0 border-2 border-white"
+                                    title="Active Primary Color"
+                                    style={{ backgroundColor: primaryColorId ? yarnColorMap.get(primaryColorId)?.hex : 'transparent', backgroundImage: !primaryColorId ? 'linear-gradient(45deg, #ddd 25%, transparent 25%), linear-gradient(-45deg, #ddd 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ddd 75%), linear-gradient(-45deg, transparent 75%, #ddd 75%)' : 'none', backgroundSize: '8px 8px' }}
+                                />
+                                <div className="flex flex-col overflow-hidden">
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase leading-tight">Primary</span>
+                                    <span className="text-xs font-semibold text-gray-700 truncate" title={primaryColorId ? yarnColorMap.get(primaryColorId)?.name : 'Eraser'}>
+                                        {primaryColorId ? yarnColorMap.get(primaryColorId)?.name : 'Eraser'}
+                                    </span>
                                 </div>
                             </div>
-                            {/* Active Color Details */}
-                            <div className="text-center pt-1 border-t border-stone-200/50 mt-1">
-                                <div className="font-bold text-stone-900 text-sm truncate px-2">
-                                    {primaryColorId ? yarnColorMap.get(primaryColorId)?.name : 'Eraser'}
-                                </div>
-                                <div className="text-[10px] text-stone-400 uppercase tracking-wider">
-                                    {primaryColorId ? yarnColorMap.get(primaryColorId)?.brand : 'Tool'}
+
+                            {/* Center Swap */}
+                            <button
+                                onClick={swapColors}
+                                className="w-6 h-6 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-200 transition-colors shrink-0"
+                                title="Swap Colors (X)"
+                            >
+                                <Icon name="swap" size={16} />
+                            </button>
+
+                            {/* Secondary Group (Right) */}
+                            <div className="flex flex-row-reverse items-center gap-2 max-w-[40%] text-right">
+                                <div
+                                    className="w-8 h-8 rounded-full shadow-sm ring-1 ring-gray-300 ring-offset-1 shrink-0 opacity-90 border-2 border-white"
+                                    title="Active Secondary Color"
+                                    style={{ backgroundColor: secondaryColorId ? yarnColorMap.get(secondaryColorId)?.hex : 'transparent', backgroundImage: !secondaryColorId ? 'linear-gradient(45deg, #ddd 25%, transparent 25%), linear-gradient(-45deg, #ddd 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ddd 75%), linear-gradient(-45deg, transparent 75%, #ddd 75%)' : 'none', backgroundSize: '8px 8px' }}
+                                />
+                                <div className="flex flex-col overflow-hidden">
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase leading-tight">Secondary</span>
+                                    <span className="text-xs font-medium text-gray-600 truncate" title={secondaryColorId ? yarnColorMap.get(secondaryColorId)?.name : 'None'}>
+                                        {secondaryColorId ? yarnColorMap.get(secondaryColorId)?.name : 'None'}
+                                    </span>
                                 </div>
                             </div>
                         </div>
