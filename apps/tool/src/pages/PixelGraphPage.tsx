@@ -2347,7 +2347,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                                         <span className="font-mono font-bold bg-white px-2 py-0.5 rounded border border-gray-300 shadow-sm">{secondaryStitch ? secondaryStitch.symbol : '-'}</span>
                                     </div>
                                     <Button variant="secondary" onClick={() => setIsStitchPaletteOpen(true)} className="w-full justify-center text-xs h-8 mt-2">
-                                        Manage Stitches
+                                        <Icon name="manage-stitches" size={12} className="mr-1.5" /> Manage Stitches
                                     </Button>
                                 </div>
                             )}

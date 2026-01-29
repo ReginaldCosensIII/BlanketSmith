@@ -234,7 +234,7 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
                             <Icon name="plus" size={12} className="mr-1.5" /> Add All ({filteredLibraryColors.length})
                         </Button>
                         <Button variant="secondary" onClick={() => setIsCustomOverlayOpen(true)} className="flex-1 justify-center text-xs h-8">
-                            <Icon name="palette" size={12} className="mr-1.5" /> Custom Color
+                            <Icon name="color-palette" size={12} className="mr-1.5" /> Custom Color
                         </Button>
                     </div>
                 </div>
@@ -337,7 +337,7 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
                         <div className="flex justify-between items-center mb-4 border-b pb-2">
                             <h3 className="font-bold text-lg text-gray-700">Create Custom Color</h3>
                             <button onClick={() => setIsCustomOverlayOpen(false)} className="text-gray-400 hover:text-gray-600">
-                                <Icon name="x" size={20} />
+                                <Icon name="close" size={20} />
                             </button>
                         </div>
 
