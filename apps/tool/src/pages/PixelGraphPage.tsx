@@ -2239,20 +2239,18 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                     <div className="border-t pt-4">
                         {/* GEN-002: Dual-Swatch Sidebar Header */}
                         {/* GEN-002: Dual-Swatch Sidebar Header (Redesigned) */}
-                        <div className="flex flex-row items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded-lg mb-4 shadow-sm">
+                        <div className="flex flex-row items-center justify-center gap-10 p-2 bg-gray-50 border border-gray-200 rounded-lg mb-4 shadow-sm">
                             {/* Primary Group (Left) */}
-                            <div className="flex flex-row items-center gap-2 max-w-[40%]">
+                            <div className="flex flex-col items-center gap-1 max-w-[40%]">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase leading-none">Primary</span>
                                 <div
                                     className="w-8 h-8 rounded-full shadow-sm ring-2 ring-gray-800 ring-offset-1 shrink-0 border-2 border-white"
                                     title="Active Primary Color"
                                     style={{ backgroundColor: primaryColorId ? yarnColorMap.get(primaryColorId)?.hex : 'transparent', backgroundImage: !primaryColorId ? 'linear-gradient(45deg, #ddd 25%, transparent 25%), linear-gradient(-45deg, #ddd 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ddd 75%), linear-gradient(-45deg, transparent 75%, #ddd 75%)' : 'none', backgroundSize: '8px 8px' }}
                                 />
-                                <div className="flex flex-col overflow-hidden">
-                                    <span className="text-[10px] font-bold text-gray-400 uppercase leading-tight">Primary</span>
-                                    <span className="text-xs font-semibold text-gray-700 truncate" title={primaryColorId ? yarnColorMap.get(primaryColorId)?.name : 'Eraser'}>
-                                        {primaryColorId ? yarnColorMap.get(primaryColorId)?.name : 'Eraser'}
-                                    </span>
-                                </div>
+                                <span className="text-[10px] font-semibold text-gray-700 truncate w-full text-center" title={primaryColorId ? yarnColorMap.get(primaryColorId)?.name : 'Eraser'}>
+                                    {primaryColorId ? yarnColorMap.get(primaryColorId)?.name : 'Eraser'}
+                                </span>
                             </div>
 
                             {/* Center Swap */}
@@ -2265,18 +2263,16 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                             </button>
 
                             {/* Secondary Group (Right) */}
-                            <div className="flex flex-row-reverse items-center gap-2 max-w-[40%] text-right">
+                            <div className="flex flex-col items-center gap-1 max-w-[40%]">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase leading-none">Secondary</span>
                                 <div
                                     className="w-8 h-8 rounded-full shadow-sm ring-1 ring-gray-300 ring-offset-1 shrink-0 opacity-90 border-2 border-white"
                                     title="Active Secondary Color"
                                     style={{ backgroundColor: secondaryColorId ? yarnColorMap.get(secondaryColorId)?.hex : 'transparent', backgroundImage: !secondaryColorId ? 'linear-gradient(45deg, #ddd 25%, transparent 25%), linear-gradient(-45deg, #ddd 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ddd 75%), linear-gradient(-45deg, transparent 75%, #ddd 75%)' : 'none', backgroundSize: '8px 8px' }}
                                 />
-                                <div className="flex flex-col overflow-hidden">
-                                    <span className="text-[10px] font-bold text-gray-400 uppercase leading-tight">Secondary</span>
-                                    <span className="text-xs font-medium text-gray-600 truncate" title={secondaryColorId ? yarnColorMap.get(secondaryColorId)?.name : 'None'}>
-                                        {secondaryColorId ? yarnColorMap.get(secondaryColorId)?.name : 'None'}
-                                    </span>
-                                </div>
+                                <span className="text-[10px] font-medium text-gray-600 truncate w-full text-center" title={secondaryColorId ? yarnColorMap.get(secondaryColorId)?.name : 'None'}>
+                                    {secondaryColorId ? yarnColorMap.get(secondaryColorId)?.name : 'None'}
+                                </span>
                             </div>
                         </div>
 
@@ -2298,7 +2294,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                                 onClick={(e) => handlePaletteClick(null, e)}
                                 onContextMenu={(e) => handlePaletteClick(null, e)}
                                 className={`
-                                    w-8 h-8 rounded-lg border-2 relative overflow-hidden transition-all
+                                    w-8 h-8 rounded-full border-2 relative overflow-hidden transition-all
                                     ${primaryColorId === null ? 'ring-2 ring-stone-900 ring-offset-1 z-10 border-white shadow-sm' : 'border-gray-200 hover:border-gray-300'} 
                                     ${secondaryColorId === null ? 'md:after:absolute md:after:top-0 md:after:right-0 md:after:w-2 md:after:h-2 md:after:bg-stone-400 md:after:rounded-bl-md' : ''}
                                 `}
@@ -2332,7 +2328,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                                 );
                             })}
 
-                            <button onClick={() => handleOpenPaletteManager('primary', 'select')} className="w-8 h-8 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-colors" title="Add or Manage Colors">
+                            <button onClick={() => handleOpenPaletteManager('primary', 'select')} className="w-8 h-8 rounded-full border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-colors" title="Add or Manage Colors">
                                 <Icon name="plus" size="sm" />
                             </button>
                         </div>
