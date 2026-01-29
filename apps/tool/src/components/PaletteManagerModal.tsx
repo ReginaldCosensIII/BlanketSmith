@@ -104,6 +104,33 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
         setTempCustomColor(rgbToHex(rgb[0], rgb[1], rgb[2]));
     };
 
+    const updateColorFromHex = (val: string) => {
+        setTempCustomColor(val);
+        // Only update HSL if valid hex
+        if (/^#[0-9A-Fa-f]{6}$/i.test(val)) {
+            const rgb = hexToRgb(val);
+            setHsl(rgbToHsl(rgb[0], rgb[1], rgb[2]));
+        }
+    };
+
+    const updateColorFromRgb = (r: number, g: number, b: number) => {
+        // Clamp
+        const safeR = Math.max(0, Math.min(255, isNaN(r) ? 0 : r));
+        const safeG = Math.max(0, Math.min(255, isNaN(g) ? 0 : g));
+        const safeB = Math.max(0, Math.min(255, isNaN(b) ? 0 : b));
+
+        const hex = rgbToHex(safeR, safeG, safeB);
+        setTempCustomColor(hex);
+        setHsl(rgbToHsl(safeR, safeG, safeB));
+    };
+
+    const getRgb = (): [number, number, number] => {
+        if (/^#[0-9A-Fa-f]{6}$/i.test(tempCustomColor)) {
+            return hexToRgb(tempCustomColor);
+        }
+        return [0, 0, 0];
+    };
+
     // --- Actions ---
     const handleAddColor = (color: PatternColor) => {
         // 1. Add to palette if not exists
@@ -174,12 +201,18 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
 
     const handleCreateCustomAndAdd = () => {
         const hex = tempCustomColor;
+        // VALIDATION: Ensure valid hex before saving
+        if (!/^#[0-9A-Fa-f]{6}$/i.test(hex)) {
+            // Should not happen if button disabled, but defensive:
+            return;
+        }
+
         const newColor: PatternColor = {
             id: `custom-${Date.now()}`,
             brand: customBrand.trim() || 'Custom',
             name: customName.trim() || `Custom ${hex}`,
             hex: hex,
-            rgb: hexToRgb(hex),
+            rgb: hexToRgb(hex), // Guaranteed to be valid [r,g,b]
             skeinLength: 295
         };
         dispatch({ type: 'ADD_COLOR_TO_PALETTE', payload: newColor });
@@ -348,7 +381,39 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
                                     className="w-32 h-32 rounded-lg border shadow-sm"
                                     style={{ backgroundColor: tempCustomColor }}
                                 />
-                                <div className="text-center font-mono text-sm bg-gray-100 rounded py-1 border">{tempCustomColor}</div>
+                                {/* Editable Hex Input */}
+                                <input
+                                    type="text"
+                                    value={tempCustomColor}
+                                    onChange={(e) => updateColorFromHex(e.target.value)}
+                                    className="w-full text-center font-mono text-sm bg-gray-50 rounded py-1 border uppercase focus:ring-2 focus:ring-indigo-100 outline-none"
+                                    maxLength={7}
+                                />
+
+                                {/* RGB Inputs */}
+                                <div className="grid grid-cols-3 gap-1">
+                                    {['R', 'G', 'B'].map((label, idx) => {
+                                        const currentRgb = getRgb();
+                                        return (
+                                            <div key={label} className="relative">
+                                                <input
+                                                    type="number"
+                                                    min="0"
+                                                    max="255"
+                                                    value={currentRgb[idx]}
+                                                    onChange={(e) => {
+                                                        const val = parseInt(e.target.value);
+                                                        const newRgb = [...currentRgb];
+                                                        newRgb[idx] = val;
+                                                        updateColorFromRgb(newRgb[0], newRgb[1], newRgb[2]);
+                                                    }}
+                                                    className="w-full text-center text-xs border rounded py-1 px-0 appearance-none bg-white"
+                                                />
+                                                <div className="text-[8px] text-gray-400 text-center mt-0.5 font-bold">{label}</div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
                             </div>
 
                             {/* Controls */}
@@ -407,7 +472,12 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
                                 </div>
 
                                 <div className="pt-2">
-                                    <Button variant="primary" onClick={handleCreateCustomAndAdd} className="w-full justify-center">
+                                    <Button
+                                        variant="primary"
+                                        onClick={handleCreateCustomAndAdd}
+                                        className="w-full justify-center"
+                                        disabled={!/^#[0-9A-Fa-f]{6}$/i.test(tempCustomColor)}
+                                    >
                                         Add to Palette
                                     </Button>
                                 </div>

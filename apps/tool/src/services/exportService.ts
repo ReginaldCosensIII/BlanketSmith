@@ -87,6 +87,20 @@ const PDF_CONFIG = {
     }
 };
 
+const hexToRgb = (hex: string): [number, number, number] => {
+    if (!hex) return [0, 0, 0];
+    const bigint = parseInt(hex.slice(1), 16);
+    return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+};
+
+const ensurePaletteConsistency = (palette: PatternColor[]) => {
+    palette.forEach(color => {
+        if (!color.rgb || !Array.isArray(color.rgb) || color.rgb.length !== 3) {
+            color.rgb = hexToRgb(color.hex);
+        }
+    });
+};
+
 const getTextColor = (hex: string): string => {
     if (!hex) return '#000000';
     const rgb = parseInt(hex.slice(1), 16);
@@ -160,6 +174,9 @@ const buildColorSymbolMap = (yarnPalette: PatternColor[]): Map<string, string> =
 
 export const exportPixelGridToImage = (projectName: string, gridData: PixelGridData, yarnPalette: PatternColor[]) => {
     try {
+        // Defensive: Ensure RGB values exist
+        ensurePaletteConsistency(yarnPalette);
+
         // Basic implementation to restore functionality
         const canvas = document.createElement('canvas');
         const scale = 20; // Fixed scale for export
@@ -294,8 +311,15 @@ export const exportPixelGridToPDF = (
     options: ExportOptions = {},
     projectSettings: any = {},
     isLeftHanded: boolean = false
+
 ) => {
     try {
+        // Defensive: Ensure RGB values exist
+        // Note: We modifying the array elements in place, which is generally safe here as PatternColor objects are mutable references
+        // and we are normalizing data for export.
+
+        if (yarnPalette) ensurePaletteConsistency(yarnPalette);
+
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({
             orientation: 'portrait',
@@ -681,7 +705,8 @@ export const exportPixelGridToPDF = (
                 }
 
                 // Color Swatch
-                const [r, g, b] = yarn.rgb;
+                // Defensive: Ensure RGB is available
+                const [r, g, b] = yarn.rgb || hexToRgb(yarn.hex);
                 doc.setFillColor(r, g, b);
                 doc.rect(colColor, legendY, swatchSize, swatchSize, 'F');
                 doc.rect(colColor, legendY, swatchSize, swatchSize, 'S'); // Border

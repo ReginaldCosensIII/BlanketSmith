@@ -28,6 +28,7 @@ export interface LibraryColor {
   code: string; // Manufacturer code
   name: string;
   hex: string;
+  rgb?: [number, number, number];
   productCode?: string; // UPC or SKU for shopping list
   matchConfidence?: 'exact' | 'high' | 'approx';
 }
