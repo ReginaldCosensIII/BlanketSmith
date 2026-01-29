@@ -78,35 +78,97 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const { state, dispatch } = useProject();
     const project = state.project?.type === 'pixel' ? state.project : null;
 
-    // --- PERSISTENT STATE INITIALIZATION ---
-    const [primaryColorId, setPrimaryColorId] = useState<string | null>(() => localStorage.getItem('editor_primaryColorId') || null);
-    const [secondaryColorId, setSecondaryColorId] = useState<string | null>(() => localStorage.getItem('editor_secondaryColorId') || null);
-    const [isPanelOpen, setIsPanelOpen] = useState(() => localStorage.getItem('editor_isPanelOpen') === 'true');
-    const [activeTool, setActiveTool] = useState<Tool>(() => (localStorage.getItem('editor_activeTool') as Tool) || 'brush');
+    // --- GLOBAL PRIMARY/SECONDARY STATE (GEN-002) ---
+    // Note: We use the global project state for source of truth.
+    // We default to local state only during transition or initial load if project is null (though logic guards against null)
 
-    const [isProcessing, setIsProcessing] = useState(false);
-    const [showGridLines, setShowGridLines] = useState(() => localStorage.getItem('editor_showGridLines') !== 'false'); // Default true
-    const imageUploadRef = useRef<HTMLInputElement>(null);
-    const previewCanvasRef = useRef<HTMLCanvasElement>(null);
-    const fullScreenCanvasRef = useRef<HTMLCanvasElement>(null);
-    const [maxImportColors, setMaxImportColors] = useState(() => Number(localStorage.getItem('editor_maxImportColors')) || 16);
+    // Sync local state refs if needed, but primary consumption should be directly from `project`
+    // Legacy local state removed in favor of `project.activePrimaryColorId`
 
+    const primaryColorId = project?.activePrimaryColorId ?? null;
+    const secondaryColorId = project?.activeSecondaryColorId ?? null;
+
+    // --- COLOR ACTIONS ---
+    const setPrimaryColorId = useCallback((id: string | null) => {
+        dispatch({ type: 'SET_PRIMARY_COLOR', payload: id });
+    }, [dispatch]);
+
+    const setSecondaryColorId = useCallback((id: string | null) => {
+        dispatch({ type: 'SET_SECONDARY_COLOR', payload: id });
+    }, [dispatch]);
+
+    const swapColors = useCallback(() => {
+        const p = primaryColorId;
+        const s = secondaryColorId;
+        // Batch updates? Reducer doesn't support batch, so we do two dispatches.
+        // This is fine for UI actions.
+        dispatch({ type: 'SET_PRIMARY_COLOR', payload: s });
+        dispatch({ type: 'SET_SECONDARY_COLOR', payload: p });
+    }, [primaryColorId, secondaryColorId, dispatch]);
+
+    // ... (rest of the persistent state effects that are NOT color related)
+    // --- TOOL STATE ---
+    const [activeTool, setActiveTool] = useState<Tool>('brush');
     const [brushSize, setBrushSize] = useState(() => Number(localStorage.getItem('editor_brushSize')) || 1);
     const [rowFillSize, setRowFillSize] = useState(() => Number(localStorage.getItem('editor_rowFillSize')) || 1);
     const [colFillSize, setColFillSize] = useState(() => Number(localStorage.getItem('editor_colFillSize')) || 1);
-    const [textToolInput, setTextToolInput] = useState(() => localStorage.getItem('editor_textToolInput') || 'Text');
+    const [textToolInput, setTextToolInput] = useState(() => localStorage.getItem('editor_textToolInput') || 'A');
     const [textSize, setTextSize] = useState(() => Number(localStorage.getItem('editor_textSize')) || 1);
-
     const [symmetry, setSymmetry] = useState<Symmetry>(() => {
         const saved = localStorage.getItem('editor_symmetry');
-        return saved ? JSON.parse(saved) : { vertical: false, horizontal: false };
+        return saved ? JSON.parse(saved) : { horizontal: false, vertical: false };
     });
 
-    // --- PERSISTENCE EFFECTS ---
-    useEffect(() => { if (primaryColorId) localStorage.setItem('editor_primaryColorId', primaryColorId); }, [primaryColorId]);
-    useEffect(() => { if (secondaryColorId) localStorage.setItem('editor_secondaryColorId', secondaryColorId); }, [secondaryColorId]);
-    useEffect(() => { localStorage.setItem('editor_isPanelOpen', String(isPanelOpen)); }, [isPanelOpen]);
-    useEffect(() => { localStorage.setItem('editor_activeTool', activeTool); }, [activeTool]);
+    // --- DISPLAY STATE ---
+    const [showGridLines, setShowGridLines] = useState(() => localStorage.getItem('editor_showGridLines') !== 'false');
+    const [maxImportColors, setMaxImportColors] = useState(() => Number(localStorage.getItem('editor_maxImportColors')) || 32);
+
+    const [isPanelOpen, setIsPanelOpen] = useState(() => localStorage.getItem('editor_isPanelOpen') === 'true');
+    // ...
+
+    // --- MIGRATION EFFECT (Legacy LocalStorage -> Global) ---
+    useEffect(() => {
+        if (!project) return;
+
+        // If global state is empty but we have local storage, hydrate it once
+        if (project.activePrimaryColorId === undefined) {
+            const saved = localStorage.getItem('editor_primaryColorId');
+            if (saved) dispatch({ type: 'SET_PRIMARY_COLOR', payload: saved });
+        }
+        if (project.activeSecondaryColorId === undefined) {
+            const saved = localStorage.getItem('editor_secondaryColorId');
+            if (saved) dispatch({ type: 'SET_SECONDARY_COLOR', payload: saved });
+        }
+    }, [project?.id]); // Only runs on project load/change
+
+    // ...
+
+    // ... (Handle Palette Click Refactor)
+    const handlePaletteClick = (colorId: string | null, e: React.MouseEvent) => {
+        e.preventDefault();
+
+        // Tool-specific override: Replace Tool
+        if (activeTool === 'replace') {
+            if (replaceTarget === 'from') {
+                setReplaceFromColor(colorId);
+                setReplaceTarget('to');
+                return;
+            }
+            if (replaceTarget === 'to') {
+                setReplaceToColor(colorId);
+                setReplaceTarget(null);
+                return;
+            }
+        }
+
+        // Standard Palette Interaction
+        // Right-Click OR Shift+Click = Set Secondary
+        if (e.type === 'contextmenu' || e.shiftKey) {
+            setSecondaryColorId(colorId);
+        } else {
+            setPrimaryColorId(colorId);
+        }
+    };
 
     useEffect(() => { localStorage.setItem('editor_showGridLines', String(showGridLines)); }, [showGridLines]);
     useEffect(() => { localStorage.setItem('editor_maxImportColors', String(maxImportColors)); }, [maxImportColors]);
@@ -161,6 +223,11 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [genMaxColors, setGenMaxColors] = useState(32);
     // FIX for GEN-001: Store new colors for preview rendering
     const [previewNewColors, setPreviewNewColors] = useState<PatternColor[]>([]);
+    const [isProcessing, setIsProcessing] = useState(false); // Restore isProcessing
+
+    const previewCanvasRef = useRef<HTMLCanvasElement>(null);
+    const fullScreenCanvasRef = useRef<HTMLCanvasElement>(null);
+    const imageUploadRef = useRef<HTMLInputElement>(null);
 
     const resetGenerationState = useCallback(() => {
         setImportFile(null);
@@ -1443,27 +1510,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const openSettingsModal = () => { setSettingsForm({ unit: project?.settings?.unit || 'in', stitchesPerUnit: project?.settings?.stitchesPerUnit || 4, rowsPerUnit: project?.settings?.rowsPerUnit || 4, hookSize: project?.settings?.hookSize || '', yarnPerStitch: project?.settings?.yarnPerStitch || 1 }); setIsSettingsModalOpen(true); };
     const saveSettings = () => { dispatch({ type: 'UPDATE_PROJECT_SETTINGS', payload: settingsForm }); setIsSettingsModalOpen(false); };
     const physicalSizeString = useMemo(() => { if (!projectData || !project?.settings) return null; const sts = Number(project.settings.stitchesPerUnit); const rows = Number(project.settings.rowsPerUnit); const unit = project.settings.unit || 'in'; if (!sts || !rows) return null; const pWidth = (projectData.width / sts).toFixed(1); const pHeight = (projectData.height / rows).toFixed(1); return `${pWidth} x ${pHeight} ${unit}`; }, [projectData, project?.settings]);
-    const handlePaletteClick = (colorId: string | null, e: React.MouseEvent) => {
-        e.preventDefault();
-        if (activeTool === 'replace') {
-            if (replaceTarget === 'from') {
-                setReplaceFromColor(colorId);
-                setReplaceTarget('to');
-                return;
-            }
-            if (replaceTarget === 'to') {
-                setReplaceToColor(colorId);
-                setReplaceTarget(null);
-                return;
-            }
-        }
 
-        if (e.type === 'contextmenu') {
-            setSecondaryColorId(colorId);
-        } else {
-            setPrimaryColorId(colorId);
-        }
-    };
     const handleConfirmAddColor = () => { const hex = tempCustomColor; const newColor: PatternColor = { id: `custom-${Date.now()}`, brand: 'Custom', name: `Custom ${hex}`, hex: hex, rgb: [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)], skeinLength: 295 }; const newPalette = [...(project?.yarnPalette || []), newColor]; dispatch({ type: 'SET_PALETTE', payload: newPalette }); setPrimaryColorId(newColor.id); setIsColorPickerOpen(false); };
     const updateColorFromHsl = (h: number, s: number, l: number) => { setHsl([h, s, l]); const rgb = hslToRgb(h, s, l); setTempCustomColor(rgbToHex(rgb[0], rgb[1], rgb[2])); };
 
@@ -2151,95 +2198,126 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
 
 
                     <div className="border-t pt-4">
-                        <h4 className="text-xs font-semibold text-gray-500 uppercase mb-2">Palette</h4>
-                        <div className="grid grid-cols-5 gap-1 mb-2">
+                        {/* GEN-002: Dual-Swatch Sidebar Header */}
+                        <div className="flex flex-col gap-3 p-4 border rounded-lg bg-stone-50 border-stone-200 mb-4 shadow-sm">
+                            <div className="flex items-center justify-center gap-4">
+                                {/* Primary Swatch (Large) */}
+                                <div className="flex flex-col items-center gap-1 group">
+                                    <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider">Primary</span>
+                                    <div
+                                        className="w-12 h-12 rounded-full shadow-lg ring-2 ring-stone-900 ring-offset-2 cursor-pointer transition-transform hover:scale-105 active:scale-95 border-4 border-white"
+                                        style={{ backgroundColor: primaryColorId ? yarnColorMap.get(primaryColorId)?.hex : 'transparent', backgroundImage: !primaryColorId ? 'linear-gradient(45deg, #ddd 25%, transparent 25%), linear-gradient(-45deg, #ddd 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ddd 75%), linear-gradient(-45deg, transparent 75%, #ddd 75%)' : 'none', backgroundSize: '8px 8px' }}
+                                        title={primaryColorId ? yarnColorMap.get(primaryColorId)?.name : 'Eraser'}
+                                    />
+                                </div>
+
+                                {/* Swap Button */}
+                                <button
+                                    onClick={swapColors}
+                                    className="w-8 h-8 flex items-center justify-center rounded-full text-stone-400 hover:bg-stone-200 hover:text-stone-700 transition-colors mt-4"
+                                    title="Swap Primary & Secondary (X)"
+                                >
+                                    <Icon name="swap" size="md" />
+                                </button>
+
+                                {/* Secondary Swatch (Large) */}
+                                <div className="flex flex-col items-center gap-1 group">
+                                    <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider">Secondary</span>
+                                    <div
+                                        className="w-10 h-10 rounded-full shadow-md ring-1 ring-stone-300 ring-offset-2 cursor-pointer transition-transform hover:scale-105 active:scale-95 border-4 border-white opacity-90 group-hover:opacity-100"
+                                        style={{ backgroundColor: secondaryColorId ? yarnColorMap.get(secondaryColorId)?.hex : 'transparent', backgroundImage: !secondaryColorId ? 'linear-gradient(45deg, #ddd 25%, transparent 25%), linear-gradient(-45deg, #ddd 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ddd 75%), linear-gradient(-45deg, transparent 75%, #ddd 75%)' : 'none', backgroundSize: '8px 8px' }}
+                                        title={secondaryColorId ? yarnColorMap.get(secondaryColorId)?.name : 'Eraser'}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Active Color Details */}
+                            <div className="text-center pt-1 border-t border-stone-200/50 mt-1">
+                                <div className="font-bold text-stone-900 text-sm truncate px-2">
+                                    {primaryColorId ? yarnColorMap.get(primaryColorId)?.name : 'Eraser'}
+                                </div>
+                                <div className="text-[10px] text-stone-400 uppercase tracking-wider">
+                                    {primaryColorId ? yarnColorMap.get(primaryColorId)?.brand : 'Tool'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <h4 className="text-xs font-bold text-gray-500 uppercase mb-2 flex items-center justify-between">
+                            <span>Pattern Palette</span>
+                            <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-400 font-normal">
+                                {project.yarnPalette.length}
+                            </span>
+                        </h4>
+
+                        <div className="grid grid-cols-5 gap-1.5 mb-2">
+                            {/* Eraser / Transparent */}
                             <button
                                 onClick={(e) => handlePaletteClick(null, e)}
                                 onContextMenu={(e) => handlePaletteClick(null, e)}
-                                className={`w-8 h-8 rounded border-2 relative overflow-hidden ${primaryColorId === null ? 'ring-2 ring-brand-midBlue ring-offset-1 z-10' : 'border-gray-200'} ${secondaryColorId === null ? 'md:ring-2 md:ring-brand-purple md:ring-offset-1' : ''}`}
+                                className={`
+                                    w-8 h-8 rounded-lg border-2 relative overflow-hidden transition-all
+                                    ${primaryColorId === null ? 'ring-2 ring-stone-900 ring-offset-1 z-10 border-white shadow-sm' : 'border-gray-200 hover:border-gray-300'} 
+                                    ${secondaryColorId === null ? 'md:after:absolute md:after:top-0 md:after:right-0 md:after:w-2 md:after:h-2 md:after:bg-stone-400 md:after:rounded-bl-md' : ''}
+                                `}
                                 title="Eraser (Left: Primary, Right: Secondary)"
                             >
                                 <div className="absolute inset-0 bg-white opacity-50" style={{ backgroundImage: 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)', backgroundSize: '8px 8px', backgroundPosition: '0 0, 0 4px, 4px -4px, -4px 0px' }}></div>
-                                <Icon name="transparency-color" size={24} className="absolute inset-0 m-auto text-red-500 opacity-80" />
+                                <Icon name="transparency-color" size={18} className="absolute inset-0 m-auto text-red-500 opacity-60" />
                             </button>
-                            {project.yarnPalette.map(yarn => (
-                                <button
-                                    key={yarn.id}
-                                    onClick={(e) => handlePaletteClick(yarn.id, e)}
-                                    onContextMenu={(e) => handlePaletteClick(yarn.id, e)}
-                                    className={`w-8 h-8 rounded border-2 ${primaryColorId === yarn.id ? 'ring-2 ring-brand-midBlue ring-offset-1 z-10' : 'border-gray-200'} ${secondaryColorId === yarn.id ? 'md:ring-2 md:ring-brand-purple md:ring-offset-1' : ''}`}
-                                    style={{ backgroundColor: yarn.hex }}
-                                    title={`${yarn.name} (${yarn.brand})`}
-                                />
-                            ))}
-                            <button onClick={() => setIsColorPickerOpen(true)} className="w-8 h-8 rounded border-2 border-dashed border-gray-400 flex items-center justify-center text-gray-500 hover:bg-gray-100" title="Add Custom Color">
+
+                            {/* Palette Items */}
+                            {project.yarnPalette.map(yarn => {
+                                const isPri = primaryColorId === yarn.id;
+                                const isSec = secondaryColorId === yarn.id;
+                                return (
+                                    <button
+                                        key={yarn.id}
+                                        onClick={(e) => handlePaletteClick(yarn.id, e)}
+                                        onContextMenu={(e) => handlePaletteClick(yarn.id, e)}
+                                        className={`
+                                            w-8 h-8 rounded-lg border-2 transition-all relative
+                                            ${isPri ? 'ring-2 ring-stone-900 ring-offset-1 z-10 border-white shadow-sm' : 'border-gray-200 hover:border-gray-300 hover:scale-105'} 
+                                            ${isSec ? 'md:after:absolute md:after:top-0 md:after:right-0 md:after:w-2 md:after:h-2 md:after:bg-stone-400 md:after:rounded-bl-md' : ''}
+                                        `}
+                                        style={{ backgroundColor: yarn.hex }}
+                                        title={`${yarn.name} (${yarn.brand})`}
+                                    />
+                                );
+                            })}
+
+                            <button onClick={() => setIsColorPickerOpen(true)} className="w-8 h-8 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-50 hover:border-gray-400 transition-colors" title="Add Custom Color">
                                 <Icon name="plus" size="sm" />
                             </button>
                         </div>
-                        <div className="flex flex-col gap-2 mt-3">
-                            {/* Primary (Left) */}
-                            <div className="flex items-center justify-between bg-gray-50 p-2 rounded border border-gray-200">
-                                <div className="flex items-center gap-2 overflow-hidden">
-                                    <span className="font-bold text-gray-500 text-xs">L:</span>
-                                    {primaryColorId ? (
-                                        <>
-                                            <div className="w-4 h-4 rounded-full border border-gray-300 flex-shrink-0" style={{ backgroundColor: yarnColorMap.get(primaryColorId)?.hex }}></div>
-                                            <span className="text-sm truncate font-medium">{yarnColorMap.get(primaryColorId)?.name}</span>
-                                        </>
-                                    ) : <span className="text-sm text-gray-500 italic">Eraser</span>}
-                                </div>
-                                {isComboPaintMode ? (
-                                    primaryStitch && (
-                                        <div className="flex items-center justify-center w-8 h-8 bg-white rounded border border-gray-300 font-bold text-lg shadow-sm" title={`Stitch: ${primaryStitch.name}`}>
-                                            {primaryStitch.symbol}
-                                        </div>
-                                    )
-                                ) : (
-                                    <div className="flex items-center justify-center w-8 h-8 bg-gray-100 rounded border border-gray-200 text-gray-300" title="Stitch disabled (Enable Combo Paint Mode)">
-                                        <Icon name="ban" size="sm" />
-                                    </div>
-                                )}
+
+                        {/* Combo Mode & Stitches (Simplified) */}
+                        <div className="mt-4 p-3 bg-gray-50 rounded border border-gray-200">
+                            <div className="flex items-center justify-between mb-2">
+                                <span className="text-xs font-bold text-gray-500 uppercase">Stitch Paint</span>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" checked={isComboPaintMode} onChange={(e) => setIsComboPaintMode(e.target.checked)} className="sr-only peer" />
+                                    <div className="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
+                                </label>
                             </div>
 
-                            {/* Secondary (Right) */}
-                            <div className="flex items-center justify-between bg-gray-50 p-2 rounded border border-gray-200">
-                                <div className="flex items-center gap-2 overflow-hidden">
-                                    <span className="font-bold text-gray-500 text-xs">R:</span>
-                                    {secondaryColorId ? (
-                                        <>
-                                            <div className="w-4 h-4 rounded-full border border-gray-300 flex-shrink-0" style={{ backgroundColor: yarnColorMap.get(secondaryColorId)?.hex }}></div>
-                                            <span className="text-sm truncate font-medium">{yarnColorMap.get(secondaryColorId)?.name}</span>
-                                        </>
-                                    ) : <span className="text-sm text-gray-500 italic">Eraser</span>}
-                                </div>
-                                {isComboPaintMode ? (
-                                    secondaryStitch && (
-                                        <div className="flex items-center justify-center w-8 h-8 bg-white rounded border border-gray-300 font-bold text-lg shadow-sm" title={`Stitch: ${secondaryStitch.name}`}>
-                                            {secondaryStitch.symbol}
-                                        </div>
-                                    )
-                                ) : (
-                                    <div className="flex items-center justify-center w-8 h-8 bg-gray-100 rounded border border-gray-200 text-gray-300" title="Stitch disabled (Enable Combo Paint Mode)">
-                                        <Icon name="ban" size="sm" />
+                            {isComboPaintMode && (
+                                <div className="space-y-2">
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-gray-600">Primary:</span>
+                                        <span className="font-mono font-bold bg-white px-2 py-0.5 rounded border border-gray-300 shadow-sm">{primaryStitch ? primaryStitch.symbol : '-'}</span>
                                     </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Controls */}
-                        <div className="mt-3 space-y-2 border-t pt-2 border-gray-100">
-                            <label className="flex items-center justify-between text-sm text-gray-700 cursor-pointer select-none p-1 hover:bg-gray-50 rounded">
-                                <span className="font-medium">Combo Paint Mode</span>
-                                <input
-                                    type="checkbox"
-                                    checked={isComboPaintMode}
-                                    onChange={(e) => setIsComboPaintMode(e.target.checked)}
-                                    className="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4"
-                                />
-                            </label>
-                            <Button variant="secondary" onClick={() => setIsStitchPaletteOpen(true)} className="w-full justify-center">
-                                <Icon name="manage-stitches" size="md" className="mr-2" /> Manage Stitches
-                            </Button>
+                                    <div className="flex items-center justify-between text-sm">
+                                        <span className="text-gray-600">Secondary:</span>
+                                        <span className="font-mono font-bold bg-white px-2 py-0.5 rounded border border-gray-300 shadow-sm">{secondaryStitch ? secondaryStitch.symbol : '-'}</span>
+                                    </div>
+                                    <Button variant="secondary" onClick={() => setIsStitchPaletteOpen(true)} className="w-full justify-center text-xs h-8 mt-2">
+                                        Manage Stitches
+                                    </Button>
+                                </div>
+                            )}
+                            {!isComboPaintMode && (
+                                <p className="text-[10px] text-gray-400 text-center italic">Enable to paint stitches & colors together.</p>
+                            )}
                         </div>
                     </div>
 

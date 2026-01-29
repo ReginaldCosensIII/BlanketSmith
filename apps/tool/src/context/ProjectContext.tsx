@@ -50,6 +50,16 @@ const projectReducer = (state: ProjectState, action: ProjectAction): ProjectStat
       const updatedProject = { ...state.project, yarnPalette: action.payload };
       return { ...state, project: updatedProject };
     }
+    case 'SET_PRIMARY_COLOR': {
+      if (!state.project) return state;
+      const updatedProject = { ...state.project, activePrimaryColorId: action.payload || undefined };
+      return { ...state, project: updatedProject };
+    }
+    case 'SET_SECONDARY_COLOR': {
+      if (!state.project) return state;
+      const updatedProject = { ...state.project, activeSecondaryColorId: action.payload || undefined };
+      return { ...state, project: updatedProject };
+    }
     case 'UPDATE_INSTRUCTION_DOC': {
       if (!state.project) return state;
       const updatedProject = { ...state.project, instructionDoc: action.payload };

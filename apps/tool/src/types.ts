@@ -108,6 +108,8 @@ export type ProjectAction =
   | { type: 'UPDATE_PROJECT_NAME'; payload: string }
   | { type: 'UPDATE_PROJECT_SETTINGS'; payload: Record<string, any> }
   | { type: 'SET_PALETTE'; payload: PatternColor[] }
+  | { type: 'SET_PRIMARY_COLOR'; payload: string | null }
+  | { type: 'SET_SECONDARY_COLOR'; payload: string | null }
   | { type: 'UPDATE_INSTRUCTION_DOC'; payload: InstructionDoc }
   | { type: 'UNDO' }
   | { type: 'REDO' };
