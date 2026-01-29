@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, ChangeEvent } from 'react';
-import { PixelGridData, YarnColor, CellData, Symmetry, ContextMenuItem, ExportType, ExportOptions, InstructionDoc } from '../types';
+import { PixelGridData, PatternColor, CellData, Symmetry, ContextMenuItem, ExportType, ExportOptions, InstructionDoc } from '../types';
 import { useProject } from '../context/ProjectContext';
 import { PixelGridEditor } from '../components/PixelGridEditor';
 import { SelectToolbar } from '../components/editor/SelectToolbar';
@@ -160,7 +160,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const [genDithering, setGenDithering] = useState(false);
     const [genMaxColors, setGenMaxColors] = useState(32);
     // FIX for GEN-001: Store new colors for preview rendering
-    const [previewNewColors, setPreviewNewColors] = useState<YarnColor[]>([]);
+    const [previewNewColors, setPreviewNewColors] = useState<PatternColor[]>([]);
 
     const resetGenerationState = useCallback(() => {
         setImportFile(null);
@@ -243,7 +243,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
     const projectData = project?.data as PixelGridData | undefined;
 
     const yarnColorMap = useMemo(() => {
-        if (!project) return new Map<string, YarnColor>();
+        if (!project) return new Map<string, PatternColor>();
         return new Map(project.yarnPalette.map(yc => [yc.id, yc]));
     }, [project]);
 
@@ -1222,7 +1222,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             // Draw pixels
             // Draw pixels
             // FIX: Create merged map for lookup once
-            const previewMap = new Map<string, YarnColor>();
+            const previewMap = new Map<string, PatternColor>();
             // 1. Add existing project colors
             project?.yarnPalette.forEach(y => previewMap.set(y.id, y));
             // 2. Add preview specific colors (overriding or appending)
@@ -1464,7 +1464,7 @@ export const PixelGraphPage: React.FC<{ zoom: number; onZoomChange: (newZoom: nu
             setPrimaryColorId(colorId);
         }
     };
-    const handleConfirmAddColor = () => { const hex = tempCustomColor; const newColor: YarnColor = { id: `custom-${Date.now()}`, brand: 'Custom', name: `Custom ${hex}`, hex: hex, rgb: [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)], skeinLength: 295 }; const newPalette = [...(project?.yarnPalette || []), newColor]; dispatch({ type: 'SET_PALETTE', payload: newPalette }); setPrimaryColorId(newColor.id); setIsColorPickerOpen(false); };
+    const handleConfirmAddColor = () => { const hex = tempCustomColor; const newColor: PatternColor = { id: `custom-${Date.now()}`, brand: 'Custom', name: `Custom ${hex}`, hex: hex, rgb: [parseInt(hex.slice(1, 3), 16), parseInt(hex.slice(3, 5), 16), parseInt(hex.slice(5, 7), 16)], skeinLength: 295 }; const newPalette = [...(project?.yarnPalette || []), newColor]; dispatch({ type: 'SET_PALETTE', payload: newPalette }); setPrimaryColorId(newColor.id); setIsColorPickerOpen(false); };
     const updateColorFromHsl = (h: number, s: number, l: number) => { setHsl([h, s, l]); const rgb = hslToRgb(h, s, l); setTempCustomColor(rgbToHex(rgb[0], rgb[1], rgb[2])); };
 
     if (!project || !projectData) return <div className="p-4">No Pixel Art project loaded.</div>;

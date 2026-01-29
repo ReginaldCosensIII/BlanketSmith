@@ -1,6 +1,6 @@
 ﻿
 // @ts-nocheck
-import { PixelGridData, YarnColor, CellData, ExportType, BrandingOptions, ChartVisualOptions, ExportOptions } from '../types';
+import { PixelGridData, PatternColor, CellData, ExportType, BrandingOptions, ChartVisualOptions, ExportOptions } from '../types';
 import { DEFAULT_STITCH_LIBRARY, StitchDefinition } from '../data/stitches';
 import { logger } from './logger';
 import { notify } from './notification';
@@ -147,7 +147,7 @@ const generateNumberingData = (grid: CellData[], width: number, height: number, 
     return numbers;
 };
 
-const buildColorSymbolMap = (yarnPalette: YarnColor[]): Map<string, string> => {
+const buildColorSymbolMap = (yarnPalette: PatternColor[]): Map<string, string> => {
     const map = new Map<string, string>();
     yarnPalette.forEach((yarn, index) => {
         // yarn.id or name; pick a stable key used in cells:
@@ -158,7 +158,7 @@ const buildColorSymbolMap = (yarnPalette: YarnColor[]): Map<string, string> => {
     return map;
 };
 
-export const exportPixelGridToImage = (projectName: string, gridData: PixelGridData, yarnPalette: YarnColor[]) => {
+export const exportPixelGridToImage = (projectName: string, gridData: PixelGridData, yarnPalette: PatternColor[]) => {
     try {
         // Basic implementation to restore functionality
         const canvas = document.createElement('canvas');
@@ -289,7 +289,7 @@ const drawInstructionsSection = (
 export const exportPixelGridToPDF = (
     projectName: string,
     gridData: PixelGridData,
-    yarnPalette: YarnColor[],
+    yarnPalette: PatternColor[],
     yarnUsage: Map<string, number>,
     options: ExportOptions = {},
     projectSettings: any = {},

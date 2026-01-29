@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
-import { PixelGridData, YarnColor, Symmetry, CellData } from '../types';
+import { PixelGridData, PatternColor, Symmetry, CellData } from '../types';
 import { PIXEL_FONT, MIN_ZOOM, MAX_ZOOM } from '../constants';
 import { useCanvasLogic } from '../hooks/useCanvasLogic';
 import { GridRenderer } from './editor/GridRenderer';
@@ -15,7 +15,7 @@ import { StitchDefinition } from '../data/stitches';
 
 interface PixelGridEditorProps {
     data: PixelGridData;
-    yarnPalette: YarnColor[];
+    yarnPalette: PatternColor[];
     stitchMap: Map<string, StitchDefinition>;
     primaryColorId: string | null;
     secondaryColorId: string | null;

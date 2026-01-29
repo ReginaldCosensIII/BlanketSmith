@@ -1,4 +1,4 @@
-import { AnyProject, InstructionDoc, InstructionBlock, PixelGridData, YarnColor } from '../../types';
+import { AnyProject, InstructionDoc, InstructionBlock, PixelGridData, PatternColor } from '../../types';
 import { StitchRegistry } from './registry';
 import { RowWalker, InstructionRow, InstructionSegment } from './rowWalker';
 
@@ -8,7 +8,7 @@ import { RowWalker, InstructionRow, InstructionSegment } from './rowWalker';
  */
 const generateInstructionTextForRow = (
     row: InstructionRow,
-    yarnPalette: YarnColor[],
+    yarnPalette: PatternColor[],
     registry: StitchRegistry,
     isLastRow: boolean
 ): string => {

@@ -1,5 +1,5 @@
 
-import { AnyProject, PatternType, PixelGridData, YarnColor, CellData } from '../types';
+import { AnyProject, PatternType, PixelGridData, PatternColor, CellData } from '../types';
 import { YARN_PALETTE } from '../constants';
 import { logger } from './logger';
 import { notify } from './notification';
@@ -76,7 +76,7 @@ export const createNewProject = (
     createdAt: now,
     updatedAt: now,
     settings: {},
-    yarnPalette: [...YARN_PALETTE],
+    yarnPalette: [...YARN_PALETTE] as PatternColor[],
   };
 
   switch (type) {
@@ -116,7 +116,7 @@ function colorDistance(rgb1: [number, number, number], rgb2: [number, number, nu
   return Math.sqrt(Math.pow(r1 - r2, 2) + Math.pow(g1 - g2, 2) + Math.pow(b1 - b2, 2));
 }
 
-export const findClosestYarnColor = (rgb: [number, number, number], yarnPalette: YarnColor[]): YarnColor => {
+export const findClosestYarnColor = (rgb: [number, number, number], yarnPalette: PatternColor[]): PatternColor => {
   let closestColor = yarnPalette[0];
   let minDistance = Infinity;
 
@@ -137,7 +137,7 @@ export const processImageToGrid = async (
   gridWidth: number,
   gridHeight: number,
   options: import('./patternGenerator').GenerationOptions
-): Promise<{ gridPart: Partial<PixelGridData>, newColors: YarnColor[] }> => {
+): Promise<{ gridPart: Partial<PixelGridData>, newColors: PatternColor[] }> => {
   try {
     // 1. Downsample (Average into new Uint8ClampedArray)
     const dsWidth = gridWidth;
@@ -185,18 +185,18 @@ export const processImageToGrid = async (
 
     // 3. Handle Result based on Mode
     let finalGrid: CellData[] = grid;
-    let newColors: YarnColor[] = [];
+    let newColors: PatternColor[] = [];
     let finalPaletteIds: string[] = [];
 
     if (options.paletteMode === 'extract') {
-      // EXTRACT MODE: The generator created new YarnColor objects.
-      newColors = usedPalette;
-      finalPaletteIds = usedPalette.map(y => y.id);
+      // EXTRACT MODE: The generator created new PatternColor objects.
+      newColors = usedPalette as PatternColor[];
+      finalPaletteIds = usedPalette.map((y: any) => y.id);
     } else {
       // MATCH MODE: The generator used the targetPalette (existing yarns OR external brand).
       // We MUST return these as "newColors" so the UI can decide if they need to be added to the project.
-      newColors = usedPalette;
-      finalPaletteIds = usedPalette.map(y => y.id);
+      newColors = usedPalette as PatternColor[];
+      finalPaletteIds = usedPalette.map((y: any) => y.id);
     }
 
     return {
@@ -223,4 +223,3 @@ export const processImageToGrid = async (
     };
   }
 };
-

@@ -1,7 +1,8 @@
 
 export type PatternType = 'pixel' | 'c2c' | 'granny' | 'stripes';
 
-export interface YarnColor {
+// [GEN-002] Refactored: PatternColor (formerly YarnColor) represents a specific color entry IN A PATTERN.
+export interface PatternColor {
   id: string;
   brand: string;
   name: string;
@@ -9,6 +10,26 @@ export interface YarnColor {
   rgb: [number, number, number];
   skeinLength?: number; // Length in yards
   yarnWeight?: string; // e.g. 'DK', 'Worsted'
+  // [GEN-002] Future-proofing: Link back to library ID if applicable
+  libraryColorId?: string;
+}
+
+// [GEN-002] Library Data Interfaces
+export interface YarnBrand {
+  id: string;
+  name: string;
+  website?: string;
+  isCustom?: boolean;
+}
+
+export interface YarnColor {
+  id: string; // The unique Library ID
+  brandId: string;
+  code: string; // Manufacturer code
+  name: string;
+  hex: string;
+  productCode?: string; // UPC or SKU for shopping list
+  matchConfidence?: 'exact' | 'high' | 'approx';
 }
 
 export interface CellData {
@@ -25,7 +46,7 @@ export interface PixelGridData {
   width: number;
   height: number;
   grid: CellData[];
-  palette: string[]; // Array of yarnColor IDs used in the grid
+  palette: string[]; // Array of PatternColor IDs used in the grid
 }
 
 export interface C2CData {
@@ -42,7 +63,7 @@ export interface GrannySquare {
   id: string;
   x: number;
   y: number;
-  rounds: string[]; // Array of yarnColor IDs
+  rounds: string[]; // Array of PatternColor IDs
 }
 export interface GrannySquareData {
   // TODO: Implement Granny Square data structure
@@ -64,8 +85,12 @@ export interface Project<T> {
     [key: string]: any;
   };
   data: T;
-  yarnPalette: YarnColor[];
+  yarnPalette: PatternColor[];
   instructionDoc?: InstructionDoc;
+
+  // [GEN-002] Persistent UI State
+  activePrimaryColorId?: string;
+  activeSecondaryColorId?: string;
 }
 
 export type AnyProject = Project<PixelGridData | C2CData | StripesData | GrannySquareData>;
@@ -82,7 +107,7 @@ export type ProjectAction =
   | { type: 'UPDATE_PROJECT_DATA'; payload: Partial<PixelGridData | C2CData | StripesData | GrannySquareData> }
   | { type: 'UPDATE_PROJECT_NAME'; payload: string }
   | { type: 'UPDATE_PROJECT_SETTINGS'; payload: Record<string, any> }
-  | { type: 'SET_PALETTE'; payload: YarnColor[] }
+  | { type: 'SET_PALETTE'; payload: PatternColor[] }
   | { type: 'UPDATE_INSTRUCTION_DOC'; payload: InstructionDoc }
   | { type: 'UNDO' }
   | { type: 'REDO' };

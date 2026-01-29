@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { exportPixelGridToPDF } from '../services/exportService';
-import { ExportOptions, PixelGridData, YarnColor } from '../types';
+import { ExportOptions, PixelGridData, PatternColor } from '../types';
 import { getDefaultChartOnlyExportOptionsV3, getDefaultPatternPackExportOptionsV3 } from '../services/exportDefaultsV3';
 
 // Dev-only guard
@@ -57,7 +57,7 @@ function buildCO(overrides: Partial<ExportOptions> = {}): ExportOptions {
 
 // --- 2. MOCK DATA HELPERS ---
 
-const MOCK_PALETTE: YarnColor[] = [
+const MOCK_PALETTE: PatternColor[] = [
     { id: 'y1', name: 'Royal Blue', hex: '#002366', rgb: [0, 35, 102], brand: 'Stylecraft', yarnWeight: 'DK', skeinLength: 295 },
     { id: 'y2', name: 'Matador', hex: '#E31837', rgb: [227, 24, 55], brand: 'Stylecraft', yarnWeight: 'DK', skeinLength: 295 },
     { id: 'y3', name: 'White', hex: '#FFFFFF', rgb: [255, 255, 255], brand: 'Stylecraft', yarnWeight: 'DK', skeinLength: 295 },

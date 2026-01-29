@@ -1,17 +1,16 @@
-
 import * as imageq from 'image-q';
-import { CellData, YarnColor } from '../types';
+import { CellData, PatternColor } from '../types';
 
 export interface GenerationOptions {
   maxColors: number;
   paletteMode: 'extract' | 'match';
-  targetPalette?: YarnColor[];
+  targetPalette?: PatternColor[];
   dithering?: boolean;
 }
 
 export interface GenerationResult {
   grid: CellData[];
-  usedPalette: YarnColor[];
+  usedPalette: PatternColor[];
 }
 
 /**
@@ -48,7 +47,7 @@ export const generatePattern = async (
       throw new Error('Target palette is required for "match" mode.');
     }
 
-    // Convert YarnColor[] to imageq.utils.Palette
+    // Convert PatternColor[] to imageq.utils.Palette
     finalPalette = new imageq.utils.Palette();
     options.targetPalette.forEach(yarn => {
       // Point.createByQuadruplet takes an array [r, g, b, a]
@@ -107,7 +106,7 @@ export const generatePattern = async (
   }
 
   // Build temporary Source Palette for lookup
-  let sourcePaletteEnv: YarnColor[] = [];
+  let sourcePaletteEnv: PatternColor[] = [];
   if (options.paletteMode === 'match' && options.targetPalette) {
     sourcePaletteEnv = options.targetPalette;
   } else {
