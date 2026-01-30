@@ -21,6 +21,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **SPA Routing**: Fixed 404 error on page refresh/direct URL access (SPA Routing issue) by adding `vercel.json` to the landing page app.
 
+- **Project Renaming (Pattern Book)**:
+    - **Renaming**: Projects can now be renamed directly from the Pattern Book (inline edit) and the Editor Settings Modal.
+    - **Reliability**: Ensured new names are persisted immediately to local storage.
+
 
 
 ### Infrastructure

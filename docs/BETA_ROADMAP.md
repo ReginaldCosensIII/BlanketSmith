@@ -158,6 +158,7 @@ Add items freely; keep IDs stable once created. Promote to Blocker list when nee
 - [ ] **TOUR-001:** Interactive guided tour (Status: Not Started)
 - [x] **GEN-001:** Generate Pattern v2 (advanced settings + improved algorithms) (Status: Done)
 - [x] **GEN-002:** Interactive Palette System + Data Ingestion (Status: Done)
+- [x] **GEN-003:** Project Renaming (Editor & Pattern Book) (Status: Done)
 - [ ] **CHART-001:** New chart type integrated into export + UI (Status: Not Started)
 
 ### Medium Priority
