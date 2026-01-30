@@ -203,7 +203,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
 
     // --- GENERATION SETTINGS ---
     const [genMode, setGenMode] = useState<'match' | 'extract'>('match');
-    const [genBrandKey, setGenBrandKey] = useState<string>('default');
+    const [genBrandKey, setGenBrandKey] = useState<string>('current-project');
     const [genDithering, setGenDithering] = useState(false);
     const [genMaxColors, setGenMaxColors] = useState(32);
     // FIX for GEN-001: Store new colors for preview rendering
@@ -219,7 +219,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
         setPreviewGrid(null);
         setPreviewNewColors([]);
         setGenMode('match');
-        setGenBrandKey('default');
+        setGenBrandKey('current-project');
         setGenDithering(false);
         setGenMaxColors(32);
     }, []);
