@@ -1,45 +1,71 @@
-# Yarn Data Schema
+# Yarn Data Schema & Contribution Guide
 
-This document outlines the structure for the Yarn Library data in BlanketSmith.
+This document describes the data structure used for the Yarn Library in BlanketSmith (`apps/tool/src/data/yarnLibrary`).
 
 ## File Structure
-*   **Path**: `apps/tool/src/data/yarnLibrary/brands.ts`
-*   **Exports**: `LIBRARY_BRANDS`, `LIBRARY_COLORS`
 
-## 1. Yarn Brand (`YarnBrand`)
-Defines the metadata for a yarn line or collection.
+*   **`brands.ts`**: The central registry for all yarn data. Contains both the `Brand` definitions and the `Colors` list.
+*   **`index.ts`**: Helper functions to query the library (`getLibraryBrands`, `getLibraryColorsByBrand`, etc.).
+
+## Data Models
+
+### 1. Yarn Brand (`YarnBrand`)
+
+Represents a specific yarn product line (e.g., "Stylecraft Special DK").
 
 ```typescript
 interface YarnBrand {
-  id: string;       // Unique kebab-case ID (e.g., 'red-heart-super-saver')
-  name: string;     // Display Name
-  website?: string; // Optional URL string (e.g., 'yarnspirations.com')
-  isCustom?: boolean; // True only for 'BlanketSmith Essentials'
+  id: string;        // Unique slug (e.g., 'stylecraft-special-dk')
+  name: string;      // Display name (e.g., 'Stylecraft Special DK')
+  website?: string;  // Manufacturer URL (optional)
+  isCustom?: boolean; // True for the special "Custom" placeholder brand
 }
 ```
 
-## 2. Library Color (`LibraryColor`)
-Defines a specific colorway within a brand. This is a read-only definition.
+### 2. Library Color (`LibraryColor`)
+
+Represents a specific colorway within a brand.
 
 ```typescript
 interface LibraryColor {
-  id: string; // Formatting Convention: "{brandId}-{code}" (e.g., 'rhss-0319')
-  brandId: string; // Must match a defined YarnBrand ID
-  code: string; // Manufacturer color code (e.g., '0319')
-  name: string; // Color name (e.g., 'Cherry Red')
-  hex: string; // Hex code (e.g., '#C51D34')
-  productCode?: string; // Optional UPC/SKU
-  matchConfidence?: 'exact' | 'high' | 'approx'; // Optional metadata for color matching
+  id: string;        // Unique ID (e.g., 'stylecraft-1001')
+  brandId: string;   // Must match a YarnBrand.id
+  code: string;      // Manufacturer's color code (e.g., '1001')
+  name: string;      // Color Name (e.g., 'White')
+  hex: string;       // Hex Code (e.g., '#FFFFFF') - Used for UI
+  rgb?: [r, g, b];   // Optional pre-calculated RGB array (0-255).
+                     // If omitted, the app calculates it from Hex at runtime.
+                     // RECOMMENDED: Include this for performance and stability.
+  productCode?: string; // UPC or SKU (optional)
+  matchConfidence?: 'exact' | 'high' | 'approx'; // visual match quality
 }
 ```
 
-## How to Add a New Brand
-1.  Open `apps/tool/src/data/yarnLibrary/brands.ts`.
-2.  Add a new entry to the `LIBRARY_BRANDS` array.
-3.  Add the corresponding colors to the `LIBRARY_COLORS` array:
-    *   Ensure `brandId` matches the new brand ID.
-    *   Ensure `id` is unique (prefix with brand shorthand).
-    *   Ensure `code` matches the manufacturer's code.
+## Adding a New Brand
 
-## JSON Data Source
-The current dataset includes top brands (Red Heart, Stylecraft, Lion Brand, Paintbox, etc.). When importing new data, convert it to the TypeScript format above.
+1.  **Define the Brand**: Add a new entry to the `BRANDS` array in `brands.ts`.
+2.  **Add Colors**:
+    - Use a script or JSON payload to clear valid Hex codes.
+    - calculate RGB values for best performance.
+    - Append the colors to the `LIBRARY_COLORS` array in `brands.ts` (or the specific variable if split).
+3.  **Use Unique IDs**: Ensure `id` is globally unique (prefix with brand slug).
+
+## Example Entry
+
+```typescript
+// Brand
+{ id: 'my-yarn-brand', name: 'My Yarn Brand' }
+
+// Color
+{ 
+  id: 'my-yarn-001', 
+  brandId: 'my-yarn-brand', 
+  code: '001', 
+  name: 'Ruby', 
+  hex: '#E0115F',
+  rgb: [224, 17, 95] 
+}
+```
+
+## Maintenance Types
+The TypeScript interfaces are defined in `apps/tool/src/types.ts`.

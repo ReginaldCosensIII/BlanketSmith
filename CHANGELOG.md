@@ -12,6 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Added Dual-Send logic: Users receive confirmation, Admins receive alert with full metadata.
     - Normalized submission categories for consistent handling.
 
+- **Yarn Palette System (GEN-002)**: Complete overhaul of color management.
+    - **Yarn Browser**: Unified "Storefront" for browsing yarn libraries with Search/Filter.
+    - **Data Ingestion**: Added 10+ real-world brands (Red Heart, Stylecraft, etc.) with 120+ colors.
+    - **Custom Colors**: Hardened hexadecimal input with RGB validation and preview.
+    - **History Fix**: Decoupled Palette actions from Grid History to prevent state loss.
+    - **Refactor**: Replaced legacy color picker with `PaletteManagerModal`.
+
 - **SPA Routing**: Fixed 404 error on page refresh/direct URL access (SPA Routing issue) by adding `vercel.json` to the landing page app.
 
 
