@@ -1,10 +1,10 @@
 
-import { YarnColor } from './types';
+import { PatternColor } from './types';
 
 export const MIN_ZOOM = 0.1; // 10%
 export const MAX_ZOOM = 30.0; // 3000%
 
-export const YARN_PALETTE: YarnColor[] = [
+export const YARN_PALETTE: PatternColor[] = [
   { id: 'yarn-1', brand: 'Stylecraft', name: 'White', hex: '#FFFFFF', rgb: [255, 255, 255], skeinLength: 295 },
   { id: 'yarn-2', brand: 'Stylecraft', name: 'Cream', hex: '#FDF4DC', rgb: [253, 244, 220], skeinLength: 295 },
   { id: 'yarn-3', brand: 'Stylecraft', name: 'Silver', hex: '#C0C0C0', rgb: [192, 192, 192], skeinLength: 295 },
@@ -23,7 +23,7 @@ export const YARN_PALETTE: YarnColor[] = [
   { id: 'yarn-16', brand: 'Stylecraft', name: 'Deep Purple', hex: '#301934', rgb: [48, 25, 52], skeinLength: 295 },
 ];
 
-export const YARN_PALETTE_PASTELS: YarnColor[] = [
+export const YARN_PALETTE_PASTELS: PatternColor[] = [
   { id: 'brand-pastel-mint', brand: 'PastelTest', name: 'Mint', hex: '#98FF98', rgb: [152, 255, 152], skeinLength: 300 },
   { id: 'brand-pastel-baby-blue', brand: 'PastelTest', name: 'Baby Blue', hex: '#89CFF0', rgb: [137, 207, 240], skeinLength: 300 },
   { id: 'brand-pastel-lavender', brand: 'PastelTest', name: 'Lavender', hex: '#E6E6FA', rgb: [230, 230, 250], skeinLength: 300 },
@@ -36,7 +36,7 @@ export const YARN_PALETTE_PASTELS: YarnColor[] = [
 
 export const YARN_PALETTE_DEFAULT = YARN_PALETTE;
 
-export const BRAND_PALETTES: Record<string, { name: string; colors: YarnColor[] }> = {
+export const BRAND_PALETTES: Record<string, { name: string; colors: PatternColor[] }> = {
   'default': { name: 'Standard Yarn', colors: YARN_PALETTE_DEFAULT },
   'pastels': { name: 'Pastel Test Brand', colors: YARN_PALETTE_PASTELS }
 };

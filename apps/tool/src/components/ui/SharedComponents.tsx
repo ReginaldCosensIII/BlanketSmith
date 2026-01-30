@@ -198,6 +198,16 @@ const DOTS_VERTICAL_ICON_PATH = ["M12 10a2 2 0 1 0 0 4 2 2 0 1 0 0-4m0 6a2 2 0 1
 
 const DOTS_HORIZONTAL_ICON_PATH = ["M12 10a2 2 0 1 0 0 4 2 2 0 1 0 0-4m6 0a2 2 0 1 0 0 4 2 2 0 1 0 0-4M6 10a2 2 0 1 0 0 4 2 2 0 1 0 0-4"];
 
+const COLOR_PALETTE_ICON_PATH = ["M13.4 2.1c-3.16-.43-6.24.6-8.47 2.83S1.67 10.25 2.1 13.4c.53 3.89 3.46 7.21 7.29 8.25.86.23 1.74.35 2.62.35h.14c1.03-.02 1.97-.55 2.52-1.43.54-.88.6-1.95.15-2.88l-.2-.42c-.45-.94-.1-1.8.39-2.28s1.34-.84 2.28-.39l.41.2c.93.45 2 .39 2.88-.15a3 3 0 0 0 1.43-2.52c.01-.92-.1-1.85-.35-2.76-1.04-3.83-4.35-6.75-8.25-7.29Zm6.12 10.86c-.3.18-.65.2-.96.05l-.41-.2a3.96 3.96 0 0 0-4.56.78 3.96 3.96 0 0 0-.78 4.56l.2.42c.15.31.13.66-.05.96-.19.3-.49.47-.84.48-.74.02-1.48-.08-2.21-.28-3.06-.83-5.4-3.48-5.83-6.59-.34-2.53.48-5 2.27-6.79a7.96 7.96 0 0 1 5.66-2.34c.37 0 .75.03 1.13.08 3.11.42 5.75 2.76 6.59 5.83.2.73.29 1.47.28 2.21 0 .35-.18.66-.48.84Z", "M7.33 12.76a1 1 0 1 0 0 2 1 1 0 1 0 0-2m.07-3.83a1.12 1.12 0 1 0 0 2.24 1.12 1.12 0 1 0 0-2.24m2.81-2.87a1.25 1.25 0 1 0 0 2.5 1.25 1.25 0 1 0 0-2.5m4.06.11a1.38 1.38 0 1 0 0 2.76 1.38 1.38 0 1 0 0-2.76"];
+
+const SWAP_ICON_PATH = ["M16 6H2v2h14v4l6-5-6-5zm-8 7-6 5 6 5v-4h14v-2H8z"];
+
+const ALERT_WARNING_ICON_PATH = ["M11 9h2v6h-2zm0 8h2v2h-2z", "M12.87 2.51c-.35-.63-1.4-.63-1.75 0l-9.99 18c-.17.31-.17.69.01.99.18.31.51.49.86.49h20c.35 0 .68-.19.86-.49a1 1 0 0 0 .01-.99zM3.7 20 12 5.06 20.3 20z"];
+
+const ALERT_ERROR_ICON_PATH = ["M11 9h2v6h-2zm0 8h2v2h-2z", "M12.87 2.51c-.35-.63-1.4-.63-1.75 0l-9.99 18c-.17.31-.17.69.01.99.18.31.51.49.86.49h20c.35 0 .68-.19.86-.49a1 1 0 0 0 .01-.99zM3.7 20 12 5.06 20.3 20z"];
+
+const ALERT_INFO_ICON_PATH = ["M11 9h2v6h-2zm0 8h2v2h-2z", "M12.87 2.51c-.35-.63-1.4-.63-1.75 0l-9.99 18c-.17.31-.17.69.01.99.18.31.51.49.86.49h20c.35 0 .68-.19.86-.49a1 1 0 0 0 .01-.99zM3.7 20 12 5.06 20.3 20z"];
+
 /**
  * CENTRAL ICON REGISTRY
  * =====================
@@ -243,6 +253,11 @@ const ICON_MAP: Record<string, IconDef> = {
   'rotate-right': { paths: ROTATE_ICON_PATH },
   'clear-selection': { paths: TRASH_ICON_PATH },
   'transparency-color': { paths: TRANSPARENCY_ICON_PATH },
+  'swap': { paths: SWAP_ICON_PATH },
+  'color-palette': { paths: COLOR_PALETTE_ICON_PATH },
+  'alert-warning': { paths: ALERT_WARNING_ICON_PATH, fill: "#F59E0B" }, // Amber-500
+  'alert-error': { paths: ALERT_ERROR_ICON_PATH, fill: "#EF4444" },   // Red-500
+  'alert-info': { paths: ALERT_INFO_ICON_PATH, fill: "#3B82F6" },     // Blue-500
 
   // --- Actions & Operations ---
   'undo': { paths: UNDO_ICON_PATH, stroke: "currentColor" },
@@ -383,12 +398,12 @@ export const Button: React.FC<React.ButtonHTMLAttributes<HTMLButtonElement> & { 
   );
 };
 
-export const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode; footer?: React.ReactNode }> = ({ isOpen, onClose, title, children, footer }) => {
+export const Modal: React.FC<{ isOpen: boolean; onClose: () => void; title: string; children: React.ReactNode; footer?: React.ReactNode; maxWidth?: string }> = ({ isOpen, onClose, title, children, footer, maxWidth = 'max-w-md' }) => {
   if (!isOpen) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center p-4" onClick={onClose}>
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+      <div className={`bg-white rounded-lg shadow-xl w-full ${maxWidth} max-h-[90vh] flex flex-col`} onClick={(e) => e.stopPropagation()}>
         <div className="p-4 border-b flex-shrink-0 flex justify-between items-center">
           <h2 className="text-xl font-bold text-gray-800">{title}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">

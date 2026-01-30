@@ -1,6 +1,6 @@
 ﻿
 // @ts-nocheck
-import { PixelGridData, YarnColor, CellData, ExportType, BrandingOptions, ChartVisualOptions, ExportOptions } from '../types';
+import { PixelGridData, PatternColor, CellData, ExportType, BrandingOptions, ChartVisualOptions, ExportOptions } from '../types';
 import { DEFAULT_STITCH_LIBRARY, StitchDefinition } from '../data/stitches';
 import { logger } from './logger';
 import { notify } from './notification';
@@ -87,6 +87,20 @@ const PDF_CONFIG = {
     }
 };
 
+const hexToRgb = (hex: string): [number, number, number] => {
+    if (!hex) return [0, 0, 0];
+    const bigint = parseInt(hex.slice(1), 16);
+    return [(bigint >> 16) & 255, (bigint >> 8) & 255, bigint & 255];
+};
+
+const ensurePaletteConsistency = (palette: PatternColor[]) => {
+    palette.forEach(color => {
+        if (!color.rgb || !Array.isArray(color.rgb) || color.rgb.length !== 3) {
+            color.rgb = hexToRgb(color.hex);
+        }
+    });
+};
+
 const getTextColor = (hex: string): string => {
     if (!hex) return '#000000';
     const rgb = parseInt(hex.slice(1), 16);
@@ -147,7 +161,7 @@ const generateNumberingData = (grid: CellData[], width: number, height: number, 
     return numbers;
 };
 
-const buildColorSymbolMap = (yarnPalette: YarnColor[]): Map<string, string> => {
+const buildColorSymbolMap = (yarnPalette: PatternColor[]): Map<string, string> => {
     const map = new Map<string, string>();
     yarnPalette.forEach((yarn, index) => {
         // yarn.id or name; pick a stable key used in cells:
@@ -158,8 +172,11 @@ const buildColorSymbolMap = (yarnPalette: YarnColor[]): Map<string, string> => {
     return map;
 };
 
-export const exportPixelGridToImage = (projectName: string, gridData: PixelGridData, yarnPalette: YarnColor[]) => {
+export const exportPixelGridToImage = (projectName: string, gridData: PixelGridData, yarnPalette: PatternColor[]) => {
     try {
+        // Defensive: Ensure RGB values exist
+        ensurePaletteConsistency(yarnPalette);
+
         // Basic implementation to restore functionality
         const canvas = document.createElement('canvas');
         const scale = 20; // Fixed scale for export
@@ -289,13 +306,20 @@ const drawInstructionsSection = (
 export const exportPixelGridToPDF = (
     projectName: string,
     gridData: PixelGridData,
-    yarnPalette: YarnColor[],
+    yarnPalette: PatternColor[],
     yarnUsage: Map<string, number>,
     options: ExportOptions = {},
     projectSettings: any = {},
     isLeftHanded: boolean = false
+
 ) => {
     try {
+        // Defensive: Ensure RGB values exist
+        // Note: We modifying the array elements in place, which is generally safe here as PatternColor objects are mutable references
+        // and we are normalizing data for export.
+
+        if (yarnPalette) ensurePaletteConsistency(yarnPalette);
+
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF({
             orientation: 'portrait',
@@ -681,7 +705,8 @@ export const exportPixelGridToPDF = (
                 }
 
                 // Color Swatch
-                const [r, g, b] = yarn.rgb;
+                // Defensive: Ensure RGB is available
+                const [r, g, b] = yarn.rgb || hexToRgb(yarn.hex);
                 doc.setFillColor(r, g, b);
                 doc.rect(colColor, legendY, swatchSize, swatchSize, 'F');
                 doc.rect(colColor, legendY, swatchSize, swatchSize, 'S'); // Border

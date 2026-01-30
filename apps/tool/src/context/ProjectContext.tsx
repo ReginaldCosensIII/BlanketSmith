@@ -50,6 +50,32 @@ const projectReducer = (state: ProjectState, action: ProjectAction): ProjectStat
       const updatedProject = { ...state.project, yarnPalette: action.payload };
       return { ...state, project: updatedProject };
     }
+    case 'SET_PRIMARY_COLOR': {
+      if (!state.project) return state;
+      const updatedProject = { ...state.project, activePrimaryColorId: action.payload || undefined };
+      // Configuration update, no history push
+      return { ...state, project: updatedProject };
+    }
+    case 'SET_SECONDARY_COLOR': {
+      if (!state.project) return state;
+      const updatedProject = { ...state.project, activeSecondaryColorId: action.payload || undefined };
+      // Configuration update, no history push
+      return { ...state, project: updatedProject };
+    }
+    case 'ADD_COLOR_TO_PALETTE': {
+      if (!state.project) return state;
+      // Prevent duplicates
+      if (state.project.yarnPalette.some(c => c.id === action.payload.id)) return state;
+      const updatedProject = { ...state.project, yarnPalette: [...state.project.yarnPalette, action.payload] };
+      // Configuration update, no history push
+      return { ...state, project: updatedProject };
+    }
+    case 'REMOVE_COLOR_FROM_PALETTE': {
+      if (!state.project) return state;
+      const updatedProject = { ...state.project, yarnPalette: state.project.yarnPalette.filter(c => c.id !== action.payload) };
+      // Configuration update, no history push
+      return { ...state, project: updatedProject };
+    }
     case 'UPDATE_INSTRUCTION_DOC': {
       if (!state.project) return state;
       const updatedProject = { ...state.project, instructionDoc: action.payload };
@@ -57,15 +83,37 @@ const projectReducer = (state: ProjectState, action: ProjectAction): ProjectStat
     }
     case 'UNDO': {
       if (state.historyIndex > 0) {
+        if (!state.project) return state;
         const newIndex = state.historyIndex - 1;
-        return { ...state, project: state.history[newIndex], historyIndex: newIndex };
+        const snapshot = state.history[newIndex];
+
+        // Merge persistent configuration (Palette) into the snapshot
+        const preservedProject = {
+          ...snapshot,
+          yarnPalette: state.project.yarnPalette,
+          activePrimaryColorId: state.project.activePrimaryColorId,
+          activeSecondaryColorId: state.project.activeSecondaryColorId
+        };
+
+        return { ...state, project: preservedProject, historyIndex: newIndex };
       }
       return state;
     }
     case 'REDO': {
       if (state.historyIndex < state.history.length - 1) {
+        if (!state.project) return state;
         const newIndex = state.historyIndex + 1;
-        return { ...state, project: state.history[newIndex], historyIndex: newIndex };
+        const snapshot = state.history[newIndex];
+
+        // Merge persistent configuration (Palette) into the snapshot
+        const preservedProject = {
+          ...snapshot,
+          yarnPalette: state.project.yarnPalette,
+          activePrimaryColorId: state.project.activePrimaryColorId,
+          activeSecondaryColorId: state.project.activeSecondaryColorId
+        };
+
+        return { ...state, project: preservedProject, historyIndex: newIndex };
       }
       return state;
     }
