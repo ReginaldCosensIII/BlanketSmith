@@ -208,6 +208,8 @@ const ALERT_ERROR_ICON_PATH = ["M11 9h2v6h-2zm0 8h2v2h-2z", "M12.87 2.51c-.35-.6
 
 const ALERT_INFO_ICON_PATH = ["M11 9h2v6h-2zm0 8h2v2h-2z", "M12.87 2.51c-.35-.63-1.4-.63-1.75 0l-9.99 18c-.17.31-.17.69.01.99.18.31.51.49.86.49h20c.35 0 .68-.19.86-.49a1 1 0 0 0 .01-.99zM3.7 20 12 5.06 20.3 20z"];
 
+const SEARCH_ICON_PATH = ["m17.06 14.94-2.8-1.34A6.96 6.96 0 0 0 16 9c0-3.86-3.14-7-7-7S2 5.14 2 9s3.14 7 7 7c1.76 0 3.37-.66 4.6-1.74l1.34 2.8 5 5 2.12-2.12zM9 14c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5"];
+
 /**
  * CENTRAL ICON REGISTRY
  * =====================
@@ -296,6 +298,7 @@ const ICON_MAP: Record<string, IconDef> = {
   'lock': { paths: LOCKED_ICON_PATH },
   'unlock': { paths: UNLOCKED_ICON_PATH },
   'pattern-book': { paths: BOOK_ICON_PATH },
+  'search': { paths: SEARCH_ICON_PATH },
 
   // --- Symmetry / Arrows ---
   'symmetry-vertical': { paths: VERTICAL_SYMMETRY_ICON_PATH },

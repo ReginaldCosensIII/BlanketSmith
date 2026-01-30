@@ -255,6 +255,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
     // --- RESTORED MODAL STATES ---
     const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
     const [settingsForm, setSettingsForm] = useState({
+        projectName: '',
         unit: 'in',
         stitchesPerUnit: 4,
         rowsPerUnit: 4,
@@ -1530,8 +1531,13 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
     const requestMirror = (direction: MirrorDirection) => { setMirrorConfirm({ isOpen: true, direction }); };
     const confirmMirrorCanvas = useCallback(() => { const direction = mirrorConfirm.direction; if (!direction) return; const currentProjectState = projectStateRef.current; const projectToMirror = currentProjectState.project; if (!projectToMirror || projectToMirror.type !== 'pixel') { setMirrorConfirm({ isOpen: false, direction: null }); return; } const projectData = projectToMirror.data as PixelGridData; const { width, height, grid: originalGrid } = projectData; const newGrid = [...originalGrid]; switch (direction) { case 'left-to-right': for (let y = 0; y < height; y++) { for (let x = 0; x < Math.ceil(width / 2); x++) { const sourceIndex = y * width + x; const destIndex = y * width + (width - 1 - x); newGrid[destIndex] = originalGrid[sourceIndex]; } } break; case 'right-to-left': for (let y = 0; y < height; y++) { for (let x = 0; x < Math.ceil(width / 2); x++) { const sourceIndex = y * width + (width - 1 - x); const destIndex = y * width + x; newGrid[destIndex] = originalGrid[sourceIndex]; } } break; case 'top-to-bottom': for (let y = 0; y < Math.ceil(height / 2); y++) { for (let x = 0; x < width; x++) { const sourceIndex = y * width + x; const destIndex = (height - 1 - y) * width + x; newGrid[destIndex] = originalGrid[sourceIndex]; } } break; case 'bottom-to-top': for (let y = 0; y < Math.ceil(height / 2); y++) { for (let x = 0; x < width; x++) { const sourceIndex = (height - 1 - y) * width + x; const destIndex = y * width + x; newGrid[destIndex] = originalGrid[sourceIndex]; } } break; } updateGrid(newGrid); setMirrorConfirm({ isOpen: false, direction: null }); }, [mirrorConfirm.direction, updateGrid]);
 
-    const openSettingsModal = () => { setSettingsForm({ unit: project?.settings?.unit || 'in', stitchesPerUnit: project?.settings?.stitchesPerUnit || 4, rowsPerUnit: project?.settings?.rowsPerUnit || 4, hookSize: project?.settings?.hookSize || '', yarnPerStitch: project?.settings?.yarnPerStitch || 1 }); setIsSettingsModalOpen(true); };
-    const saveSettings = () => { dispatch({ type: 'UPDATE_PROJECT_SETTINGS', payload: settingsForm }); setIsSettingsModalOpen(false); };
+    const openSettingsModal = () => { setSettingsForm({ projectName: project?.name || '', unit: project?.settings?.unit || 'in', stitchesPerUnit: project?.settings?.stitchesPerUnit || 4, rowsPerUnit: project?.settings?.rowsPerUnit || 4, hookSize: project?.settings?.hookSize || '', yarnPerStitch: project?.settings?.yarnPerStitch || 1 }); setIsSettingsModalOpen(true); };
+    const saveSettings = () => {
+        dispatch({ type: 'UPDATE_PROJECT_NAME', payload: settingsForm.projectName });
+        const { projectName, ...settingsPayload } = settingsForm;
+        dispatch({ type: 'UPDATE_PROJECT_SETTINGS', payload: settingsPayload });
+        setIsSettingsModalOpen(false);
+    };
     const physicalSizeString = useMemo(() => { if (!projectData || !project?.settings) return null; const sts = Number(project.settings.stitchesPerUnit); const rows = Number(project.settings.rowsPerUnit); const unit = project.settings.unit || 'in'; if (!sts || !rows) return null; const pWidth = (projectData.width / sts).toFixed(1); const pHeight = (projectData.height / rows).toFixed(1); return `${pWidth} x ${pHeight} ${unit}`; }, [projectData, project?.settings]);
 
 
@@ -2466,6 +2472,17 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
             <Modal isOpen={isSettingsModalOpen} onClose={() => setIsSettingsModalOpen(false)} title="Project Settings">
                 <div className="space-y-4 max-h-[calc(100vh-200px)] overflow-y-auto pr-2">
                     <div>
+                        <label className="block text-sm font-bold text-gray-700">Project Name</label>
+                        <input
+                            type="text"
+                            value={settingsForm.projectName}
+                            onChange={(e) => setSettingsForm({ ...settingsForm, projectName: e.target.value })}
+                            className="mt-1 w-full border rounded px-2 py-1 font-medium"
+                            placeholder="My Project"
+                        />
+                    </div>
+
+                    <div className="border-t pt-4">
                         <label className="block text-sm font-medium text-gray-700">Pattern Dimensions</label>
                         <div className="flex items-center gap-2 mt-1">
                             <input type="number" value={newWidth} onChange={(e) => setNewWidth(Number(e.target.value))} className="w-20 border rounded px-2 py-1" />
@@ -2533,13 +2550,13 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                                     placeholder="e.g., 5mm, H/8"
                                 />
                             </div>
-                            <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded">
-                                {physicalSizeString ? (
-                                    <span>✓ Estimated size: <strong>{physicalSizeString}</strong></span>
-                                ) : (
-                                    <span>Set stitches per unit and rows per unit to see the estimated size.</span>
-                                )}
-                            </div>
+                        </div>
+                        <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded mt-2">
+                            {physicalSizeString ? (
+                                <span>✓ Estimated size: <strong>{physicalSizeString}</strong></span>
+                            ) : (
+                                <span>Set stitches per unit and rows per unit to see the estimated size.</span>
+                            )}
                         </div>
                     </div>
 

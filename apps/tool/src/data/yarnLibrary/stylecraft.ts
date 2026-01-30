@@ -1,7 +1,7 @@
 
-import { YarnColor } from '../../types';
+import { LibraryColor } from '../../types';
 
-export const STYLECRAFT_COLORS: YarnColor[] = [
+export const STYLECRAFT_COLORS: LibraryColor[] = [
     { id: 'yarn-1', brandId: 'stylecraft-special-dk', code: '1001', name: 'White', hex: '#FFFFFF', matchConfidence: 'exact' },
     { id: 'yarn-2', brandId: 'stylecraft-special-dk', code: '1005', name: 'Cream', hex: '#FDF4DC', matchConfidence: 'exact' },
     { id: 'yarn-3', brandId: 'stylecraft-special-dk', code: '1203', name: 'Silver', hex: '#C0C0C0', matchConfidence: 'exact' },

@@ -24,6 +24,30 @@ export const PatternBookPage: React.FC = () => {
         setProjects(getProjects());
     }, []);
 
+    const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
+    const [editingName, setEditingName] = useState('');
+
+    const startRenaming = (project: AnyProject) => {
+        setEditingProjectId(project.id);
+        setEditingName(project.name);
+    };
+
+    const cancelRenaming = () => {
+        setEditingProjectId(null);
+        setEditingName('');
+    };
+
+    const saveRenaming = () => {
+        if (!editingProjectId || !editingName.trim()) return;
+        const project = projects.find(p => p.id === editingProjectId);
+        if (project) {
+            const updated = { ...project, name: editingName };
+            saveProject(updated);
+            setProjects(getProjects());
+        }
+        cancelRenaming();
+    };
+
     const openModal = () => {
         setModalStep(1);
         setSelectedProjectType(null);
@@ -167,9 +191,36 @@ export const PatternBookPage: React.FC = () => {
                         {projects.map(p => (
                             <div key={p.id} className="bg-white border rounded-lg shadow-sm hover:shadow-lg transition-shadow duration-300 flex flex-col overflow-hidden w-full">
                                 <div className="p-4 flex-1">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h3 className="font-bold text-lg text-gray-900 truncate" title={p.name}>{p.name}</h3>
-                                        <span className="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs rounded-full capitalize">{p.type}</span>
+                                    <div className="flex justify-between items-start mb-2 h-8">
+                                        {editingProjectId === p.id ? (
+                                            <div className="flex items-center gap-2 w-full mr-2" onClick={e => e.stopPropagation()}>
+                                                <input
+                                                    type="text"
+                                                    value={editingName}
+                                                    onChange={e => setEditingName(e.target.value)}
+                                                    onKeyDown={e => {
+                                                        if (e.key === 'Enter') saveRenaming();
+                                                        if (e.key === 'Escape') cancelRenaming();
+                                                    }}
+                                                    className="flex-1 border border-indigo-300 rounded px-2 py-1 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                                    autoFocus
+                                                />
+                                                <button onClick={saveRenaming} className="text-green-600 hover:text-green-700 p-1"><Icon name="check" size={16} /></button>
+                                                <button onClick={cancelRenaming} className="text-red-500 hover:text-red-600 p-1"><Icon name="close" size={16} /></button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center gap-2 min-w-0 flex-1 mr-2 group/title">
+                                                <h3 className="font-bold text-lg text-gray-900 truncate" title={p.name}>{p.name}</h3>
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); startRenaming(p); }}
+                                                    className="opacity-0 group-hover/title:opacity-100 text-gray-400 hover:text-indigo-600 transition-opacity p-1"
+                                                    title="Rename Pattern"
+                                                >
+                                                    <Icon name="edit" size={14} />
+                                                </button>
+                                            </div>
+                                        )}
+                                        <span className="px-2 py-1 bg-indigo-50 text-indigo-700 text-xs rounded-full capitalize shrink-0">{p.type}</span>
                                     </div>
                                     {(p.data as PixelGridData).width && <p className="text-sm text-gray-500">{(p.data as PixelGridData).width} x {(p.data as PixelGridData).height} stitches</p>}
                                     <p className="text-xs text-gray-400 mt-4">Updated: {new Date(p.updatedAt).toLocaleDateString()}</p>
