@@ -195,13 +195,13 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
     };
 
     const handleTrayClick = (colorId: string) => {
-        if (targetSlot) {
-            dispatch({ type: targetSlot === 'primary' ? 'SET_PRIMARY_COLOR' : 'SET_SECONDARY_COLOR', payload: colorId });
-        }
-        if (onColorSelect) onColorSelect(colorId);
+        // GEN-005: Tray interaction refactor
+        // Desktop: Click does nothing (hover handles delete)
+        // Mobile: Tap toggles the "Trash Can" reveal state
+        const isMobile = window.innerWidth < 768; // Simple breakpoint check
 
-        if (mode === 'select') {
-            onClose();
+        if (isMobile) {
+            setActiveTrayColorId(prev => prev === colorId ? null : colorId);
         }
     };
 
@@ -372,7 +372,6 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
                                 <div key={color.id} className="relative group shrink-0">
                                     <button
                                         onClick={() => {
-                                            setActiveTrayColorId(color.id);
                                             handleTrayClick(color.id);
                                         }}
                                         className={`flex flex-col items-center gap-1 w-16 p-1 rounded transition-colors ${activeTrayColorId === color.id ? 'bg-indigo-50 ring-1 ring-indigo-200' : 'hover:bg-indigo-50'}`}
