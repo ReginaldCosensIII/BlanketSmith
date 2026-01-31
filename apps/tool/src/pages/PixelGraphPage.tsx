@@ -2282,7 +2282,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                                     <Icon name="settings" size={14} />
                                 </button>
                                 <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-400 font-normal">
-                                    {project.yarnPalette.length}
+                                    {project.yarnPalette.filter(c => !c.hidden).length}
                                 </span>
                             </div>
                         </h4>

@@ -10,7 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Email System Dispatcher (feat/email-system-dispatcher)**:
     - Implemented multi-template email system (Beta, Partnership, Feedback, Default).
     - Added Dual-Send logic: Users receive confirmation, Admins receive alert with full metadata.
+    - Added Dual-Send logic: Users receive confirmation, Admins receive alert with full metadata.
     - Normalized submission categories for consistent handling.
+
+- **Palette System Refinement (GEN-004)**:
+    - **Feature:** Implemented "Global Search" in Yarn Browser (searches all brands).
+    - **Feature:** Added "Clear All" button to Yarn Palette.
+    - **Architecture:** Implemented "Immortal Palette" (Soft Delete) - Used colors are hidden rather than deleted to preserve canvas data.
+    - **Mobile:** Improved "Tap-to-Select" interaction for deleting colors.
 
 - **Yarn Palette System (GEN-002)**: Complete overhaul of color management.
     - **Yarn Browser**: Unified "Storefront" for browsing yarn libraries with Search/Filter.

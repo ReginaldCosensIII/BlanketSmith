@@ -131,7 +131,12 @@ const projectReducer = (state: ProjectState, action: ProjectAction): ProjectStat
         return acc;
       }, []);
 
-      const updatedProject = { ...state.project, yarnPalette: newPalette };
+      const updatedProject = {
+        ...state.project,
+        yarnPalette: newPalette,
+        activePrimaryColorId: undefined,
+        activeSecondaryColorId: undefined
+      };
       return { ...state, project: updatedProject };
     }
     case 'UPDATE_INSTRUCTION_DOC': {
