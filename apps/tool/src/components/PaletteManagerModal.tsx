@@ -148,14 +148,15 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
     };
 
     const handleToggleLibraryColor = (color: any) => {
-        // Check if already in palette
+        // Check if already in palette (visible or hidden)
         const existing = palette.find(p => p.libraryColorId === color.id || (p.hex === color.hex && p.name === color.name));
 
-        if (existing) {
-            // Remove it
+        if (existing && !existing.hidden) {
+            // It is visible -> Remove it
             dispatch({ type: 'REMOVE_COLOR_FROM_PALETTE', payload: existing.id });
         } else {
-            // Add it
+            // Not found OR it is Hidden -> Add/Revive it
+            // If it exists but is hidden, the reducer ADD action will revive it.
             const patternColor: PatternColor = {
                 id: color.id,
                 brand: brands.find(b => b.id === color.brandId)?.name || 'Unknown',
@@ -174,7 +175,8 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
         let count = 0;
         filteredLibraryColors.forEach(c => {
             const existing = palette.find(p => p.libraryColorId === c.id || (p.hex === c.hex && p.name === c.name));
-            if (!existing) {
+            // If doesn't exist OR is hidden -> We want to add/revive
+            if (!existing || existing.hidden) {
                 const patternColor: PatternColor = {
                     id: c.id,
                     brand: brands.find(b => b.id === c.brandId)?.name || 'Unknown',
@@ -227,12 +229,18 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
 
     const handleDeleteColor = (e: React.MouseEvent, colorId: string) => {
         e.stopPropagation();
+        const usage = yarnUsage.get(colorId) || 0;
+        if (usage > 0) {
+            if (!window.confirm(`This color is used in ${usage} pixels. It will be hidden from your palette list, but existing pixels will remain. Continue?`)) {
+                return;
+            }
+        }
         dispatch({ type: 'REMOVE_COLOR_FROM_PALETTE', payload: colorId });
     };
 
     const handleRemoveAll = () => {
         if (window.confirm("Are you sure you want to remove ALL colors from your palette?")) {
-            dispatch({ type: 'SET_PALETTE', payload: [] });
+            dispatch({ type: 'CLEAR_PALETTE' });
         }
     };
 
@@ -289,7 +297,7 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
                 <div className="flex-1 overflow-y-auto p-2 bg-gray-50/50">
                     <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                         {filteredLibraryColors.map(color => {
-                            const isInPalette = palette.some(p => p.libraryColorId === color.id || (p.hex === color.hex && p.name === color.name));
+                            const isInPalette = palette.some(p => (p.libraryColorId === color.id || (p.hex === color.hex && p.name === color.name)) && !p.hidden);
                             return (
                                 <button
                                     key={color.id}
@@ -333,7 +341,7 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
                 {/* Footer Tray: My Palette */}
                 <div className="border-t bg-white p-2 shadow-inner shrink-0 z-20">
                     <h4 className="text-[10px] font-bold text-gray-500 uppercase mb-2 flex justify-between items-center">
-                        <span>My Pattern Palette ({palette.length})</span>
+                        <span>My Pattern Palette ({palette.filter(c => !c.hidden).length})</span>
                         <div className="flex items-center gap-2">
                             <span className="text-[9px] font-normal text-gray-400 hidden md:block">Click to Select • Hover to Delete</span>
                             <span className="text-[9px] font-normal text-gray-400 block md:hidden">Tap to Select • Tap Trash to Remove</span>
@@ -349,7 +357,7 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
                         </div>
                     </h4>
                     <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
-                        {palette.map(color => {
+                        {palette.filter(c => !c.hidden).map(color => {
                             const usage = yarnUsage.get(color.id) || 0;
                             // Highlight if it matches targetSlot active color?
                             // Needed? Maybe subtle border.
@@ -372,19 +380,13 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
 
                                     {/* Delete Button */}
                                     <div className={`absolute -top-1 -right-1 transition-opacity ${activeTrayColorId === color.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
-                                        {usage > 0 ? (
-                                            <div className="bg-gray-100 text-gray-300 rounded-full p-1 cursor-not-allowed" title="In use">
-                                                <Icon name="trash" size={10} />
-                                            </div>
-                                        ) : (
-                                            <button
-                                                onClick={(e) => handleDeleteColor(e, color.id)}
-                                                className="bg-white text-red-500 border border-red-100 hover:bg-red-500 hover:text-white rounded-full p-1 shadow-sm transition-colors"
-                                                title="Remove"
-                                            >
-                                                <Icon name="trash" size={10} />
-                                            </button>
-                                        )}
+                                        <button
+                                            onClick={(e) => handleDeleteColor(e, color.id)}
+                                            className="bg-white text-red-500 border border-red-100 hover:bg-red-500 hover:text-white rounded-full p-1 shadow-sm transition-colors"
+                                            title={usage > 0 ? `Remove (used in ${usage} pixels)` : "Remove"}
+                                        >
+                                            <Icon name="trash" size={10} />
+                                        </button>
                                     </div>
                                 </div>
                             );
