@@ -2,6 +2,8 @@ import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { logger } from '../../services/logger';
 import { Button, Icon } from '../ui/SharedComponents';
 
+import { FeedbackModal } from '../modals/FeedbackModal';
+
 interface Props {
     children: ReactNode;
 }
@@ -9,16 +11,17 @@ interface Props {
 interface State {
     hasError: boolean;
     error: Error | null;
+    showFeedbackModal: boolean;
 }
 
 export class ErrorBoundary extends Component<Props, State> {
     constructor(props: Props) {
         super(props);
-        this.state = { hasError: false, error: null };
+        this.state = { hasError: false, error: null, showFeedbackModal: false };
     }
 
     static getDerivedStateFromError(error: Error): State {
-        return { hasError: true, error };
+        return { hasError: true, error, showFeedbackModal: false };
     }
 
     componentDidCatch(error: Error, errorInfo: ErrorInfo) {
@@ -37,6 +40,10 @@ export class ErrorBoundary extends Component<Props, State> {
         // Reset path and reload to clear application state
         window.location.href = '/';
     };
+
+    handleReport = () => {
+        this.setState({ showFeedbackModal: true });
+    }
 
     render() {
         if (this.state.hasError) {
@@ -69,16 +76,20 @@ export class ErrorBoundary extends Component<Props, State> {
                         </div>
 
                         <div className="mt-8 pt-6 border-t border-gray-100">
-                            <a
-                                href="https://github.com/ReginaldCosensIII/BlanketSmith/issues"
-                                target="_blank"
-                                rel="noreferrer"
+                            <button
+                                onClick={this.handleReport}
                                 className="text-xs text-gray-400 hover:text-gray-600 underline"
                             >
-                                Report this issue
-                            </a>
+                                Report this crash
+                            </button>
                         </div>
                     </div>
+                    {/* Render Feedback Modal if requested */}
+                    <FeedbackModal
+                        isOpen={this.state.showFeedbackModal}
+                        onClose={() => this.setState({ showFeedbackModal: false })}
+                        initialError={this.state.error}
+                    />
                 </div>
             );
         }
