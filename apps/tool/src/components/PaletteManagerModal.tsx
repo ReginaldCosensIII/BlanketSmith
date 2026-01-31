@@ -247,6 +247,13 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
     // Mobile/Footer State
     const [activeTrayColorId, setActiveTrayColorId] = useState<string | null>(null);
 
+    // Reset selection when modal closes
+    useEffect(() => {
+        if (!isOpen) {
+            setActiveTrayColorId(null);
+        }
+    }, [isOpen]);
+
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Yarn Browser" maxWidth="max-w-lg mx-auto">
             <div className="flex flex-col h-[600px] relative">
