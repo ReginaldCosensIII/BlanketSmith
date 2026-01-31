@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo } from 'react';
-import { ProjectState, ProjectAction } from '../types';
+import { ProjectState, ProjectAction, PixelGridData, PatternColor } from '../types';
 import { saveProject, getProjects } from '../services/projectService';
 
 const ProjectContext = createContext<{
@@ -64,16 +64,79 @@ const projectReducer = (state: ProjectState, action: ProjectAction): ProjectStat
     }
     case 'ADD_COLOR_TO_PALETTE': {
       if (!state.project) return state;
-      // Prevent duplicates
-      if (state.project.yarnPalette.some(c => c.id === action.payload.id)) return state;
-      const updatedProject = { ...state.project, yarnPalette: [...state.project.yarnPalette, action.payload] };
-      // Configuration update, no history push
+      const colorToAdd = action.payload;
+      const existingIndex = state.project.yarnPalette.findIndex(c => c.id === colorToAdd.id);
+
+      let newPalette;
+      if (existingIndex >= 0) {
+        // Color exists. If hidden, unhide it.
+        const existingColor = state.project.yarnPalette[existingIndex];
+        if (existingColor.hidden) {
+          newPalette = [...state.project.yarnPalette];
+          newPalette[existingIndex] = { ...existingColor, hidden: false };
+        } else {
+          // Already visible, do nothing
+          return state;
+        }
+      } else {
+        // New color
+        newPalette = [...state.project.yarnPalette, colorToAdd];
+      }
+
+      const updatedProject = { ...state.project, yarnPalette: newPalette };
       return { ...state, project: updatedProject };
     }
     case 'REMOVE_COLOR_FROM_PALETTE': {
       if (!state.project) return state;
-      const updatedProject = { ...state.project, yarnPalette: state.project.yarnPalette.filter(c => c.id !== action.payload) };
-      // Configuration update, no history push
+      const colorIdToRemove = action.payload;
+
+      // 1. Check Usage Safely
+      let isUsed = false;
+      if (state.project.data && 'grid' in state.project.data) {
+        const pixelData = state.project.data as PixelGridData;
+        isUsed = pixelData.grid.some((c: any) => c.colorId === colorIdToRemove);
+      }
+
+      // 2. Immortal Palette Logic
+      let newPalette;
+      if (isUsed) {
+        // Soft Delete: Mark hidden, DO NOT REMOVE pixels
+        newPalette = state.project.yarnPalette.map(c =>
+          c.id === colorIdToRemove ? { ...c, hidden: true } : c
+        );
+      } else {
+        // Hard Delete: Remove from array
+        newPalette = state.project.yarnPalette.filter(c => c.id !== colorIdToRemove);
+      }
+
+      const updatedProject = { ...state.project, yarnPalette: newPalette };
+      return { ...state, project: updatedProject };
+    }
+    case 'CLEAR_PALETTE': {
+      if (!state.project) return state;
+
+      const checkUsage = (id: string) => {
+        if (state.project?.data && 'grid' in state.project.data) {
+          const pixelData = state.project.data as PixelGridData;
+          return pixelData.grid.some((c: any) => c.colorId === id);
+        }
+        return false;
+      };
+
+      // Keep used ones (hidden), remove unused
+      const newPalette = state.project.yarnPalette.reduce<PatternColor[]>((acc, color) => {
+        if (checkUsage(color.id)) {
+          acc.push({ ...color, hidden: true });
+        }
+        return acc;
+      }, []);
+
+      const updatedProject = {
+        ...state.project,
+        yarnPalette: newPalette,
+        activePrimaryColorId: undefined,
+        activeSecondaryColorId: undefined
+      };
       return { ...state, project: updatedProject };
     }
     case 'UPDATE_INSTRUCTION_DOC': {

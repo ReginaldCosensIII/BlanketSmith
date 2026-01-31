@@ -12,6 +12,8 @@ export interface PatternColor {
   yarnWeight?: string; // e.g. 'DK', 'Worsted'
   // [GEN-002] Future-proofing: Link back to library ID if applicable
   libraryColorId?: string;
+  // [GEN-004] Soft Delete: If true, this color is hidden from the UI but preserved in the data/pixels
+  hidden?: boolean;
 }
 
 // [GEN-002] Library Data Interfaces
@@ -113,6 +115,7 @@ export type ProjectAction =
   | { type: 'SET_SECONDARY_COLOR'; payload: string | null }
   | { type: 'ADD_COLOR_TO_PALETTE'; payload: PatternColor }
   | { type: 'REMOVE_COLOR_FROM_PALETTE'; payload: string }
+  | { type: 'CLEAR_PALETTE' }
   | { type: 'UPDATE_INSTRUCTION_DOC'; payload: InstructionDoc }
   | { type: 'UNDO' }
   | { type: 'REDO' };

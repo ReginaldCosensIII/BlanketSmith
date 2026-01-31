@@ -2205,8 +2205,8 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                     )}
 
                     {activeTool === 'replace' && (
-                        <div className="p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
-                            <p className="mb-2 font-semibold text-yellow-800">Color Replacement</p>
+                        <div className="p-2 bg-gray-50 border border-gray-200 rounded text-sm">
+                            <p className="mb-2 font-semibold text-gray-700">Color Replacement</p>
                             <div className="flex items-center justify-between mb-1">
                                 <span>From:</span>
                                 <button onClick={() => setReplaceTarget('from')} className={`w-6 h-6 border rounded relative overflow-hidden ${replaceTarget === 'from' ? 'ring-2 ring-blue-500' : ''}`} style={{ backgroundColor: replaceFromColor ? yarnColorMap.get(replaceFromColor)?.hex : 'transparent' }} title="Click to set from palette/canvas">
@@ -2282,7 +2282,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                                     <Icon name="settings" size={14} />
                                 </button>
                                 <span className="text-[10px] bg-gray-100 px-1.5 py-0.5 rounded text-gray-400 font-normal">
-                                    {project.yarnPalette.length}
+                                    {project.yarnPalette.filter(c => !c.hidden).length}
                                 </span>
                             </div>
                         </h4>
@@ -2303,7 +2303,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                                 <Icon name="transparency-color" size={18} className="absolute inset-0 m-auto text-red-500 opacity-60" />
                             </button>
 
-                            {project.yarnPalette.map((yarn) => {
+                            {project.yarnPalette.filter(c => !c.hidden).map((yarn) => {
                                 const usage = yarnUsage.get(yarn.id) || 0;
                                 const isPrimary = yarn.id === primaryColorId;
                                 const isSecondary = yarn.id === secondaryColorId;

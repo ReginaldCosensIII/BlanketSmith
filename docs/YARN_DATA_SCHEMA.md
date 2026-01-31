@@ -39,6 +39,21 @@ interface LibraryColor {
   productCode?: string; // UPC or SKU (optional)
   matchConfidence?: 'exact' | 'high' | 'approx'; // visual match quality
 }
+
+### 3. Pattern Color (Runtime State)
+
+Represents a color currently added to the user's project palette.
+
+```typescript
+interface PatternColor {
+  id: string;        // Unique instance ID (or yarn ID)
+  // ... copies of LibraryColor fields (name, hex, brand, etc.)
+  
+  hidden?: boolean;  // [Soft Delete] If true, color is preserved for rendering used pixels 
+                     // but is hidden from the Palette UI. 
+                     // This ensures accidental deletions do not destroy canvas work.
+}
+```
 ```
 
 ## Adding a New Brand
