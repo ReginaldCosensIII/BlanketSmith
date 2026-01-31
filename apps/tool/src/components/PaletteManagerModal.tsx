@@ -85,11 +85,15 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
     const filteredLibraryColors = useMemo(() => {
         if (!librarySearch) return libraryColors;
         const lowerSearch = librarySearch.toLowerCase();
-        return libraryColors.filter(c =>
+
+        // Global Search: If searching, look through ALL brands
+        const source = librarySearch ? brands.flatMap(b => getLibraryColorsByBrand(b.id)) : libraryColors;
+
+        return source.filter(c =>
             c.name.toLowerCase().includes(lowerSearch) ||
             (c.productCode && c.productCode.toLowerCase().includes(lowerSearch))
         );
-    }, [libraryColors, librarySearch]);
+    }, [libraryColors, librarySearch, brands]);
 
     // --- Custom Color State ---
     const [pickerMode, setPickerMode] = useState<'HEX' | 'RGB' | 'HSL'>('HEX');
@@ -226,6 +230,15 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
         dispatch({ type: 'REMOVE_COLOR_FROM_PALETTE', payload: colorId });
     };
 
+    const handleRemoveAll = () => {
+        if (window.confirm("Are you sure you want to remove ALL colors from your palette?")) {
+            dispatch({ type: 'SET_PALETTE', payload: [] });
+        }
+    };
+
+    // Mobile/Footer State
+    const [activeTrayColorId, setActiveTrayColorId] = useState<string | null>(null);
+
     return (
         <Modal isOpen={isOpen} onClose={onClose} title="Yarn Browser" maxWidth="max-w-lg mx-auto">
             <div className="flex flex-col h-[600px] relative">
@@ -289,6 +302,11 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
                                         style={{ backgroundColor: color.hex }}
                                     />
                                     <span className="text-[10px] text-gray-600 truncate w-full text-center font-medium leading-tight">{color.name}</span>
+                                    {librarySearch && (
+                                        <span className="text-[9px] text-gray-400 truncate w-full text-center block" title={brands.find(b => b.id === color.brandId)?.name}>
+                                            {brands.find(b => b.id === color.brandId)?.name}
+                                        </span>
+                                    )}
                                     <span className="text-[9px] text-gray-400">{color.productCode}</span>
 
                                     {isInPalette && (
@@ -316,7 +334,19 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
                 <div className="border-t bg-white p-2 shadow-inner shrink-0 z-20">
                     <h4 className="text-[10px] font-bold text-gray-500 uppercase mb-2 flex justify-between items-center">
                         <span>My Pattern Palette ({palette.length})</span>
-                        <span className="text-[9px] font-normal text-gray-400">Click to Select • Hover to Delete</span>
+                        <div className="flex items-center gap-2">
+                            <span className="text-[9px] font-normal text-gray-400 hidden md:block">Click to Select • Hover to Delete</span>
+                            <span className="text-[9px] font-normal text-gray-400 block md:hidden">Tap to Select • Tap Trash to Remove</span>
+                            {palette.length > 0 && (
+                                <button
+                                    onClick={handleRemoveAll}
+                                    className="text-[9px] text-red-500 hover:text-red-700 hover:bg-red-50 px-1.5 py-0.5 rounded transition-colors ml-2 border border-red-100"
+                                    title="Remove All Colors"
+                                >
+                                    Clear All
+                                </button>
+                            )}
+                        </div>
                     </h4>
                     <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin">
                         {palette.map(color => {
@@ -326,8 +356,11 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
                             return (
                                 <div key={color.id} className="relative group shrink-0">
                                     <button
-                                        onClick={() => handleTrayClick(color.id)}
-                                        className="flex flex-col items-center gap-1 w-16 p-1 rounded hover:bg-indigo-50 transition-colors"
+                                        onClick={() => {
+                                            setActiveTrayColorId(color.id);
+                                            handleTrayClick(color.id);
+                                        }}
+                                        className={`flex flex-col items-center gap-1 w-16 p-1 rounded transition-colors ${activeTrayColorId === color.id ? 'bg-indigo-50 ring-1 ring-indigo-200' : 'hover:bg-indigo-50'}`}
                                         title={`Select ${color.name} (${usage} pixels)`}
                                     >
                                         <div
@@ -338,7 +371,7 @@ export const PaletteManagerModal: React.FC<PaletteManagerModalProps> = ({ isOpen
                                     </button>
 
                                     {/* Delete Button */}
-                                    <div className="absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <div className={`absolute -top-1 -right-1 transition-opacity ${activeTrayColorId === color.id ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
                                         {usage > 0 ? (
                                             <div className="bg-gray-100 text-gray-300 rounded-full p-1 cursor-not-allowed" title="In use">
                                                 <Icon name="trash" size={10} />
