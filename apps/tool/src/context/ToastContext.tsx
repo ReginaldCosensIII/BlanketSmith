@@ -8,11 +8,15 @@ export interface Toast {
     type: ToastType;
     message: string;
     duration?: number;
+    action?: {
+        label: string;
+        onClick: () => void;
+    };
 }
 
 interface ToastContextType {
-    showToast: (message: string, type: ToastType, duration?: number) => void;
-    showError: (message: string) => void;
+    showToast: (message: string, type: ToastType, duration?: number, action?: { label: string, onClick: () => void }) => void;
+    showError: (message: string, action?: { label: string, onClick: () => void }) => void;
     showSuccess: (message: string) => void;
     showInfo: (message: string) => void;
 }
@@ -34,9 +38,9 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         setToasts((prev) => prev.filter((t) => t.id !== id));
     }, []);
 
-    const showToast = useCallback((message: string, type: ToastType, duration = 5000) => {
+    const showToast = useCallback((message: string, type: ToastType, duration = 5000, action?: { label: string, onClick: () => void }) => {
         const id = Date.now().toString() + Math.random().toString(36).substring(2, 9);
-        const toast = { id, message, type, duration };
+        const toast = { id, message, type, duration, action };
         setToasts((prev) => [...prev, toast]);
 
         if (duration > 0) {
@@ -49,16 +53,21 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     // Listen for global events to decoupling services from UI
     React.useEffect(() => {
         const handleGlobalToast = (event: Event) => {
-            const customEvent = event as CustomEvent<{ message: string; type: ToastType; duration?: number }>;
-            const { message, type, duration } = customEvent.detail;
-            showToast(message, type, duration);
+            const customEvent = event as CustomEvent<{
+                message: string;
+                type: ToastType;
+                duration?: number;
+                action?: { label: string; onClick: () => void };
+            }>;
+            const { message, type, duration, action } = customEvent.detail;
+            showToast(message, type, duration, action);
         };
 
         window.addEventListener('blanketsmith:toast', handleGlobalToast);
         return () => window.removeEventListener('blanketsmith:toast', handleGlobalToast);
     }, [showToast]);
 
-    const showError = useCallback((message: string) => showToast(message, 'error'), [showToast]);
+    const showError = useCallback((message: string, action?: { label: string, onClick: () => void }) => showToast(message, 'error', 5000, action), [showToast]);
     const showSuccess = useCallback((message: string) => showToast(message, 'success'), [showToast]);
     const showInfo = useCallback((message: string) => showToast(message, 'info'), [showToast]);
 
@@ -83,6 +92,14 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                             {toast.type === 'info' && <Icon name="info" className="text-blue-500" />}
                         </div>
                         <p className="flex-1 text-sm font-medium">{toast.message}</p>
+                        {toast.action && (
+                            <button
+                                onClick={toast.action.onClick}
+                                className="mr-2 px-3 py-1 text-xs font-semibold bg-gray-100 hover:bg-gray-200 rounded text-gray-800 transition-colors"
+                            >
+                                {toast.action.label}
+                            </button>
+                        )}
                         <button
                             onClick={() => removeToast(toast.id)}
                             className="text-gray-400 hover:text-gray-600 transition-colors"

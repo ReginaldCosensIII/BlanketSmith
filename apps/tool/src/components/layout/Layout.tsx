@@ -21,8 +21,16 @@ export const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () =
                 setIsDropdownOpen(false);
             }
         };
+
+        const handleOpenFeedback = () => setIsFeedbackOpen(true);
+
         document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
+        window.addEventListener('blanketsmith:open-feedback', handleOpenFeedback);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            window.removeEventListener('blanketsmith:open-feedback', handleOpenFeedback);
+        };
     }, []);
 
     const DropdownLink: React.FC<{ to: string, children: React.ReactNode }> = ({ to, children }) => (

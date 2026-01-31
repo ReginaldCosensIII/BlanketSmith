@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Button } from '../ui/SharedComponents';
 import { useToast } from '../../context/ToastContext';
+import { notify } from '../../services/notification';
 import { createClient } from '@supabase/supabase-js';
 
 // --- Inline Icons ---
@@ -125,10 +126,8 @@ export const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, i
             const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
             if (!supabaseUrl || !supabaseKey) {
-                console.warn("[Feedback] Supabase env vars missing.");
-                // For demo/dev robustness, simulate success if no keys? 
-                // No, user wants real submission. Throw.
-                throw new Error('Supabase configuration missing');
+                notify.error("Configuration Missing: Check .env.local");
+                return;
             }
 
             const supabase = createClient(supabaseUrl, supabaseKey);
