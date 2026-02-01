@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### [Unreleased]
+- **Navigation (Landing Page)**:
+    - **Global Scroll-to-Top**: Implemented a global scroll reset on route changes to ensure users start at the top of the page when navigating.
 - **Feedback System (RPT-001 / RPT-002)**:
     - **Feedback System:** Users can now report bugs/features via the "Report Issue" menu item or the "Report" button on error toasts.
     - **Crash Reporting:** `ErrorBoundary` now captures stack traces and offers a "Report Crash" button that pre-fills the bug report.
