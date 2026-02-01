@@ -6,10 +6,13 @@ import { Button, Icon } from '../ui/SharedComponents';
 import { MIN_ZOOM, MAX_ZOOM } from '../../constants';
 import '../../styles/footer.css';
 
+import { FeedbackModal } from '../modals/FeedbackModal';
+
 export const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () => void; }> = ({ isSidebarVisible, onToggleSidebar }) => {
     const { state, saveCurrentProject } = useProject();
     const navigate = useNavigate();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+    const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -18,8 +21,16 @@ export const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () =
                 setIsDropdownOpen(false);
             }
         };
+
+        const handleOpenFeedback = () => setIsFeedbackOpen(true);
+
         document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
+        window.addEventListener('blanketsmith:open-feedback', handleOpenFeedback);
+
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+            window.removeEventListener('blanketsmith:open-feedback', handleOpenFeedback);
+        };
     }, []);
 
     const DropdownLink: React.FC<{ to: string, children: React.ReactNode }> = ({ to, children }) => (
@@ -38,6 +49,12 @@ export const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () =
                     <div className="absolute top-full mt-2 w-64 bg-white rounded-md shadow-lg border z-30 p-2 space-y-1">
                         <DropdownLink to="/contact">Contact Us</DropdownLink>
                         <DropdownLink to="/partner">Partner With Us</DropdownLink>
+                        <button
+                            onClick={() => { setIsFeedbackOpen(true); setIsDropdownOpen(false); }}
+                            className="w-full text-left block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md"
+                        >
+                            Report Issue / Feedback
+                        </button>
                         <div className="border-t my-1"></div>
                         <div className="flex items-center justify-between p-2">
                             <label htmlFor="sidebar-toggle" className="text-sm font-medium text-gray-700">Show Sidebar</label>
@@ -57,6 +74,8 @@ export const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () =
                     </div>
                 )}
             </div>
+
+            <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
             {state.project && <div className="text-gray-600 font-semibold hidden md:block">{state.project.name}</div>}
             <div className="flex items-center gap-2">
                 {state.project && <Button variant="secondary" onClick={saveCurrentProject}><Icon name="save" size="md" /> <span className="hidden md:inline">Save</span></Button>}

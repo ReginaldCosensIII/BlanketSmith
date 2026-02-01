@@ -143,7 +143,8 @@ Add items freely; keep IDs stable once created. Promote to Blocker list when nee
 - [x] **UX-002:** Non-mouse zoom/navigation controls (Status: Done)
     - [x] Stage 1: Shortcut Engine & Documentation
 - [x] **INS-001:** Instructions Engine v2 (Status: Done)
-- [ ] **RPT-001:** Feedback/bug reporting mechanism (Status: Not Started)
+- [x] **RPT-001:** Feedback/bug reporting mechanism (Status: Done)
+    - [x] Integrated "Report Crash" flow with ErrorBoundary.
 - [ ] **ROT-001:** Rotate/select tool data integrity + undo/redo compatibility (Status: Not Started)
 - [x] **INFRA-001:** Global Type Checking (Status: Done)
 
