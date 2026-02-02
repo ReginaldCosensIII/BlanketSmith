@@ -184,6 +184,14 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
     const floatingHistoryPast = useRef<FloatingState[]>([]);
     const floatingHistoryFuture = useRef<FloatingState[]>([]);
 
+    // Shadow Ref for Floating State (Fixes Stale Closures in Undo/Redo)
+    const floatingStateRef = useRef<FloatingState | null>(null);
+
+    const updateFloatingState = useCallback((newState: FloatingState | null) => {
+        floatingStateRef.current = newState;
+        setFloatingSelection(newState);
+    }, []);
+
     const { hasFloatingSelection, performUndo, performRedo, setHasFloatingSelection, registerUndoHandler, registerRedoHandler, undoHandler } = useFloatingSelection();
 
     useEffect(() => {
@@ -516,7 +524,13 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
             isRotated: false
         };
 
-        setFloatingSelection(newFloating);
+        // Initialize Stack for new Paste (fixes missing state tracking bug)
+        floatingHistoryPast.current = [];
+        floatingHistoryFuture.current = [];
+
+        // Use Shadow Ref helper
+        updateFloatingState(newFloating);
+
         setSelection({
             x: startX,
             y: startY,
@@ -524,9 +538,6 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
             h: clipboard.height
         });
 
-        // Initialize Stack for new Paste
-        floatingHistoryPast.current = [];
-        floatingHistoryFuture.current = [];
         updateFloatingHandlers();
     };
 
@@ -631,60 +642,65 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
     };
 
     const handleFloatingUndo = useCallback(() => {
-        setFloatingSelection((current) => {
-            // 1. Check Past Stack
-            const pastStack = floatingHistoryPast.current;
-            if (pastStack.length > 0) {
-                // RESTORE STATE
-                // Snapshot current to Future
-                const currentSnapshot = snapshotFloatingState(current);
-                if (currentSnapshot) {
-                    floatingHistoryFuture.current.push(currentSnapshot);
-                }
+        // Use Ref as source of truth to avoid stale closures and double-invocation bugs
+        const current = floatingStateRef.current;
+        const pastStack = floatingHistoryPast.current;
 
-                // Pop from Past
-                const prevState = pastStack.pop()!;
+        if (pastStack.length > 0 && current) {
+            // RESTORE STATE
+            // Snapshot current to Future
+            const currentSnapshot = snapshotFloatingState(current);
+            if (currentSnapshot) {
+                floatingHistoryFuture.current.push(currentSnapshot);
+            }
 
-                // Sync UI Selection
-                setSelection({ x: prevState.x, y: prevState.y, w: prevState.w, h: prevState.h });
+            // Pop from Past
+            const prevState = pastStack.pop()!;
 
-                return {
-                    ...prevState,
-                    // Ensure we use the popped data (already deep copied when pushed)
-                };
+            // Sync UI Selection
+            setSelection({ x: prevState.x, y: prevState.y, w: prevState.w, h: prevState.h });
+
+            // Update State via Helper
+            updateFloatingState({
+                ...prevState,
+                // Ensure we use the popped data (already deep copied when pushed)
+            });
+        } else {
+            // BASE STATE REACHED -> CANCEL LIFT (Global Undo)
+            // This mimics the "Crop/Cut" undo
+            if (!current) {
+                // Edge case: Undo called but no floating selection? 
+                // Should fall through to Global Undo if we are clean.
+                dispatch({ type: 'UNDO' });
             } else {
-                // BASE STATE REACHED -> CANCEL LIFT (Global Undo)
-                // This mimics the "Crop/Cut" undo
                 dispatch({ type: 'UNDO' });
                 setSelection(null);
-                return null; // Clears floating selection
+                updateFloatingState(null); // Clears floating selection
             }
-        });
-    }, [dispatch]);
+        }
+    }, [dispatch, updateFloatingState]);
 
     const handleFloatingRedo = useCallback(() => {
-        setFloatingSelection((current) => {
-            // 1. Check Future Stack
-            const futureStack = floatingHistoryFuture.current;
-            if (futureStack.length > 0) {
-                // RESTORE FUTURE STATE
-                // Snapshot current to Past
-                const currentSnapshot = snapshotFloatingState(current);
-                if (currentSnapshot) {
-                    floatingHistoryPast.current.push(currentSnapshot);
-                }
+        const current = floatingStateRef.current;
+        const futureStack = floatingHistoryFuture.current;
 
-                // Pop from Future
-                const nextState = futureStack.pop()!;
-
-                // Sync UI Selection
-                setSelection({ x: nextState.x, y: nextState.y, w: nextState.w, h: nextState.h });
-
-                return nextState;
+        if (futureStack.length > 0 && current) {
+            // RESTORE FUTURE STATE
+            // Snapshot current to Past
+            const currentSnapshot = snapshotFloatingState(current);
+            if (currentSnapshot) {
+                floatingHistoryPast.current.push(currentSnapshot);
             }
-            return current;
-        });
-    }, []);
+
+            // Pop from Future
+            const nextState = futureStack.pop()!;
+
+            // Sync UI Selection
+            setSelection({ x: nextState.x, y: nextState.y, w: nextState.w, h: nextState.h });
+
+            updateFloatingState(nextState);
+        }
+    }, [updateFloatingState]);
 
     // Helper to register the stack handlers (Call this after any stack mutation or lift)
     const updateFloatingHandlers = useCallback(() => {
@@ -733,32 +749,39 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
             // Initialize Stack
             floatingHistoryPast.current = [];
             floatingHistoryFuture.current = [];
+
+            // Sync Shadow Ref immediately
+            updateFloatingState(workingFloating);
             updateFloatingHandlers();
         }
 
-        // 2. Rotate Floating Selection
-        if (workingFloating) {
+        // 2. Rotate Floating Selection (Use Shadow Ref as Source of Truth)
+        // If we just lifted, workingFloating is set but ref might not be synced in this scope if we didn't call updateFloatingState above?
+        // Actually, updateFloatingState syncs ref.current.
+        // So we should try to read from Ref first, if null, fallback to workingFloating (newly lifted).
+
+        const sourceState = floatingStateRef.current || workingFloating;
+
+        if (sourceState) {
             // SNAPSHOT TO PAST STACK before mutation
-            const preRotationSnapshot = snapshotFloatingState(workingFloating);
+            const preRotationSnapshot = snapshotFloatingState(sourceState);
             if (preRotationSnapshot) {
                 floatingHistoryPast.current.push(preRotationSnapshot);
             }
             // Clear future on new action
             floatingHistoryFuture.current = [];
 
-            const { grid: rotatedGrid, newWidth, newHeight } = rotateSubGrid(workingFloating.data, workingFloating.w, workingFloating.h);
+            const { grid: rotatedGrid, newWidth, newHeight } = rotateSubGrid(sourceState.data, sourceState.w, sourceState.h);
 
             // Calculate new top-left using integer delta to avoid sub-pixel drift
-            // We use Math.trunc() to ensure that symmetric rotations (w->h then h->w) 
-            // round towards zero in both directions, maintaining the original position after 4 spins.
-            const dx = (workingFloating.w - newWidth) / 2;
-            const dy = (workingFloating.h - newHeight) / 2;
+            const dx = (sourceState.w - newWidth) / 2;
+            const dy = (sourceState.h - newHeight) / 2;
 
-            const newX = workingFloating.x + Math.trunc(dx);
-            const newY = workingFloating.y + Math.trunc(dy);
+            const newX = sourceState.x + Math.trunc(dx);
+            const newY = sourceState.y + Math.trunc(dy);
 
             const newFloating = {
-                ...workingFloating,
+                ...sourceState,
                 x: newX,
                 y: newY,
                 w: newWidth,
@@ -767,15 +790,16 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                 isRotated: true
             };
 
-            setFloatingSelection(newFloating);
+            // Commit to Ref & State
+            updateFloatingState(newFloating);
 
             // Sync selection bounds for UI
             setSelection({ x: newX, y: newY, w: newWidth, h: newHeight });
 
-            // Register Stack Handlers (no local chain needed anymore)
+            // Register Stack Handlers
             updateFloatingHandlers();
         }
-    }, [projectData, selection, floatingSelection, updateGrid, rotateSubGrid, updateFloatingHandlers]);
+    }, [projectData, selection, floatingSelection, updateGrid, rotateSubGrid, updateFloatingHandlers, updateFloatingState]);
 
     const handleSelectAll = () => {
         if (!projectData) return;
