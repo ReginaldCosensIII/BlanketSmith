@@ -657,12 +657,14 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
         if (workingFloating) {
             const { grid: rotatedGrid, newWidth, newHeight } = rotateSubGrid(workingFloating.data, workingFloating.w, workingFloating.h);
 
-            // Calculate new centered position relative to previous center
-            const centerX = workingFloating.x + workingFloating.w / 2;
-            const centerY = workingFloating.y + workingFloating.h / 2;
+            // Calculate new top-left using integer delta to avoid sub-pixel drift
+            // We use Math.trunc() to ensure that symmetric rotations (w->h then h->w) 
+            // round towards zero in both directions, maintaining the original position after 4 spins.
+            const dx = (workingFloating.w - newWidth) / 2;
+            const dy = (workingFloating.h - newHeight) / 2;
 
-            const newX = Math.floor(centerX - newWidth / 2);
-            const newY = Math.floor(centerY - newHeight / 2);
+            const newX = workingFloating.x + Math.trunc(dx);
+            const newY = workingFloating.y + Math.trunc(dy);
 
             const newFloating = {
                 ...workingFloating,
