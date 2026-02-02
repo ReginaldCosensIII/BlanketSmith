@@ -170,7 +170,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
     const [preRotationState, setPreRotationState] = useState<{ grid: CellData[], selection: { x: number, y: number, w: number, h: number } } | null>(null);
     const [toolbarPosition, setToolbarPosition] = useState<{ x: number, y: number } | null>(null);
 
-    const { hasFloatingSelection, performUndo, performRedo, setHasFloatingSelection, registerUndoHandler, registerRedoHandler } = useFloatingSelection();
+    const { hasFloatingSelection, performUndo, performRedo, setHasFloatingSelection, registerUndoHandler, registerRedoHandler, undoHandler } = useFloatingSelection();
 
     useEffect(() => {
         setHasFloatingSelection(!!floatingSelection);
@@ -651,6 +651,23 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                 isRotated: false
             };
             didLift = true;
+
+            // Register Undo for Lift: Cancel the floating selection
+            // Note: We do NOT need to restore the grid pixels because standard Redux undo 
+            // will handle the "Cut" part (since we dispatched updateGrid).
+            // We only need to clear the floating overlay.
+            registerUndoHandler(() => {
+                setFloatingSelection(null);
+                // Also trigger standard undo to put pixels back?
+                // YES. Logic: Lift = [Grid Update (Cut)] + [Set Floating].
+                // Undo Lift = [Unset Floating] + [Undo Grid Update].
+                // Since performUndo in Context only calls this handler IF floating exists,
+                // we must manually trigger the grid dispatch undo here if we want to be atomic.
+                // However, standard architecture: Global Undo -> Check Floating.
+                // If Floating -> Run Handler.
+                // So this Handler must do EVERYTHING required to revert the state.
+                dispatch({ type: 'UNDO' });
+            });
         }
 
         // 2. Rotate Floating Selection
@@ -680,12 +697,58 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
             // Sync selection bounds for UI
             setSelection({ x: newX, y: newY, w: newWidth, h: newHeight });
 
-            // Note: If we just lifted, we might want to register undo handler for the lift?
-            // Existing architecture handles Paste undo. Lift is similar.
-            // For now, we rely on the grid update history for the "Cut" part, 
-            // and floating state for the overlay.
+            // Sync selection bounds for UI
+            setSelection({ x: newX, y: newY, w: newWidth, h: newHeight });
+
+            // REGISTER UNDO HANDLER FOR ROTATION (Step Back)
+            // Capture the *current* undo handler (which handles the previous state, e.g. Lift)
+            // to re-register it after this rotation is undone. This creates an undo chain.
+            const prevUndoHandler = undoHandler;
+
+            registerUndoHandler(() => {
+                setFloatingSelection((current) => {
+                    if (!current) return null;
+                    // Rotate 270 (3 times 90) to reverse 90 deg rotation
+                    let r = current.data;
+                    let rw = current.w;
+                    let rh = current.h;
+
+                    // 1
+                    let res = rotateSubGrid(r, rw, rh);
+                    r = res.grid; rw = res.newWidth; rh = res.newHeight;
+                    // 2
+                    res = rotateSubGrid(r, rw, rh);
+                    r = res.grid; rw = res.newWidth; rh = res.newHeight;
+                    // 3
+                    res = rotateSubGrid(r, rw, rh);
+                    r = res.grid; rw = res.newWidth; rh = res.newHeight;
+
+                    const dx = (current.w - rw) / 2;
+                    const dy = (current.h - rh) / 2;
+                    const nx = current.x + Math.trunc(dx);
+                    const ny = current.y + Math.trunc(dy);
+
+                    // Sync selection UI
+                    setSelection({ x: nx, y: ny, w: rw, h: rh });
+
+                    return {
+                        ...current,
+                        data: r,
+                        w: rw,
+                        h: rh,
+                        x: nx,
+                        y: ny
+                    };
+                });
+
+                // Restore previous undo handler (e.g. Cancel Lift)
+                if (prevUndoHandler) {
+                    registerUndoHandler(prevUndoHandler);
+                }
+            });
+
         }
-    }, [projectData, selection, floatingSelection, updateGrid, rotateSubGrid]);
+    }, [projectData, selection, floatingSelection, updateGrid, rotateSubGrid, registerUndoHandler, undoHandler]);
 
     const handleSelectAll = () => {
         if (!projectData) return;

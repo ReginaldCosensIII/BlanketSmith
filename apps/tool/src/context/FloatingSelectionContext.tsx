@@ -7,6 +7,8 @@ interface FloatingSelectionContextType {
     performRedo: () => void;
     registerUndoHandler: (handler: () => void) => void;
     registerRedoHandler: (handler: () => void) => void;
+    undoHandler: (() => void) | null;
+    redoHandler: (() => void) | null;
 }
 
 const FloatingSelectionContext = createContext<FloatingSelectionContextType | undefined>(undefined);
@@ -45,6 +47,8 @@ export const FloatingSelectionProvider: React.FC<{ children: React.ReactNode }> 
                 performRedo,
                 registerUndoHandler,
                 registerRedoHandler,
+                undoHandler,
+                redoHandler,
             }}
         >
             {children}
