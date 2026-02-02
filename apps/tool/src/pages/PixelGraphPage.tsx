@@ -170,6 +170,20 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
     const [preRotationState, setPreRotationState] = useState<{ grid: CellData[], selection: { x: number, y: number, w: number, h: number } } | null>(null);
     const [toolbarPosition, setToolbarPosition] = useState<{ x: number, y: number } | null>(null);
 
+    // --- FLOATING HISTORY STACK (Refactor ROT-001) ---
+    // Strict History Stack to prevent infinite undo loops and ensure reliable redo.
+    type FloatingState = {
+        data: CellData[];
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+        isRotated: boolean;
+    };
+
+    const floatingHistoryPast = useRef<FloatingState[]>([]);
+    const floatingHistoryFuture = useRef<FloatingState[]>([]);
+
     const { hasFloatingSelection, performUndo, performRedo, setHasFloatingSelection, registerUndoHandler, registerRedoHandler, undoHandler } = useFloatingSelection();
 
     useEffect(() => {
@@ -510,24 +524,10 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
             h: clipboard.height
         });
 
-        // Register Undo/Redo handlers for this floating selection state
-
-        // Undo: Clear the floating selection
-        registerUndoHandler(() => {
-            setFloatingSelection(null);
-            setSelection(null);
-        });
-
-        // Redo: Restore the floating selection
-        registerRedoHandler(() => {
-            setFloatingSelection(newFloating);
-            setSelection({
-                x: startX,
-                y: startY,
-                w: clipboard.width,
-                h: clipboard.height
-            });
-        });
+        // Initialize Stack for new Paste
+        floatingHistoryPast.current = [];
+        floatingHistoryFuture.current = [];
+        updateFloatingHandlers();
     };
 
     const handleClearSelection = useCallback(() => {
@@ -615,6 +615,83 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
     // Removed legacy RotationSession and in-place clipping logic.
     // Now rotates Floating Selection directly, or lifts selection to float.
 
+    // --- FLOATING STACK HANDLERS ---
+
+    // Helper to Deep Copy State
+    const snapshotFloatingState = (current: typeof floatingSelection): FloatingState | null => {
+        if (!current) return null;
+        return {
+            data: structuredClone(current.data), // Deep Copy
+            x: current.x,
+            y: current.y,
+            w: current.w,
+            h: current.h,
+            isRotated: current.isRotated
+        };
+    };
+
+    const handleFloatingUndo = useCallback(() => {
+        setFloatingSelection((current) => {
+            // 1. Check Past Stack
+            const pastStack = floatingHistoryPast.current;
+            if (pastStack.length > 0) {
+                // RESTORE STATE
+                // Snapshot current to Future
+                const currentSnapshot = snapshotFloatingState(current);
+                if (currentSnapshot) {
+                    floatingHistoryFuture.current.push(currentSnapshot);
+                }
+
+                // Pop from Past
+                const prevState = pastStack.pop()!;
+
+                // Sync UI Selection
+                setSelection({ x: prevState.x, y: prevState.y, w: prevState.w, h: prevState.h });
+
+                return {
+                    ...prevState,
+                    // Ensure we use the popped data (already deep copied when pushed)
+                };
+            } else {
+                // BASE STATE REACHED -> CANCEL LIFT (Global Undo)
+                // This mimics the "Crop/Cut" undo
+                dispatch({ type: 'UNDO' });
+                setSelection(null);
+                return null; // Clears floating selection
+            }
+        });
+    }, [dispatch]);
+
+    const handleFloatingRedo = useCallback(() => {
+        setFloatingSelection((current) => {
+            // 1. Check Future Stack
+            const futureStack = floatingHistoryFuture.current;
+            if (futureStack.length > 0) {
+                // RESTORE FUTURE STATE
+                // Snapshot current to Past
+                const currentSnapshot = snapshotFloatingState(current);
+                if (currentSnapshot) {
+                    floatingHistoryPast.current.push(currentSnapshot);
+                }
+
+                // Pop from Future
+                const nextState = futureStack.pop()!;
+
+                // Sync UI Selection
+                setSelection({ x: nextState.x, y: nextState.y, w: nextState.w, h: nextState.h });
+
+                return nextState;
+            }
+            return current;
+        });
+    }, []);
+
+    // Helper to register the stack handlers (Call this after any stack mutation or lift)
+    const updateFloatingHandlers = useCallback(() => {
+        registerUndoHandler(handleFloatingUndo);
+        registerRedoHandler(handleFloatingRedo);
+    }, [registerUndoHandler, registerRedoHandler, handleFloatingUndo, handleFloatingRedo]);
+
     const handleRotateSelection = useCallback(() => {
         if (!projectData) return;
 
@@ -652,26 +729,23 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
             };
             didLift = true;
 
-            // Register Undo for Lift: Cancel the floating selection
-            // Note: We do NOT need to restore the grid pixels because standard Redux undo 
-            // will handle the "Cut" part (since we dispatched updateGrid).
-            // We only need to clear the floating overlay.
-            registerUndoHandler(() => {
-                setFloatingSelection(null);
-                // Also trigger standard undo to put pixels back?
-                // YES. Logic: Lift = [Grid Update (Cut)] + [Set Floating].
-                // Undo Lift = [Unset Floating] + [Undo Grid Update].
-                // Since performUndo in Context only calls this handler IF floating exists,
-                // we must manually trigger the grid dispatch undo here if we want to be atomic.
-                // However, standard architecture: Global Undo -> Check Floating.
-                // If Floating -> Run Handler.
-                // So this Handler must do EVERYTHING required to revert the state.
-                dispatch({ type: 'UNDO' });
-            });
+            // Register Undo for Lift: Use Floating Undo (Stack is empty, so it will fall through to Global Undo)
+            // Initialize Stack
+            floatingHistoryPast.current = [];
+            floatingHistoryFuture.current = [];
+            updateFloatingHandlers();
         }
 
         // 2. Rotate Floating Selection
         if (workingFloating) {
+            // SNAPSHOT TO PAST STACK before mutation
+            const preRotationSnapshot = snapshotFloatingState(workingFloating);
+            if (preRotationSnapshot) {
+                floatingHistoryPast.current.push(preRotationSnapshot);
+            }
+            // Clear future on new action
+            floatingHistoryFuture.current = [];
+
             const { grid: rotatedGrid, newWidth, newHeight } = rotateSubGrid(workingFloating.data, workingFloating.w, workingFloating.h);
 
             // Calculate new top-left using integer delta to avoid sub-pixel drift
@@ -694,61 +768,14 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
             };
 
             setFloatingSelection(newFloating);
-            // Sync selection bounds for UI
-            setSelection({ x: newX, y: newY, w: newWidth, h: newHeight });
 
             // Sync selection bounds for UI
             setSelection({ x: newX, y: newY, w: newWidth, h: newHeight });
 
-            // REGISTER UNDO HANDLER FOR ROTATION (Step Back)
-            // Capture the *current* undo handler (which handles the previous state, e.g. Lift)
-            // to re-register it after this rotation is undone. This creates an undo chain.
-            const prevUndoHandler = undoHandler;
-
-            registerUndoHandler(() => {
-                setFloatingSelection((current) => {
-                    if (!current) return null;
-                    // Rotate 270 (3 times 90) to reverse 90 deg rotation
-                    let r = current.data;
-                    let rw = current.w;
-                    let rh = current.h;
-
-                    // 1
-                    let res = rotateSubGrid(r, rw, rh);
-                    r = res.grid; rw = res.newWidth; rh = res.newHeight;
-                    // 2
-                    res = rotateSubGrid(r, rw, rh);
-                    r = res.grid; rw = res.newWidth; rh = res.newHeight;
-                    // 3
-                    res = rotateSubGrid(r, rw, rh);
-                    r = res.grid; rw = res.newWidth; rh = res.newHeight;
-
-                    const dx = (current.w - rw) / 2;
-                    const dy = (current.h - rh) / 2;
-                    const nx = current.x + Math.trunc(dx);
-                    const ny = current.y + Math.trunc(dy);
-
-                    // Sync selection UI
-                    setSelection({ x: nx, y: ny, w: rw, h: rh });
-
-                    return {
-                        ...current,
-                        data: r,
-                        w: rw,
-                        h: rh,
-                        x: nx,
-                        y: ny
-                    };
-                });
-
-                // Restore previous undo handler (e.g. Cancel Lift)
-                if (prevUndoHandler) {
-                    registerUndoHandler(prevUndoHandler);
-                }
-            });
-
+            // Register Stack Handlers (no local chain needed anymore)
+            updateFloatingHandlers();
         }
-    }, [projectData, selection, floatingSelection, updateGrid, rotateSubGrid, registerUndoHandler, undoHandler]);
+    }, [projectData, selection, floatingSelection, updateGrid, rotateSubGrid, updateFloatingHandlers]);
 
     const handleSelectAll = () => {
         if (!projectData) return;
