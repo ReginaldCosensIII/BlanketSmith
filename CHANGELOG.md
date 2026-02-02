@@ -38,6 +38,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Project Renaming (Pattern Book)**:
     - **Renaming**: Projects can now be renamed directly from the Pattern Book (inline edit) and the Editor Settings Modal.
     - **Reliability**: Ensured new names are persisted immediately to local storage.
+    
+- **Rotation Logic & History (ROT-001)**:
+    - **Refactor**: Implemented "Shadow Ref" pattern and strict History Stack for Floating Selections to fix undo/redo loops and state skipping.
+    - **Fix**: Resolved rotation drift on even-dimension selections using `Math.trunc` to prevent sub-pixel accumulation.
+    - **Reliability**: Replaced unstable "Blind Math" undo logic with deterministic state restoration.
 
 
 
