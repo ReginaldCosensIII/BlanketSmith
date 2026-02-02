@@ -170,7 +170,29 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
     const [preRotationState, setPreRotationState] = useState<{ grid: CellData[], selection: { x: number, y: number, w: number, h: number } } | null>(null);
     const [toolbarPosition, setToolbarPosition] = useState<{ x: number, y: number } | null>(null);
 
-    const { hasFloatingSelection, performUndo, performRedo, setHasFloatingSelection, registerUndoHandler, registerRedoHandler } = useFloatingSelection();
+    // --- FLOATING HISTORY STACK (Refactor ROT-001) ---
+    // Strict History Stack to prevent infinite undo loops and ensure reliable redo.
+    type FloatingState = {
+        data: CellData[];
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+        isRotated: boolean;
+    };
+
+    const floatingHistoryPast = useRef<FloatingState[]>([]);
+    const floatingHistoryFuture = useRef<FloatingState[]>([]);
+
+    // Shadow Ref for Floating State (Fixes Stale Closures in Undo/Redo)
+    const floatingStateRef = useRef<FloatingState | null>(null);
+
+    const updateFloatingState = useCallback((newState: FloatingState | null) => {
+        floatingStateRef.current = newState;
+        setFloatingSelection(newState);
+    }, []);
+
+    const { hasFloatingSelection, performUndo, performRedo, setHasFloatingSelection, registerUndoHandler, registerRedoHandler, undoHandler } = useFloatingSelection();
 
     useEffect(() => {
         setHasFloatingSelection(!!floatingSelection);
@@ -502,7 +524,13 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
             isRotated: false
         };
 
-        setFloatingSelection(newFloating);
+        // Initialize Stack for new Paste (fixes missing state tracking bug)
+        floatingHistoryPast.current = [];
+        floatingHistoryFuture.current = [];
+
+        // Use Shadow Ref helper
+        updateFloatingState(newFloating);
+
         setSelection({
             x: startX,
             y: startY,
@@ -510,24 +538,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
             h: clipboard.height
         });
 
-        // Register Undo/Redo handlers for this floating selection state
-
-        // Undo: Clear the floating selection
-        registerUndoHandler(() => {
-            setFloatingSelection(null);
-            setSelection(null);
-        });
-
-        // Redo: Restore the floating selection
-        registerRedoHandler(() => {
-            setFloatingSelection(newFloating);
-            setSelection({
-                x: startX,
-                y: startY,
-                w: clipboard.width,
-                h: clipboard.height
-            });
-        });
+        updateFloatingHandlers();
     };
 
     const handleClearSelection = useCallback(() => {
@@ -611,246 +622,184 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
     };
 
     // --- ROTATION SESSION STATE ---
-    interface RotationSession {
-        baseRect: { x: number, y: number, w: number, h: number };
-        baseCells: CellData[];
-        boundingBox: { x: number, y: number, w: number, h: number };
-        boundingBoxCells: CellData[];
-        currentRect: { x: number, y: number, w: number, h: number }; // Track current rotation position
-        step: 0 | 1 | 2 | 3;
-    }
-    const [rotationSession, setRotationSession] = useState<RotationSession | null>(null);
-    const isRotatingRef = useRef(false);
+    // --- ROTATION LOGIC (Refactored ROT-001) ---
+    // Removed legacy RotationSession and in-place clipping logic.
+    // Now rotates Floating Selection directly, or lifts selection to float.
 
-    // Reset rotation session if selection changes externally
-    useEffect(() => {
-        if (isRotatingRef.current) {
-            isRotatingRef.current = false;
-            return;
-        }
-        setRotationSession(null);
-    }, [selection, projectData]);
+    // --- FLOATING STACK HANDLERS ---
 
-    const rotateBaseCells = (baseCells: CellData[], w: number, h: number, step: 0 | 1 | 2 | 3): { cells: CellData[], newW: number, newH: number } => {
-        if (step === 0) {
-            return { cells: [...baseCells], newW: w, newH: h };
-        }
-
-        let newW = w;
-        let newH = h;
-        if (step === 1 || step === 3) {
-            newW = h;
-            newH = w;
-        }
-
-        const rotated = new Array(newW * newH).fill({ colorId: null });
-
-        for (let r = 0; r < h; r++) {
-            for (let c = 0; c < w; c++) {
-                const srcIdx = r * w + c;
-                let destCol = 0;
-                let destRow = 0;
-
-                if (step === 1) {
-                    destCol = r;
-                    destRow = w - 1 - c;
-                } else if (step === 2) {
-                    destCol = w - 1 - c;
-                    destRow = h - 1 - r;
-                } else if (step === 3) {
-                    destCol = h - 1 - r;
-                    destRow = c;
-                }
-
-                const destIdx = destRow * newW + destCol;
-                rotated[destIdx] = baseCells[srcIdx];
-            }
-        }
-        return { cells: rotated, newW, newH };
-    };
-
-    const calculateRotationBoundingBox = (baseRect: { x: number, y: number, w: number, h: number }) => {
-        const { x, y, w, h } = baseRect;
-        const positions = [];
-
-        for (let step = 0; step < 4; step++) {
-            let newW = w;
-            let newH = h;
-            if (step === 1 || step === 3) {
-                newW = h;
-                newH = w;
-            }
-
-            const newX = x + Math.trunc((w - newW) / 2);
-            const newY = y + Math.trunc((h - newH) / 2);
-
-            positions.push({ x: newX, y: newY, w: newW, h: newH });
-        }
-
-        const minX = Math.min(...positions.map(p => p.x));
-        const minY = Math.min(...positions.map(p => p.y));
-        const maxX = Math.max(...positions.map(p => p.x + p.w));
-        const maxY = Math.max(...positions.map(p => p.y + p.h));
-
+    // Helper to Deep Copy State
+    const snapshotFloatingState = (current: typeof floatingSelection): FloatingState | null => {
+        if (!current) return null;
         return {
-            x: minX,
-            y: minY,
-            w: maxX - minX,
-            h: maxY - minY
+            data: structuredClone(current.data), // Deep Copy
+            x: current.x,
+            y: current.y,
+            w: current.w,
+            h: current.h,
+            isRotated: current.isRotated
         };
     };
 
-    const handleRotateSelection = () => {
-        if (!selection || !projectData) return;
-        if (floatingSelection) {
-            handleCommit();
+    const handleFloatingUndo = useCallback(() => {
+        // Use Ref as source of truth to avoid stale closures and double-invocation bugs
+        const current = floatingStateRef.current;
+        const pastStack = floatingHistoryPast.current;
+
+        if (pastStack.length > 0 && current) {
+            // RESTORE STATE
+            // Snapshot current to Future
+            const currentSnapshot = snapshotFloatingState(current);
+            if (currentSnapshot) {
+                floatingHistoryFuture.current.push(currentSnapshot);
+            }
+
+            // Pop from Past
+            const prevState = pastStack.pop()!;
+
+            // Sync UI Selection
+            setSelection({ x: prevState.x, y: prevState.y, w: prevState.w, h: prevState.h });
+
+            // Update State via Helper
+            updateFloatingState({
+                ...prevState,
+                // Ensure we use the popped data (already deep copied when pushed)
+            });
+        } else {
+            // BASE STATE REACHED -> CANCEL LIFT (Global Undo)
+            // This mimics the "Crop/Cut" undo
+            if (!current) {
+                // Edge case: Undo called but no floating selection? 
+                // Should fall through to Global Undo if we are clean.
+                dispatch({ type: 'UNDO' });
+            } else {
+                dispatch({ type: 'UNDO' });
+                setSelection(null);
+                updateFloatingState(null); // Clears floating selection
+            }
         }
+    }, [dispatch, updateFloatingState]);
 
-        let currentSession = rotationSession;
+    const handleFloatingRedo = useCallback(() => {
+        const current = floatingStateRef.current;
+        const futureStack = floatingHistoryFuture.current;
 
-        if (!currentSession ||
-            currentSession.baseRect.x !== selection.x ||
-            currentSession.baseRect.y !== selection.y ||
-            currentSession.baseRect.w !== selection.w ||
-            currentSession.baseRect.h !== selection.h) {
+        if (futureStack.length > 0 && current) {
+            // RESTORE FUTURE STATE
+            // Snapshot current to Past
+            const currentSnapshot = snapshotFloatingState(current);
+            if (currentSnapshot) {
+                floatingHistoryPast.current.push(currentSnapshot);
+            }
 
+            // Pop from Future
+            const nextState = futureStack.pop()!;
+
+            // Sync UI Selection
+            setSelection({ x: nextState.x, y: nextState.y, w: nextState.w, h: nextState.h });
+
+            updateFloatingState(nextState);
+        }
+    }, [updateFloatingState]);
+
+    // Helper to register the stack handlers (Call this after any stack mutation or lift)
+    const updateFloatingHandlers = useCallback(() => {
+        registerUndoHandler(handleFloatingUndo);
+        registerRedoHandler(handleFloatingRedo);
+    }, [registerUndoHandler, registerRedoHandler, handleFloatingUndo, handleFloatingRedo]);
+
+    const handleRotateSelection = useCallback(() => {
+        if (!projectData) return;
+
+        let workingFloating = floatingSelection;
+        let didLift = false;
+
+        // 1. Lift Selection if needed
+        if (!workingFloating && selection) {
             const { x, y, w, h } = selection;
+            const data: CellData[] = [];
 
-            const baseCells: CellData[] = [];
             for (let row = 0; row < h; row++) {
                 for (let col = 0; col < w; col++) {
-                    baseCells.push(projectData.grid[(y + row) * projectData.width + (x + col)]);
+                    const idx = (y + row) * projectData.width + (x + col);
+                    data.push(projectData.grid[idx]);
                 }
             }
 
-            const boundingBox = calculateRotationBoundingBox({ x, y, w, h });
-
-            // Capture bounding box cells
-            // IMPORTANT: We treat the area covered by the *initial selection* (baseRect) as "empty" (null)
-            // in the snapshot. This allows us to "erase" the selection when it moves during rotation.
-            // Areas outside baseRect are captured as-is (preserving background).
-            const boundingBoxCells: CellData[] = [];
-            for (let row = 0; row < boundingBox.h; row++) {
-                for (let col = 0; col < boundingBox.w; col++) {
-                    const gridX = boundingBox.x + col;
-                    const gridY = boundingBox.y + row;
-
-                    // Check if this pixel is inside the base selection
-                    const inBaseRect =
-                        gridX >= x && gridX < x + w &&
-                        gridY >= y && gridY < y + h;
-
-                    if (gridX >= 0 && gridX < projectData.width && gridY >= 0 && gridY < projectData.height) {
-                        if (inBaseRect) {
-                            // It's the selection itself -> capture as NULL so we can "clear" it later
-                            boundingBoxCells.push({ colorId: null });
-                        } else {
-                            // It's background -> capture as-is
-                            boundingBoxCells.push(projectData.grid[gridY * projectData.width + gridX]);
-                        }
-                    } else {
-                        boundingBoxCells.push({ colorId: null });
-                    }
+            // Clear the area we just lifted (Cut behavior to avoid duplication)
+            const newGrid = [...projectData.grid];
+            for (let r = 0; r < h; r++) {
+                for (let c = 0; c < w; c++) {
+                    const idx = (y + r) * projectData.width + (x + c);
+                    newGrid[idx] = { colorId: null };
                 }
             }
 
-            currentSession = {
-                baseRect: { x, y, w, h },
-                baseCells,
-                boundingBox,
-                boundingBoxCells,
-                currentRect: { x, y, w, h }, // Initialize currentRect with initial selection
-                step: 0
+            // Update grid (pushes to undo stack usually, but here we might want to batch? 
+            // updateGrid calls dispatch. Safe to call.)
+            updateGrid(newGrid);
+
+            workingFloating = {
+                x, y, w, h, data,
+                isRotated: false
             };
+            didLift = true;
+
+            // Register Undo for Lift: Use Floating Undo (Stack is empty, so it will fall through to Global Undo)
+            // Initialize Stack
+            floatingHistoryPast.current = [];
+            floatingHistoryFuture.current = [];
+
+            // Sync Shadow Ref immediately
+            updateFloatingState(workingFloating);
+            updateFloatingHandlers();
         }
 
-        const nextStep = ((currentSession.step + 1) % 4) as 0 | 1 | 2 | 3;
+        // 2. Rotate Floating Selection (Use Shadow Ref as Source of Truth)
+        // If we just lifted, workingFloating is set but ref might not be synced in this scope if we didn't call updateFloatingState above?
+        // Actually, updateFloatingState syncs ref.current.
+        // So we should try to read from Ref first, if null, fallback to workingFloating (newly lifted).
 
-        const { cells: rotatedCells, newW, newH } = rotateBaseCells(
-            currentSession.baseCells,
-            currentSession.baseRect.w,
-            currentSession.baseRect.h,
-            nextStep
-        );
+        const sourceState = floatingStateRef.current || workingFloating;
 
-        const { x: baseX, y: baseY, w: baseW, h: baseH } = currentSession.baseRect;
-
-        let newX = baseX + Math.trunc((baseW - newW) / 2);
-        let newY = baseY + Math.trunc((baseH - newH) / 2);
-
-        if (newX < 0) newX = 0;
-        if (newY < 0) newY = 0;
-        if (newX + newW > projectData.width) newX = projectData.width - newW;
-        if (newY + newH > projectData.height) newY = projectData.height - newH;
-
-        const newGrid = [...projectData.grid];
-
-        // FIRST: Clear the PREVIOUS rotation position (currentRect)
-        // We restore the background from the boundingBox snapshot for the area covered by currentRect
-        // This ensures we don't leave "ghosts" of the previous rotation
-        const { currentRect, boundingBox, boundingBoxCells } = currentSession;
-
-        for (let row = 0; row < currentRect.h; row++) {
-            for (let col = 0; col < currentRect.w; col++) {
-                const gridX = currentRect.x + col;
-                const gridY = currentRect.y + row;
-
-                if (gridX >= 0 && gridX < projectData.width && gridY >= 0 && gridY < projectData.height) {
-                    // Calculate position in bounding box to restore background
-                    const bbCol = gridX - boundingBox.x;
-                    const bbRow = gridY - boundingBox.y;
-
-                    if (bbCol >= 0 && bbCol < boundingBox.w && bbRow >= 0 && bbRow < boundingBox.h) {
-                        const gridIdx = gridY * projectData.width + gridX;
-                        const bbIdx = bbRow * boundingBox.w + bbCol;
-                        newGrid[gridIdx] = boundingBoxCells[bbIdx];
-                    }
-                }
+        if (sourceState) {
+            // SNAPSHOT TO PAST STACK before mutation
+            const preRotationSnapshot = snapshotFloatingState(sourceState);
+            if (preRotationSnapshot) {
+                floatingHistoryPast.current.push(preRotationSnapshot);
             }
+            // Clear future on new action
+            floatingHistoryFuture.current = [];
+
+            const { grid: rotatedGrid, newWidth, newHeight } = rotateSubGrid(sourceState.data, sourceState.w, sourceState.h);
+
+            // Calculate new top-left using integer delta to avoid sub-pixel drift
+            const dx = (sourceState.w - newWidth) / 2;
+            const dy = (sourceState.h - newHeight) / 2;
+
+            const newX = sourceState.x + Math.trunc(dx);
+            const newY = sourceState.y + Math.trunc(dy);
+
+            const newFloating = {
+                ...sourceState,
+                x: newX,
+                y: newY,
+                w: newWidth,
+                h: newHeight,
+                data: rotatedGrid,
+                isRotated: true
+            };
+
+            // Commit to Ref & State
+            updateFloatingState(newFloating);
+
+            // Sync selection bounds for UI
+            setSelection({ x: newX, y: newY, w: newWidth, h: newHeight });
+
+            // Register Stack Handlers
+            updateFloatingHandlers();
         }
-
-        // If returning to step 0, we might want to ensure the *entire* bounding box is clean
-        // just to be absolutely safe against any floating point drifts or edge cases,
-        // although the per-step clearing above should theoretically handle it.
-        // Let's keep the full restore on step 0 as a safety net.
-        if (nextStep === 0) {
-            for (let row = 0; row < boundingBox.h; row++) {
-                for (let col = 0; col < boundingBox.w; col++) {
-                    const gridX = boundingBox.x + col;
-                    const gridY = boundingBox.y + row;
-                    if (gridX >= 0 && gridX < projectData.width && gridY >= 0 && gridY < projectData.height) {
-                        const gridIdx = gridY * projectData.width + gridX;
-                        const bbIdx = row * boundingBox.w + col;
-                        newGrid[gridIdx] = boundingBoxCells[bbIdx];
-                    }
-                }
-            }
-        }
-
-        // Write rotated content
-        for (let r = 0; r < newH; r++) {
-            for (let c = 0; c < newW; c++) {
-                const destX = newX + c;
-                const destY = newY + r;
-
-                if (destX >= 0 && destX < projectData.width && destY >= 0 && destY < projectData.height) {
-                    const gridIdx = destY * projectData.width + destX;
-                    const rotIdx = r * newW + c;
-                    newGrid[gridIdx] = rotatedCells[rotIdx];
-                }
-            }
-        }
-
-        updateGrid(newGrid);
-
-        isRotatingRef.current = true;
-        setSelection({ x: newX, y: newY, w: newW, h: newH });
-        setRotationSession({
-            ...currentSession,
-            step: nextStep,
-            currentRect: { x: newX, y: newY, w: newW, h: newH }
-        });
-    };
+    }, [projectData, selection, floatingSelection, updateGrid, rotateSubGrid, updateFloatingHandlers, updateFloatingState]);
 
     const handleSelectAll = () => {
         if (!projectData) return;

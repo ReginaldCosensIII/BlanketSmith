@@ -1,6 +1,7 @@
 
 import { useCallback } from 'react';
 import { Symmetry, CellData } from '../types';
+import { rotateGrid } from '../utils/gridUtils';
 
 export const useCanvasLogic = (
     width: number,
@@ -9,8 +10,8 @@ export const useCanvasLogic = (
 ) => {
     // Calculate all points affected by symmetry for a given grid coordinate
     const getSymmetryPoints = useCallback((gridX: number, gridY: number) => {
-        const points = [{x: gridX, y: gridY}];
-        
+        const points = [{ x: gridX, y: gridY }];
+
         if (symmetry.vertical) {
             points.push({ x: width - 1 - gridX, y: gridY });
         }
@@ -20,11 +21,11 @@ export const useCanvasLogic = (
         if (symmetry.vertical && symmetry.horizontal) {
             points.push({ x: width - 1 - gridX, y: height - 1 - gridY });
         }
-        
+
         // Deduplicate points (handles center lines)
-        const uniquePoints: {x: number, y: number}[] = [];
+        const uniquePoints: { x: number, y: number }[] = [];
         const seen = new Set<string>();
-        
+
         points.forEach(p => {
             const key = `${p.x},${p.y}`;
             if (!seen.has(key)) {
@@ -32,13 +33,13 @@ export const useCanvasLogic = (
                 uniquePoints.push(p);
             }
         });
-        
+
         return uniquePoints;
     }, [width, height, symmetry]);
 
     // Calculate pixels covered by a brush at a specific point
     const getBrushPoints = useCallback((centerX: number, centerY: number, brushSize: number) => {
-        const points: {x: number, y: number}[] = [];
+        const points: { x: number, y: number }[] = [];
         const offset = Math.floor((brushSize - 1) / 2);
         const startX = centerX - offset;
         const startY = centerY - offset;
@@ -58,22 +59,8 @@ export const useCanvasLogic = (
 
     // --- TRANSFORM HELPERS ---
 
-    const rotateSubGrid = useCallback((subGrid: CellData[], w: number, h: number): CellData[] => {
-        // Rotate 90 degrees clockwise
-        const newGrid = new Array(w * h).fill({ colorId: null });
-        for (let y = 0; y < h; y++) {
-            for (let x = 0; x < w; x++) {
-                // New X is (h - 1 - y)
-                // New Y is x
-                const oldIndex = y * w + x;
-                const newX = h - 1 - y;
-                const newY = x;
-                // Note: Dimensions swap (new grid is h x w)
-                const newIndex = newY * h + newX; 
-                newGrid[newIndex] = subGrid[oldIndex];
-            }
-        }
-        return newGrid;
+    const rotateSubGrid = useCallback((subGrid: CellData[], w: number, h: number) => {
+        return rotateGrid(subGrid, w, h);
     }, []);
 
     const flipSubGrid = useCallback((subGrid: CellData[], w: number, h: number, direction: 'horizontal' | 'vertical'): CellData[] => {
