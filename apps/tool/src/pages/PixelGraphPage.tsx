@@ -765,7 +765,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
         // Actually, updateFloatingState syncs ref.current.
         // So we should try to read from Ref first, if null, fallback to workingFloating (newly lifted).
 
-        const sourceState = floatingStateRef.current || workingFloating;
+        const sourceState = floatingSelection ?? floatingStateRef.current ?? workingFloating;
 
         if (sourceState) {
             // SNAPSHOT TO PAST STACK before mutation
