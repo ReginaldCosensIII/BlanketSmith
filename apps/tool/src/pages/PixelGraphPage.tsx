@@ -166,7 +166,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
     const [clipboard, setClipboard] = useState<{ width: number, height: number, data: CellData[] } | null>(null);
     const [showCenterGuides, setShowCenterGuides] = useState(() => localStorage.getItem('editor_showCenterGuides') !== 'false');
 
-    const [floatingSelection, setFloatingSelection] = useState<{ x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean } | null>(null);
+    const [floatingSelection, setFloatingSelection] = useState<{ x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean, sourceBounds?: { x: number, y: number, w: number, h: number } } | null>(null);
     const [preRotationState, setPreRotationState] = useState<{ grid: CellData[], selection: { x: number, y: number, w: number, h: number } } | null>(null);
     const [toolbarPosition, setToolbarPosition] = useState<{ x: number, y: number } | null>(null);
 
@@ -179,6 +179,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
         w: number;
         h: number;
         isRotated: boolean;
+        sourceBounds?: { x: number, y: number, w: number, h: number };
     };
 
     const floatingHistoryPast = useRef<FloatingState[]>([]);
@@ -452,6 +453,20 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
         if (!floatingSelection || !projectData) return;
 
         const newGrid = [...projectData.grid];
+
+        // Smart Commit: Atomic Clear of Source
+        if (floatingSelection.sourceBounds) {
+            const { x, y, w, h } = floatingSelection.sourceBounds;
+            for (let r = 0; r < h; r++) {
+                for (let c = 0; c < w; c++) {
+                    const idx = (y + r) * projectData.width + (x + c);
+                    if (idx >= 0 && idx < newGrid.length) {
+                        newGrid[idx] = { colorId: null };
+                    }
+                }
+            }
+        }
+
         const { x, y, w, h, data } = floatingSelection;
 
         for (let row = 0; row < h; row++) {
@@ -472,7 +487,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
         setFloatingSelection(null);
     }, [floatingSelection, projectData, updateGrid]);
 
-    const handleFloatingSelectionChange = (newFloating: { x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean } | null) => {
+    const handleFloatingSelectionChange = (newFloating: { x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean, sourceBounds?: { x: number, y: number, w: number, h: number } } | null) => {
         setFloatingSelection(newFloating);
         if (newFloating) {
             setSelection({ x: newFloating.x, y: newFloating.y, w: newFloating.w, h: newFloating.h });
@@ -637,7 +652,8 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
             y: current.y,
             w: current.w,
             h: current.h,
-            isRotated: current.isRotated
+            isRotated: current.isRotated,
+            sourceBounds: current.sourceBounds ? { ...current.sourceBounds } : undefined
         };
     };
 
@@ -729,7 +745,8 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
             // Lift without clearing (Copy vs Cut behavior for now, until Smart Commit)
             workingFloating = {
                 x, y, w, h, data,
-                isRotated: false
+                isRotated: false,
+                sourceBounds: { x, y, w, h }
             };
             didLift = true;
 

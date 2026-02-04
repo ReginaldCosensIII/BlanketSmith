@@ -37,8 +37,8 @@ interface PixelGridEditorProps {
     showCenterGuides: boolean;
     selection: { x: number, y: number, w: number, h: number } | null;
     onSelectionChange: (sel: { x: number, y: number, w: number, h: number } | null) => void;
-    floatingSelection: { x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean } | null;
-    onFloatingSelectionChange: (sel: { x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean } | null) => void;
+    floatingSelection: { x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean, sourceBounds?: { x: number, y: number, w: number, h: number } } | null;
+    onFloatingSelectionChange: (sel: { x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean, sourceBounds?: { x: number, y: number, w: number, h: number } } | null) => void;
     onContextMenu: (x: number, y: number) => void;
     isZoomLocked: boolean;
     onToggleZoomLock: () => void;
@@ -1161,12 +1161,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
     const getCursor = () => {
         if (activeTool === 'select') {
-            if (floatingSelection && hoveredCell) {
-                if (hoveredCell.x >= floatingSelection.x && hoveredCell.x < floatingSelection.x + floatingSelection.w &&
-                    hoveredCell.y >= floatingSelection.y && hoveredCell.y < floatingSelection.y + floatingSelection.h) {
-                    return 'move';
-                }
-            }
+
             return 'crosshair';
         }
         if (activeTool === 'brush' || activeTool === 'fill') return 'crosshair';
