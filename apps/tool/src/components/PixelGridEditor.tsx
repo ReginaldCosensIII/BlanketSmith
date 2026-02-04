@@ -279,6 +279,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     // SYNC STROKE TRACKING: Fixes stale closure issues during rapid mouse moves
     const currentStrokeRef = useRef<Set<number>>(new Set());
     const [hoveredCell, setHoveredCell] = useState<{ x: number; y: number } | null>(null);
+    const [draggingStart, setDraggingStart] = useState<{ x: number, y: number } | null>(null); // For floating selection drag
     const [selectionStart, setSelectionStart] = useState<{ x: number, y: number } | null>(null);
 
 
@@ -448,6 +449,14 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
 
             if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height) {
+                // Check if clicking inside floating selection to drag
+                if (floatingSelection &&
+                    gridX >= floatingSelection.x && gridX < floatingSelection.x + floatingSelection.w &&
+                    gridY >= floatingSelection.y && gridY < floatingSelection.y + floatingSelection.h) {
+                    setDraggingStart({ x: gridX, y: gridY });
+                    return;
+                }
+
                 setIsDrawing(true);
                 setSelectionStart({ x: gridX, y: gridY });
                 onSelectionChange({ x: gridX, y: gridY, w: 1, h: 1 });
@@ -542,6 +551,22 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         // Touch Placement Drag Logic
         if (touchPlacementRef.current?.active) {
             touchPlacementRef.current = { ...touchPlacementRef.current, x: gridX, y: gridY };
+        }
+
+        // Floating Selection Drag
+        if (draggingStart && floatingSelection) {
+            const dx = gridX - draggingStart.x;
+            const dy = gridY - draggingStart.y;
+
+            if (dx !== 0 || dy !== 0) {
+                onFloatingSelectionChange({
+                    ...floatingSelection,
+                    x: floatingSelection.x + dx,
+                    y: floatingSelection.y + dy
+                });
+                setDraggingStart({ x: gridX, y: gridY });
+            }
+            return;
         }
 
 
@@ -652,6 +677,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         if (activeTool === 'select') {
             setIsDrawing(false);
             setSelectionStart(null);
+            setDraggingStart(null);
             return;
         }
 
@@ -1161,7 +1187,12 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
     const getCursor = () => {
         if (activeTool === 'select') {
-
+            if (floatingSelection && hoveredCell) {
+                if (hoveredCell.x >= floatingSelection.x && hoveredCell.x < floatingSelection.x + floatingSelection.w &&
+                    hoveredCell.y >= floatingSelection.y && hoveredCell.y < floatingSelection.y + floatingSelection.h) {
+                    return 'move';
+                }
+            }
             return 'crosshair';
         }
         if (activeTool === 'brush' || activeTool === 'fill') return 'crosshair';
