@@ -1329,6 +1329,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                             stitchMap={stitchMap}
                             showGridLines={showGridLines}
                             zoom={zoom}
+                            floatingSelection={floatingSelection}
                         />
 
                         {floatingSelection && (

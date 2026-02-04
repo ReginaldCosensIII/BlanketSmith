@@ -10,6 +10,7 @@ interface GridRendererProps {
     stitchMap: Map<string, StitchDefinition>;
     showGridLines: boolean;
     zoom: number;
+    floatingSelection?: { sourceBounds?: { x: number, y: number, w: number, h: number } } | null;
 }
 
 export const GridRenderer: React.FC<GridRendererProps> = ({
@@ -20,6 +21,7 @@ export const GridRenderer: React.FC<GridRendererProps> = ({
     stitchMap,
     showGridLines,
     zoom,
+    floatingSelection,
 }) => {
     return (
         <g>
@@ -34,6 +36,14 @@ export const GridRenderer: React.FC<GridRendererProps> = ({
             {grid.map((cell, i) => {
                 const x = i % width;
                 const y = Math.floor(i / width);
+
+                if (floatingSelection?.sourceBounds) {
+                    const { x: sx, y: sy, w: sw, h: sh } = floatingSelection.sourceBounds;
+                    if (x >= sx && x < sx + sw && y >= sy && y < sy + sh) {
+                        return null;
+                    }
+                }
+
                 const colorObj = cell.colorId ? yarnColorMap.get(cell.colorId) : null;
                 const color = colorObj ? (typeof colorObj === 'string' ? colorObj : colorObj.hex) : 'transparent';
                 const stitch = cell.stitchId ? stitchMap.get(cell.stitchId) : null;
