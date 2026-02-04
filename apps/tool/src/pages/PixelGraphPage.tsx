@@ -726,19 +726,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                 }
             }
 
-            // Clear the area we just lifted (Cut behavior to avoid duplication)
-            const newGrid = [...projectData.grid];
-            for (let r = 0; r < h; r++) {
-                for (let c = 0; c < w; c++) {
-                    const idx = (y + r) * projectData.width + (x + c);
-                    newGrid[idx] = { colorId: null };
-                }
-            }
-
-            // Update grid (pushes to undo stack usually, but here we might want to batch? 
-            // updateGrid calls dispatch. Safe to call.)
-            updateGrid(newGrid);
-
+            // Lift without clearing (Copy vs Cut behavior for now, until Smart Commit)
             workingFloating = {
                 x, y, w, h, data,
                 isRotated: false

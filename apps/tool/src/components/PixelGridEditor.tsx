@@ -280,7 +280,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const currentStrokeRef = useRef<Set<number>>(new Set());
     const [hoveredCell, setHoveredCell] = useState<{ x: number; y: number } | null>(null);
     const [selectionStart, setSelectionStart] = useState<{ x: number, y: number } | null>(null);
-    const [floatingDragStart, setFloatingDragStart] = useState<{ x: number, y: number } | null>(null);
+
 
     const yarnColorMap = React.useMemo(() => new Map(yarnPalette.map(yc => [yc.id, yc.hex])), [yarnPalette]);
 
@@ -445,13 +445,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             if (isRightClick) return;
 
             // Check for floating selection drag
-            if (floatingSelection) {
-                if (gridX >= floatingSelection.x && gridX < floatingSelection.x + floatingSelection.w &&
-                    gridY >= floatingSelection.y && gridY < floatingSelection.y + floatingSelection.h) {
-                    setFloatingDragStart({ x: gridX, y: gridY });
-                    return;
-                }
-            }
+
 
             if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height) {
                 setIsDrawing(true);
@@ -550,20 +544,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             touchPlacementRef.current = { ...touchPlacementRef.current, x: gridX, y: gridY };
         }
 
-        if (floatingDragStart && floatingSelection) {
-            // ... (Keep existing floating drag logic)
-            const dx = gridX - floatingDragStart.x;
-            const dy = gridY - floatingDragStart.y;
-            if (dx !== 0 || dy !== 0) {
-                onFloatingSelectionChange({
-                    ...floatingSelection,
-                    x: floatingSelection.x + dx,
-                    y: floatingSelection.y + dy
-                });
-                setFloatingDragStart({ x: gridX, y: gridY });
-            }
-            return;
-        }
+
 
         if (isDrawing && activeTool === 'select' && selectionStart) {
             // ... (Keep existing selection logic)
@@ -666,10 +647,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             return;
         }
 
-        if (floatingDragStart) {
-            setFloatingDragStart(null);
-            return;
-        }
+
 
         if (activeTool === 'select') {
             setIsDrawing(false);
