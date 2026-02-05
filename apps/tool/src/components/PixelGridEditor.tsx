@@ -39,6 +39,7 @@ interface PixelGridEditorProps {
     onSelectionChange: (sel: { x: number, y: number, w: number, h: number } | null) => void;
     floatingSelection: { x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean, sourceBounds?: { x: number, y: number, w: number, h: number } } | null;
     onFloatingSelectionChange: (sel: { x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean, sourceBounds?: { x: number, y: number, w: number, h: number } } | null) => void;
+    onLiftSelection: () => void;
     onContextMenu: (x: number, y: number) => void;
     isZoomLocked: boolean;
     onToggleZoomLock: () => void;
@@ -103,6 +104,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     onSelectionChange,
     floatingSelection,
     onFloatingSelectionChange,
+    onLiftSelection,
     onContextMenu,
     isZoomLocked,
     onToggleZoomLock
@@ -453,6 +455,15 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 if (floatingSelection &&
                     gridX >= floatingSelection.x && gridX < floatingSelection.x + floatingSelection.w &&
                     gridY >= floatingSelection.y && gridY < floatingSelection.y + floatingSelection.h) {
+                    setDraggingStart({ x: gridX, y: gridY });
+                    return;
+                }
+
+                // Check for implicit lift (dragging an existing selection)
+                if (selection &&
+                    gridX >= selection.x && gridX < selection.x + selection.w &&
+                    gridY >= selection.y && gridY < selection.y + selection.h) {
+                    onLiftSelection();
                     setDraggingStart({ x: gridX, y: gridY });
                     return;
                 }
@@ -1190,6 +1201,12 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             if (floatingSelection && hoveredCell) {
                 if (hoveredCell.x >= floatingSelection.x && hoveredCell.x < floatingSelection.x + floatingSelection.w &&
                     hoveredCell.y >= floatingSelection.y && hoveredCell.y < floatingSelection.y + floatingSelection.h) {
+                    return 'move';
+                }
+            }
+            if (selection && hoveredCell) {
+                if (hoveredCell.x >= selection.x && hoveredCell.x < selection.x + selection.w &&
+                    hoveredCell.y >= selection.y && hoveredCell.y < selection.y + selection.h) {
                     return 'move';
                 }
             }

@@ -806,6 +806,34 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
         }
     }, [projectData, selection, floatingSelection, updateGrid, rotateSubGrid, updateFloatingHandlers, updateFloatingState]);
 
+    // FEAT-001: Implicit Lift Handler (Select and Move)
+    const handleLiftSelection = useCallback(() => {
+        if (!selection || !projectData || floatingSelection) return;
+
+        const { x, y, w, h } = selection;
+        const data: CellData[] = [];
+
+        for (let row = 0; row < h; row++) {
+            for (let col = 0; col < w; col++) {
+                const idx = (y + row) * projectData.width + (x + col);
+                data.push(projectData.grid[idx]);
+            }
+        }
+
+        const newFloating: FloatingState = {
+            x, y, w, h, data,
+            isRotated: false,
+            sourceBounds: { x, y, w, h }
+        };
+
+        // Initialize stack for this new lift session
+        floatingHistoryPast.current = [];
+        floatingHistoryFuture.current = [];
+
+        updateFloatingState(newFloating);
+        updateFloatingHandlers();
+    }, [selection, projectData, floatingSelection, updateFloatingHandlers, updateFloatingState]);
+
     const handleSelectAll = () => {
         if (!projectData) return;
         if (floatingSelection) handleCommit();
@@ -2085,6 +2113,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                     onSelectionChange={handleSelectionChangeWrapper}
                     floatingSelection={floatingSelection}
                     onFloatingSelectionChange={handleFloatingSelectionChange}
+                    onLiftSelection={handleLiftSelection}
                     onContextMenu={handleOpenContextMenu}
                     isZoomLocked={isZoomLocked}
                     onToggleZoomLock={onToggleZoomLock}
