@@ -25,10 +25,9 @@ export const EditorOverlay: React.FC<EditorOverlayProps> = ({
             stroke: white;
             stroke-width: 1px;
             stroke-dasharray: 4, 4;
-            fill: transparent;
+            fill: none;
             vector-effect: non-scaling-stroke;
             animation: march 1s linear infinite;
-            mix-blend-mode: difference;
         }
       `}</style>
 
@@ -58,13 +57,30 @@ export const EditorOverlay: React.FC<EditorOverlayProps> = ({
             {hoverPreviews}
 
             {selection && (
-                <rect
-                    x={selection.x}
-                    y={selection.y}
-                    width={selection.w}
-                    height={selection.h}
-                    className="selection-marquee"
-                />
+                <>
+                    {/* Layer 1: Tint + Black Border */}
+                    <rect
+                        x={selection.x}
+                        y={selection.y}
+                        width={selection.w}
+                        height={selection.h}
+                        fill="rgba(33, 150, 243, 0.25)"
+                        stroke="black"
+                        strokeWidth={3}
+                        vectorEffect="non-scaling-stroke"
+                        style={{ pointerEvents: 'none' }}
+                    />
+                    {/* Layer 2: White Dashed Border */}
+                    <rect
+                        x={selection.x}
+                        y={selection.y}
+                        width={selection.w}
+                        height={selection.h}
+                        className="selection-marquee"
+                        vectorEffect="non-scaling-stroke" // Redundant but explicit
+                        style={{ pointerEvents: 'none' }}
+                    />
+                </>
             )}
         </g>
     );
