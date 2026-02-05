@@ -572,11 +572,13 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             const dy = gridY - draggingStart.y;
 
             if (dx !== 0 || dy !== 0) {
-                const maxX = width - floatingSelection.w;
-                const maxY = height - floatingSelection.h;
+                const minX = -(floatingSelection.w - 1);
+                const maxX = width - 1;
+                const minY = -(floatingSelection.h - 1);
+                const maxY = height - 1;
 
-                const nextX = Math.max(0, Math.min(floatingSelection.x + dx, maxX));
-                const nextY = Math.max(0, Math.min(floatingSelection.y + dy, maxY));
+                const nextX = Math.max(minX, Math.min(floatingSelection.x + dx, maxX));
+                const nextY = Math.max(minY, Math.min(floatingSelection.y + dy, maxY));
 
                 if (nextX !== floatingSelection.x || nextY !== floatingSelection.y) {
                     onFloatingSelectionChange({
