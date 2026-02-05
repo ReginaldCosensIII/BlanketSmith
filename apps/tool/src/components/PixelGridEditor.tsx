@@ -425,6 +425,8 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     };
 
     const handleMouseDown = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
+        if (e.cancelable) e.preventDefault();
+
         if ('button' in e && e.button === 2) {
             e.preventDefault();
         }
@@ -1365,7 +1367,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             )}
             <div
                 ref={containerRef}
-                className="w-full h-full bg-gray-200 overflow-hidden grid place-items-center touch-none"
+                className="w-full h-full bg-gray-200 overflow-hidden grid place-items-center touch-none select-none"
                 style={{ cursor: getCursor() }}
                 onContextMenu={handleContextMenu}
                 onMouseDown={handleMouseDown}
