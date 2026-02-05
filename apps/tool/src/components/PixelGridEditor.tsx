@@ -1374,15 +1374,6 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                     shapeRendering="crispEdges"
                     data-role="canvas-interaction"
                 >
-                    <Rulers
-                        width={width}
-                        height={height}
-                        zoom={zoom}
-                        rulerSize={RULER_SIZE}
-                        svgTotalWidth={svgTotalWidth}
-                        svgTotalHeight={svgTotalHeight}
-                    />
-
                     <g transform={`translate(${RULER_SIZE}, ${RULER_SIZE})`}>
                         <GridRenderer
                             width={width}
@@ -1438,6 +1429,14 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                             hoverPreviews={getHoverPreviews()}
                         />
                     </g>
+                    <Rulers
+                        width={width}
+                        height={height}
+                        zoom={zoom}
+                        rulerSize={RULER_SIZE}
+                        svgTotalWidth={svgTotalWidth}
+                        svgTotalHeight={svgTotalHeight}
+                    />
                 </svg >
             </div >
         </>
