@@ -686,9 +686,24 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
 
         if (activeTool === 'select') {
+            // Priority 1: Check if we were dragging a Floating Selection
+            if (draggingStart) {
+                setDraggingStart(null);
+                return; // Drag finished (even if 0 distance), do not deselect
+            }
+
+            // Priority 2: Check for Single Click (Deselect)
+            const isSingleCell = selection && selection.w === 1 && selection.h === 1;
+            const isSamePos = selection && selectionStart && selection.x === selectionStart.x && selection.y === selectionStart.y;
+
+            if (isSingleCell && isSamePos) {
+                // It was a click, not a drag -> Deselect
+                onSelectionChange(null);
+            }
+
+            // Priority 3: End Selection Creation
             setIsDrawing(false);
             setSelectionStart(null);
-            setDraggingStart(null);
             return;
         }
 
@@ -1342,7 +1357,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             )}
             <div
                 ref={containerRef}
-                className="w-full h-full bg-gray-200 overflow-auto grid place-items-center touch-none"
+                className="w-full h-full bg-gray-200 overflow-hidden grid place-items-center touch-none"
                 style={{ cursor: getCursor() }}
                 onContextMenu={handleContextMenu}
                 onMouseDown={handleMouseDown}
