@@ -395,7 +395,10 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
             }
         },
         'system-save': () => console.log('Save triggered (shortcut)'), // Placeholder as requested
-        'system-select-all': () => handleSelectAll(),
+        'system-select-all': () => {
+            handleToolChange('select');
+            handleSelectAll();
+        },
         'system-delete': () => handleClearSelection(),
         'system-deselect': () => handleDeselect(),
 
