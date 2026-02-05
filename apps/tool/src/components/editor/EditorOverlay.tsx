@@ -66,7 +66,7 @@ export const EditorOverlay: React.FC<EditorOverlayProps> = ({
                         height={selection.h}
                         fill="rgba(33, 150, 243, 0.25)"
                         stroke="black"
-                        strokeWidth={3}
+                        strokeWidth={1.5}
                         vectorEffect="non-scaling-stroke"
                         style={{ pointerEvents: 'none' }}
                     />
