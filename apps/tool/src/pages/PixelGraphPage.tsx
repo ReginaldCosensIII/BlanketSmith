@@ -361,6 +361,35 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
     // Store non-stitch visual settings to restore them when leaving stitch mode
     const lastNonStitchVisualRef = useRef<{ showSymbols: boolean; showBackgrounds: boolean } | null>(null);
 
+    // --- UI EVENT LISTENERS (Footer Button Bridging) ---
+    useEffect(() => {
+        const onUIUndo = () => {
+            if (hasFloatingSelection) {
+                performUndo(); // Priority 1: Floating History
+            } else if (selection) {
+                handleDeselect(); // Priority 2: Clear Selection Boundary
+            } else {
+                dispatch({ type: 'UNDO' }); // Priority 3: Global Undo
+            }
+        };
+
+        const onUIRedo = () => {
+            if (hasFloatingSelection) {
+                performRedo();
+            } else {
+                dispatch({ type: 'REDO' });
+            }
+        };
+
+        window.addEventListener('blanketsmith:ui-undo', onUIUndo);
+        window.addEventListener('blanketsmith:ui-redo', onUIRedo);
+
+        return () => {
+            window.removeEventListener('blanketsmith:ui-undo', onUIUndo);
+            window.removeEventListener('blanketsmith:ui-redo', onUIRedo);
+        };
+    }, [hasFloatingSelection, selection, performUndo, performRedo, dispatch]);
+
     // --- KEYBOARD SHORTCUTS WIRING ---
     useKeyboardShortcuts({
         // Tools
