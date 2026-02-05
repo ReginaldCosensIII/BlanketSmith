@@ -22,12 +22,13 @@ export const EditorOverlay: React.FC<EditorOverlayProps> = ({
             to { stroke-dashoffset: -2; }
         }
         .selection-marquee {
-            stroke: #3b82f6; /* indigo-500 */
-            stroke-width: 0.5px;
-            stroke-dasharray: 1, 1;
-            fill: rgba(59, 130, 246, 0.2);
+            stroke: white;
+            stroke-width: 1px;
+            stroke-dasharray: 4, 4;
+            fill: transparent;
             vector-effect: non-scaling-stroke;
             animation: march 1s linear infinite;
+            mix-blend-mode: difference;
         }
       `}</style>
 

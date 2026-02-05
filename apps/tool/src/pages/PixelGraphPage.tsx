@@ -364,14 +364,15 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
     // --- KEYBOARD SHORTCUTS WIRING ---
     useKeyboardShortcuts({
         // Tools
-        'tool-brush': () => setActiveTool('brush'),
-        'tool-fill': () => setActiveTool('fill'),
-        'tool-replace': () => setActiveTool('replace'),
-        'tool-eyedropper': () => setActiveTool('eyedropper'),
-        'tool-select': () => setActiveTool('select'),
-        'tool-text': () => setActiveTool('text'),
-        'tool-fill-row': () => setActiveTool('fill-row'),
-        'tool-fill-column': () => setActiveTool('fill-column'),
+        'tool-brush': () => handleToolChange('brush'),
+        'tool-fill': () => handleToolChange('fill'),
+        'tool-replace': () => handleToolChange('replace'),
+        'tool-eyedropper': () => handleToolChange('eyedropper'),
+        'tool-select': () => handleToolChange('select'),
+        'tool-text': () => handleToolChange('text'),
+        'tool-fill-row': () => handleToolChange('fill-row'),
+        'tool-fill-column': () => handleToolChange('fill-column'),
+
 
         // Clipboard (Local Handlers)
         'clipboard-copy': () => handleCopy(),
