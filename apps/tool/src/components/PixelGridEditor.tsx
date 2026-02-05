@@ -123,6 +123,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const pendingZoomAlignmentRef = useRef<{ point: { x: number, y: number }, targetScreen: { x: number, y: number } } | null>(null);
     const lastPinchCenter = useRef<{ x: number, y: number } | null>(null);
     const currentZoomRef = useRef<number>(zoom);
+    const handleMouseUpRef = useRef<() => void>(() => { });
 
     const pendingScrollRef = useRef<{ left: number, top: number } | null>(null);
     const pendingTapRef = useRef<{ x: number, y: number, gridX: number, gridY: number, time: number } | null>(null);
@@ -747,6 +748,23 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         }
         setHoveredCell(null);
     };
+
+    // GLOBAL MOUSE UP LISTENER (FIX-009)
+    // Prevents "sticky drag" if the user releases the mouse outside the canvas/editor.
+    handleMouseUpRef.current = handleMouseUp;
+
+    useEffect(() => {
+        const handleGlobalMouseUp = (e: MouseEvent) => {
+            // We invoke the ref to avoid stale closures, as handleMouseUp depends on
+            // many state variables (isDrawing, activeTool, etc.)
+            handleMouseUpRef.current();
+        };
+
+        window.addEventListener('mouseup', handleGlobalMouseUp);
+        return () => {
+            window.removeEventListener('mouseup', handleGlobalMouseUp);
+        };
+    }, []);
 
     // --- NEW TOUCH HANDLERS ---
 
