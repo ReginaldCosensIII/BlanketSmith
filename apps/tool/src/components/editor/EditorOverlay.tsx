@@ -22,10 +22,10 @@ export const EditorOverlay: React.FC<EditorOverlayProps> = ({
             to { stroke-dashoffset: -2; }
         }
         .selection-marquee {
-            stroke: #3b82f6; /* indigo-500 */
-            stroke-width: 0.5px;
-            stroke-dasharray: 1, 1;
-            fill: rgba(59, 130, 246, 0.2);
+            stroke: white;
+            stroke-width: 1px;
+            stroke-dasharray: 4, 4;
+            fill: none;
             vector-effect: non-scaling-stroke;
             animation: march 1s linear infinite;
         }
@@ -57,13 +57,39 @@ export const EditorOverlay: React.FC<EditorOverlayProps> = ({
             {hoverPreviews}
 
             {selection && (
-                <rect
-                    x={selection.x}
-                    y={selection.y}
-                    width={selection.w}
-                    height={selection.h}
-                    className="selection-marquee"
-                />
+                <>
+                    {/* Layer 1: Tint Only (Exact Match) */}
+                    <rect
+                        x={selection.x}
+                        y={selection.y}
+                        width={selection.w}
+                        height={selection.h}
+                        fill="rgba(33, 150, 243, 0.4)"
+                        style={{ pointerEvents: 'none', mixBlendMode: 'hard-light' }}
+                    />
+                    {/* Layer 2: Black Stroke (Inset) */}
+                    <rect
+                        x={selection.x + 0.1}
+                        y={selection.y + 0.1}
+                        width={selection.w - 0.2}
+                        height={selection.h - 0.2}
+                        fill="none"
+                        stroke="black"
+                        strokeWidth={1.5}
+                        vectorEffect="non-scaling-stroke"
+                        style={{ pointerEvents: 'none' }}
+                    />
+                    {/* Layer 3: White Dash (Inset) */}
+                    <rect
+                        x={selection.x + 0.1}
+                        y={selection.y + 0.1}
+                        width={selection.w - 0.2}
+                        height={selection.h - 0.2}
+                        className="selection-marquee"
+                        vectorEffect="non-scaling-stroke"
+                        style={{ pointerEvents: 'none' }}
+                    />
+                </>
             )}
         </g>
     );

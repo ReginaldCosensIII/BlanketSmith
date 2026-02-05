@@ -102,26 +102,18 @@ export const Sidebar: React.FC = () => (
 );
 
 export const Footer: React.FC<{ zoom: number, onZoomChange: (newZoom: number) => void, isZoomLocked?: boolean, onToggleZoomLock?: () => void }> = ({ zoom, onZoomChange, isZoomLocked, onToggleZoomLock }) => {
-    const { state, dispatch } = useProject();
-    const { hasFloatingSelection, performUndo, performRedo } = useFloatingSelection();
+    const { state } = useProject();
+    const { hasFloatingSelection } = useFloatingSelection();
 
     const canUndo = state.historyIndex > 0;
     const canRedo = state.historyIndex < state.history.length - 1;
 
     const handleUndo = () => {
-        if (hasFloatingSelection) {
-            performUndo();
-        } else {
-            dispatch({ type: 'UNDO' });
-        }
+        window.dispatchEvent(new CustomEvent('blanketsmith:ui-undo'));
     };
 
     const handleRedo = () => {
-        if (hasFloatingSelection) {
-            performRedo();
-        } else {
-            dispatch({ type: 'REDO' });
-        }
+        window.dispatchEvent(new CustomEvent('blanketsmith:ui-redo'));
     };
 
     const handleZoomIn = () => onZoomChange(Math.min(zoom * 1.25, MAX_ZOOM));

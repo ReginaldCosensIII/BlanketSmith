@@ -166,7 +166,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
     const [clipboard, setClipboard] = useState<{ width: number, height: number, data: CellData[] } | null>(null);
     const [showCenterGuides, setShowCenterGuides] = useState(() => localStorage.getItem('editor_showCenterGuides') !== 'false');
 
-    const [floatingSelection, setFloatingSelection] = useState<{ x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean } | null>(null);
+    const [floatingSelection, setFloatingSelection] = useState<{ x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean, sourceBounds?: { x: number, y: number, w: number, h: number } } | null>(null);
     const [preRotationState, setPreRotationState] = useState<{ grid: CellData[], selection: { x: number, y: number, w: number, h: number } } | null>(null);
     const [toolbarPosition, setToolbarPosition] = useState<{ x: number, y: number } | null>(null);
 
@@ -179,6 +179,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
         w: number;
         h: number;
         isRotated: boolean;
+        sourceBounds?: { x: number, y: number, w: number, h: number };
     };
 
     const floatingHistoryPast = useRef<FloatingState[]>([]);
@@ -360,17 +361,47 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
     // Store non-stitch visual settings to restore them when leaving stitch mode
     const lastNonStitchVisualRef = useRef<{ showSymbols: boolean; showBackgrounds: boolean } | null>(null);
 
+    // --- UI EVENT LISTENERS (Footer Button Bridging) ---
+    useEffect(() => {
+        const onUIUndo = () => {
+            if (hasFloatingSelection) {
+                performUndo(); // Priority 1: Floating History
+            } else if (selection) {
+                handleDeselect(); // Priority 2: Clear Selection Boundary
+            } else {
+                dispatch({ type: 'UNDO' }); // Priority 3: Global Undo
+            }
+        };
+
+        const onUIRedo = () => {
+            if (hasFloatingSelection) {
+                performRedo();
+            } else {
+                dispatch({ type: 'REDO' });
+            }
+        };
+
+        window.addEventListener('blanketsmith:ui-undo', onUIUndo);
+        window.addEventListener('blanketsmith:ui-redo', onUIRedo);
+
+        return () => {
+            window.removeEventListener('blanketsmith:ui-undo', onUIUndo);
+            window.removeEventListener('blanketsmith:ui-redo', onUIRedo);
+        };
+    }, [hasFloatingSelection, selection, performUndo, performRedo, dispatch]);
+
     // --- KEYBOARD SHORTCUTS WIRING ---
     useKeyboardShortcuts({
         // Tools
-        'tool-brush': () => setActiveTool('brush'),
-        'tool-fill': () => setActiveTool('fill'),
-        'tool-replace': () => setActiveTool('replace'),
-        'tool-eyedropper': () => setActiveTool('eyedropper'),
-        'tool-select': () => setActiveTool('select'),
-        'tool-text': () => setActiveTool('text'),
-        'tool-fill-row': () => setActiveTool('fill-row'),
-        'tool-fill-column': () => setActiveTool('fill-column'),
+        'tool-brush': () => handleToolChange('brush'),
+        'tool-fill': () => handleToolChange('fill'),
+        'tool-replace': () => handleToolChange('replace'),
+        'tool-eyedropper': () => handleToolChange('eyedropper'),
+        'tool-select': () => handleToolChange('select'),
+        'tool-text': () => handleToolChange('text'),
+        'tool-fill-row': () => handleToolChange('fill-row'),
+        'tool-fill-column': () => handleToolChange('fill-column'),
+
 
         // Clipboard (Local Handlers)
         'clipboard-copy': () => handleCopy(),
@@ -380,9 +411,11 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
         // System
         'system-undo': () => {
             if (hasFloatingSelection) {
-                performUndo();
+                performUndo(); // Priority 1: Floating History
+            } else if (selection) {
+                handleDeselect(); // Priority 2: Clear Selection Boundary
             } else {
-                dispatch({ type: 'UNDO' });
+                dispatch({ type: 'UNDO' }); // Priority 3: Global Undo
             }
         },
         'system-redo': () => {
@@ -393,7 +426,10 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
             }
         },
         'system-save': () => console.log('Save triggered (shortcut)'), // Placeholder as requested
-        'system-select-all': () => handleSelectAll(),
+        'system-select-all': () => {
+            handleToolChange('select');
+            handleSelectAll();
+        },
         'system-delete': () => handleClearSelection(),
         'system-deselect': () => handleDeselect(),
 
@@ -452,6 +488,20 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
         if (!floatingSelection || !projectData) return;
 
         const newGrid = [...projectData.grid];
+
+        // Smart Commit: Atomic Clear of Source
+        if (floatingSelection.sourceBounds) {
+            const { x, y, w, h } = floatingSelection.sourceBounds;
+            for (let r = 0; r < h; r++) {
+                for (let c = 0; c < w; c++) {
+                    const idx = (y + r) * projectData.width + (x + c);
+                    if (idx >= 0 && idx < newGrid.length) {
+                        newGrid[idx] = { colorId: null };
+                    }
+                }
+            }
+        }
+
         const { x, y, w, h, data } = floatingSelection;
 
         for (let row = 0; row < h; row++) {
@@ -472,7 +522,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
         setFloatingSelection(null);
     }, [floatingSelection, projectData, updateGrid]);
 
-    const handleFloatingSelectionChange = (newFloating: { x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean } | null) => {
+    const handleFloatingSelectionChange = (newFloating: { x: number, y: number, w: number, h: number, data: CellData[], isRotated: boolean, sourceBounds?: { x: number, y: number, w: number, h: number } } | null) => {
         setFloatingSelection(newFloating);
         if (newFloating) {
             setSelection({ x: newFloating.x, y: newFloating.y, w: newFloating.w, h: newFloating.h });
@@ -637,7 +687,8 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
             y: current.y,
             w: current.w,
             h: current.h,
-            isRotated: current.isRotated
+            isRotated: current.isRotated,
+            sourceBounds: current.sourceBounds ? { ...current.sourceBounds } : undefined
         };
     };
 
@@ -726,22 +777,11 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                 }
             }
 
-            // Clear the area we just lifted (Cut behavior to avoid duplication)
-            const newGrid = [...projectData.grid];
-            for (let r = 0; r < h; r++) {
-                for (let c = 0; c < w; c++) {
-                    const idx = (y + r) * projectData.width + (x + c);
-                    newGrid[idx] = { colorId: null };
-                }
-            }
-
-            // Update grid (pushes to undo stack usually, but here we might want to batch? 
-            // updateGrid calls dispatch. Safe to call.)
-            updateGrid(newGrid);
-
+            // Lift without clearing (Copy vs Cut behavior for now, until Smart Commit)
             workingFloating = {
                 x, y, w, h, data,
-                isRotated: false
+                isRotated: false,
+                sourceBounds: { x, y, w, h }
             };
             didLift = true;
 
@@ -760,7 +800,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
         // Actually, updateFloatingState syncs ref.current.
         // So we should try to read from Ref first, if null, fallback to workingFloating (newly lifted).
 
-        const sourceState = floatingStateRef.current || workingFloating;
+        const sourceState = floatingSelection ?? floatingStateRef.current ?? workingFloating;
 
         if (sourceState) {
             // SNAPSHOT TO PAST STACK before mutation
@@ -800,6 +840,34 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
             updateFloatingHandlers();
         }
     }, [projectData, selection, floatingSelection, updateGrid, rotateSubGrid, updateFloatingHandlers, updateFloatingState]);
+
+    // FEAT-001: Implicit Lift Handler (Select and Move)
+    const handleLiftSelection = useCallback(() => {
+        if (!selection || !projectData || floatingSelection) return;
+
+        const { x, y, w, h } = selection;
+        const data: CellData[] = [];
+
+        for (let row = 0; row < h; row++) {
+            for (let col = 0; col < w; col++) {
+                const idx = (y + row) * projectData.width + (x + col);
+                data.push(projectData.grid[idx]);
+            }
+        }
+
+        const newFloating: FloatingState = {
+            x, y, w, h, data,
+            isRotated: false,
+            sourceBounds: { x, y, w, h }
+        };
+
+        // Initialize stack for this new lift session
+        floatingHistoryPast.current = [];
+        floatingHistoryFuture.current = [];
+
+        updateFloatingState(newFloating);
+        updateFloatingHandlers();
+    }, [selection, projectData, floatingSelection, updateFloatingHandlers, updateFloatingState]);
 
     const handleSelectAll = () => {
         if (!projectData) return;
@@ -2080,6 +2148,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                     onSelectionChange={handleSelectionChangeWrapper}
                     floatingSelection={floatingSelection}
                     onFloatingSelectionChange={handleFloatingSelectionChange}
+                    onLiftSelection={handleLiftSelection}
                     onContextMenu={handleOpenContextMenu}
                     isZoomLocked={isZoomLocked}
                     onToggleZoomLock={onToggleZoomLock}

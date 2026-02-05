@@ -142,6 +142,10 @@ Add items freely; keep IDs stable once created. Promote to Blocker list when nee
 - [x] **UX-001:** Mobile/tablet usable editor experience (Status: Done)
 - [x] **UX-002:** Non-mouse zoom/navigation controls (Status: Done)
     - [x] Stage 1: Shortcut Engine & Documentation
+- [x] **SEL-001:** Selection Architecture Overhaul (Undo/Redo/Commit) (Status: Done)
+    - [x] Smart Commit (Atomic Source Clear + Paste)
+    - [x] Floating vs. Static Undo Policy
+    - [x] Visuals (High Contrast + Inset)
 - [x] **INS-001:** Instructions Engine v2 (Status: Done)
 - [x] **RPT-001:** Feedback/bug reporting mechanism (Status: Done)
     - [x] Integrated "Report Crash" flow with ErrorBoundary.
