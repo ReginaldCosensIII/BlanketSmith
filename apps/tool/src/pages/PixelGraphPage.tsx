@@ -382,9 +382,11 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
         // System
         'system-undo': () => {
             if (hasFloatingSelection) {
-                performUndo();
+                performUndo(); // Priority 1: Floating History
+            } else if (selection) {
+                handleDeselect(); // Priority 2: Clear Selection Boundary
             } else {
-                dispatch({ type: 'UNDO' });
+                dispatch({ type: 'UNDO' }); // Priority 3: Global Undo
             }
         },
         'system-redo': () => {
