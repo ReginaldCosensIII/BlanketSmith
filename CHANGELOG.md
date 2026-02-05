@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### [Unreleased]
+- **Selection Engine Overhaul (v2)**:
+    - **Smart Commit**: Implemented non-destructive "Lift & Float" workflow with atomic commit on release.
+    - **Undo Policy**: `Ctrl+Z` is now context-aware (Floating Transform -> Deselect -> Global Undo).
+    - **Visuals**: "Three-Layer" High-Contrast marquee (Tint + Black Stroke + White Dash) with "Hard Light" blending for visibility on all colors.
+    - **Interaction**:
+        - **Drag Clamping**: Floating selections are strictly bound to canvas edges.
+        - **UI Guard**: Prevented accidental text/UI selection during aggressive mouse interactions.
+        - **Shortcuts**: `Ctrl+A` (Select All) now auto-switches to Select Tool for immediate manipulation.
+
 - **Navigation (Landing Page)**:
     - **Global Scroll-to-Top**: Implemented a global scroll reset on route changes to ensure users start at the top of the page when navigating.
 - **Feedback System (RPT-001 / RPT-002)**:
