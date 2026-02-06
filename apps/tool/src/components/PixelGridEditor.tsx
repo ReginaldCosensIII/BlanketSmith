@@ -123,7 +123,6 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const pendingZoomAlignmentRef = useRef<{ point: { x: number, y: number }, targetScreen: { x: number, y: number } } | null>(null);
     const lastPinchCenter = useRef<{ x: number, y: number } | null>(null);
     const currentZoomRef = useRef<number>(zoom);
-    // handleMouseUpRef removed (REFACTOR-002)
 
     const pendingScrollRef = useRef<{ left: number, top: number } | null>(null);
     const pendingTapRef = useRef<{ x: number, y: number, gridX: number, gridY: number, time: number } | null>(null);
