@@ -353,3 +353,21 @@ See `.github/pull_request_template.md`.
 
 This keeps planning and execution consistent and makes every task “prompt-ready.”
 
+---
+
+## 11) Agentic Automation (New)
+
+The workflow described above is now automated via Agentic Workflows and Skills.
+
+### 11.1 Workflows
+Executable workflows are located in `.agent/workflows/`.
+- **/new_task**: Automates "Prompt A", enforcing the "Stop and Wait" protocol and File Touch Contract.
+- **/verify_task**: Automates "Prompt C" and the Definition of Done.
+
+### 11.2 Skills & Rules
+- **Context Rules**: `.agent/rules/` contains strict context rules (e.g., verifying `cwd`).
+- **Skills**: `.agent/skills/` contains domain-specific instructions.
+    - **Staging**: New skills are created in `staging/` and must be promoted by the user.
+    - **Command Registry**: Defines strict mapping between UI actions and keyboard shortcuts.
+    - **Frontend & Brand**: Defines design system and brand identity usage.
+
