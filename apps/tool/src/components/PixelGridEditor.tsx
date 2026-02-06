@@ -679,6 +679,13 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     };
 
     const handleMouseUp = () => {
+        // Priority 0: Always finish drag if active (Global Safety) - FIX-010
+        if (draggingStart) {
+            setDraggingStart(null);
+            return;
+        }
+
+
         if (pinchDistRef.current !== null) {
             pinchDistRef.current = null;
         }
@@ -699,11 +706,6 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
 
         if (activeTool === 'select') {
-            // Priority 1: Check if we were dragging a Floating Selection
-            if (draggingStart) {
-                setDraggingStart(null);
-                return; // Drag finished (even if 0 distance), do not deselect
-            }
 
             // Priority 2: Check for Single Click (Deselect)
             const isSingleCell = selection && selection.w === 1 && selection.h === 1;
