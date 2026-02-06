@@ -21,8 +21,10 @@ The BlanketSmith selection engine mimics standard professional image editors (e.
 
 ### A. Drag & Move
 - **Implicit Lift:** Dragging a Static Selection automatically "Lifts" it into a Floating Selection.
-- **Constraints:** Floating selections are **hard-clamped** to the canvas edges. Users cannot drag a selection off-screen (preventing "lost" pixels).
+- **Loose Clamping:** Floating selections are loosely clamped to the canvas edges. At least 1 pixel of the selection must remain visible on the canvas (Min 1px overlap).
 - **Text Selection Guard:** The Editor Canvas prevents native browser text selection events (`select-none` + `preventDefault`), ensuring aggressive dragging doesn't highlight UI elements.
+- **Input Handling:** Uses **Pointer Events** (`setPointerCapture`) to maintain drag tracking even when the cursor leaves the browser window.
+
 
 ### B. Rotation
 - **Lossless Cycle:** Rotation uses a 4-step cycle (0 -> 90 -> 180 -> 270 -> 0) stored in a `transformRef`.
