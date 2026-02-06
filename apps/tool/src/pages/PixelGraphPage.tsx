@@ -724,9 +724,9 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                 // Should fall through to Global Undo if we are clean.
                 dispatch({ type: 'UNDO' });
             } else {
-                dispatch({ type: 'UNDO' });
                 setSelection(null);
                 updateFloatingState(null); // Clears floating selection
+                return;
             }
         }
     }, [dispatch, updateFloatingState]);

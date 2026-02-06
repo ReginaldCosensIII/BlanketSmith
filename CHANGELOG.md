@@ -117,6 +117,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Refactor**: Renamed `ProjectsPage.tsx` to `PatternBookPage.tsx`.
 
 ### Fixed
+- **Undo Logic (FIX-012)**: Resolved "Fall-through" bug where undoing a floating selection implementation also triggered a global history undo, causing data loss.
 - **Performance**: Removed external font/CSS requests for icons.
 - **Consistency**: Fixed various icon sizing inconsistencies in modals and toolbars.
 
