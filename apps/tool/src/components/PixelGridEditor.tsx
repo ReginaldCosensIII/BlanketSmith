@@ -745,9 +745,6 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     };
 
     const handleMouseLeave = () => {
-        if (isDrawing) {
-            handleMouseUp();
-        }
         setHoveredCell(null);
     };
 
