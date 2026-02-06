@@ -123,7 +123,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const pendingZoomAlignmentRef = useRef<{ point: { x: number, y: number }, targetScreen: { x: number, y: number } } | null>(null);
     const lastPinchCenter = useRef<{ x: number, y: number } | null>(null);
     const currentZoomRef = useRef<number>(zoom);
-    const handleMouseUpRef = useRef<() => void>(() => { });
+    // handleMouseUpRef removed (REFACTOR-002)
 
     const pendingScrollRef = useRef<{ left: number, top: number } | null>(null);
     const pendingTapRef = useRef<{ x: number, y: number, gridX: number, gridY: number, time: number } | null>(null);
@@ -421,11 +421,19 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
     const touchPlacementRef = useRef<{ active: boolean, x: number, y: number } | null>(null);
 
-    const checkIsTouch = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
+    const checkIsTouch = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent | React.PointerEvent) => {
         return 'touches' in e || ('nativeEvent' in e && 'touches' in (e.nativeEvent as any));
     };
 
-    const handleMouseDown = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
+    const handlePointerDown = (e: React.PointerEvent | React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
+        if ('pointerId' in e && (e as any).pointerId !== undefined) {
+            try {
+                (e.target as Element).setPointerCapture((e as any).pointerId);
+            } catch (err) {
+                // Ignore capture errors (e.g. if not a pointer event source)
+            }
+        }
+
         if (e.cancelable) e.preventDefault();
 
         if ('button' in e && e.button === 2) {
@@ -528,7 +536,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         }
     };
 
-    const handleMouseMove = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
+    const handlePointerMove = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent | React.PointerEvent) => {
         e.preventDefault();
 
         // Multi-touch guard (Pinch/Zoom) - Cancel active placement/drawing
@@ -619,22 +627,22 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 const native = e.nativeEvent;
                 if ('buttons' in native) {
                     if (drawingButton === 'left' && (native.buttons & 1) === 0) {
-                        handleMouseUp();
+                        handlePointerUp(e);
                         return;
                     }
                     if (drawingButton === 'right' && (native.buttons & 2) === 0) {
-                        handleMouseUp();
+                        handlePointerUp(e);
                         return;
                     }
                 }
             } else if ('buttons' in e) {
                 // Native MouseEvent
                 if (drawingButton === 'left' && ((e as MouseEvent).buttons & 1) === 0) {
-                    handleMouseUp();
+                    handlePointerUp(e);
                     return;
                 }
                 if (drawingButton === 'right' && ((e as MouseEvent).buttons & 2) === 0) {
-                    handleMouseUp();
+                    handlePointerUp(e);
                     return;
                 }
             }
@@ -678,7 +686,15 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         }
     };
 
-    const handleMouseUp = () => {
+    const handlePointerUp = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent | React.PointerEvent) => {
+        if ('pointerId' in e && (e as any).pointerId !== undefined) {
+            try {
+                (e.target as Element).releasePointerCapture((e as any).pointerId);
+            } catch (err) {
+                // Ignore
+            }
+        }
+
         // Priority 0: Always finish drag if active (Global Safety) - FIX-010
         if (draggingStart) {
             setDraggingStart(null);
@@ -745,25 +761,17 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     };
 
     const handleMouseLeave = () => {
+        // Legacy: removed
+    };
+
+    const handlePointerLeave = () => {
+        // UI Cleanup only - allows drag to continue off-canvas
         setHoveredCell(null);
     };
 
-    // GLOBAL MOUSE UP LISTENER (FIX-009)
-    // Prevents "sticky drag" if the user releases the mouse outside the canvas/editor.
-    handleMouseUpRef.current = handleMouseUp;
-
-    useEffect(() => {
-        const handleGlobalMouseUp = (e: MouseEvent) => {
-            // We invoke the ref to avoid stale closures, as handleMouseUp depends on
-            // many state variables (isDrawing, activeTool, etc.)
-            handleMouseUpRef.current();
-        };
-
-        window.addEventListener('mouseup', handleGlobalMouseUp);
-        return () => {
-            window.removeEventListener('mouseup', handleGlobalMouseUp);
-        };
-    }, []);
+    // GLOBAL MOUSE UP LISTENER REMOVED (REFACTOR-002: Pointer Capture solves this)
+    // handleMouseUpRef.current = handleMouseUp;
+    // useEffect... removed
 
     // --- NEW TOUCH HANDLERS ---
 
@@ -794,7 +802,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             } else {
                 // CONTINUOUS ACTION: Start immediately
                 touchMode.current = 'paint';
-                handleMouseDown(e as any);
+                handlePointerDown(e as any);
             }
 
         } else if (e.touches.length === 2) {
@@ -831,7 +839,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
     const handleTouchMove = (e: React.TouchEvent) => {
         if (touchMode.current === 'paint') {
-            handleMouseMove(e);
+            handlePointerMove(e);
         } else if ((touchMode.current === 'detecting' || touchMode.current === 'zooming' || touchMode.current === 'panning') && e.touches.length === 2) {
             e.preventDefault(); // Critical to prevent browser zoom/pan
             const container = containerRef.current;
@@ -916,7 +924,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
     const handleTouchEnd = (e: React.TouchEvent) => {
         if (touchMode.current === 'paint') {
-            handleMouseUp();
+            handlePointerUp(e);
         }
 
         if (e.touches.length === 0) {
@@ -961,7 +969,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 return;
             }
 
-            handleMouseMove(e as any);
+            handlePointerMove(e as any);
         } else if ((touchMode.current === 'detecting' || touchMode.current === 'zooming' || touchMode.current === 'panning') && e.touches.length === 2) {
             // CANCEL PENDING TAP
             pendingTapRef.current = null;
@@ -1045,7 +1053,8 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 onCanvasClick(pendingTapRef.current.gridX, pendingTapRef.current.gridY, false);
                 pendingTapRef.current = null;
             } else {
-                handleMouseUp();
+                // Since this is native touch end, we must cast or ensure compatibility if we pass it
+                handlePointerUp(e as any);
             }
         }
 
@@ -1389,10 +1398,10 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 className="w-full h-full bg-gray-200 overflow-hidden grid place-items-center touch-none select-none"
                 style={{ cursor: getCursor() }}
                 onContextMenu={handleContextMenu}
-                onMouseDown={handleMouseDown}
-                onMouseMove={handleMouseMove}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={handleMouseLeave}
+                onPointerDown={handlePointerDown}
+                onPointerMove={handlePointerMove}
+                onPointerUp={handlePointerUp}
+                onPointerLeave={handlePointerLeave}
                 data-role="background"
             >
                 <svg
