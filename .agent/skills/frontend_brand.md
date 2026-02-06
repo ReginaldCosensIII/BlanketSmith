@@ -19,6 +19,10 @@ Ensure all frontend changes align with the BlanketSmith Brand Identity and Desig
     - Use `<Button>`, `<TextInput>`, `<Card>`, etc.
 - **Tailwind**: Use utility classes for layout, but rely on component abstractions for visual style ("tokens").
 
+## Source of Truth (UI)
+- **Primary Directive**: Before creating ANY new UI elements or buttons, you **MUST** check `apps/tool/src/components/ui/SharedComponents.tsx`.
+- **Constraint**: You must use components from this file if they handle the desired interaction. Do NOT duplicate simple buttons or inputs.
+
 ## Image Generation
 - If new assets are needed, use `generate_image` with prompts that emphasize "premium", "modern", "dynamic", and "consistent with existing palette".
 
