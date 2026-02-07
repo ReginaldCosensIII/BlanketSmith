@@ -130,6 +130,8 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     // ACTIVE POINTER TRACKING: Replaces legacy `e.touches.length` for PointerEvents
     // This is the source of truth for "Is Multi-Touch Occurring?"
     const activePointers = useRef<Set<number>>(new Set());
+    const wasGesture = useRef(false);
+    const hasPointerMoved = useRef(false);
 
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isFullscreenSupported, setIsFullscreenSupported] = useState(false);
@@ -467,7 +469,12 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             // Right click on select tool is now handled by onContextMenu handler
             if (isRightClick) return;
 
-            // Check for floating selection drag
+            // GESTURE IMMUNITY: If multi-touch, ignore selection
+            if (activePointers.current.size > 1) {
+                wasGesture.current = true;
+                return;
+            }
+            if (wasGesture.current) return;
 
 
             if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height) {
@@ -490,7 +497,15 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
                 setIsDrawing(true);
                 setSelectionStart({ x: gridX, y: gridY });
-                onSelectionChange({ x: gridX, y: gridY, w: 1, h: 1 });
+
+                // DEFER SELECTION ON TOUCH (Wait for Move or Up)
+                // This prevents "Jumping" selection when a second finger hits the screen for zoom
+                if (isTouch) {
+                    hasPointerMoved.current = false;
+                    // Do NOT call onSelectionChange yet
+                } else {
+                    onSelectionChange({ x: gridX, y: gridY, w: 1, h: 1 });
+                }
             } else {
                 onSelectionChange(null);
             }
@@ -618,6 +633,12 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
 
         if (isDrawing && activeTool === 'select' && selectionStart) {
+            // IMMUNITY CHECK
+            if (wasGesture.current) return;
+
+            // TRACK MOVEMENT
+            hasPointerMoved.current = true;
+
             // ... (Keep existing selection logic)
             const startX = selectionStart.x;
             const startY = selectionStart.y;
@@ -739,13 +760,50 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
         if (activeTool === 'select') {
 
-            // Priority 2: Check for Single Click (Deselect)
-            const isSingleCell = selection && selection.w === 1 && selection.h === 1;
-            const isSamePos = selection && selectionStart && selection.x === selectionStart.x && selection.y === selectionStart.y;
+            // IMMUNITY CHECK
+            if (wasGesture.current) {
+                // Determine if we need to reset gesture state (if last pointer)
+                if (activePointers.current.size === 0) {
+                    wasGesture.current = false;
+                }
+                setIsDrawing(false);
+                setSelectionStart(null);
+                return;
+            }
 
-            if (isSingleCell && isSamePos) {
-                // It was a click, not a drag -> Deselect
-                onSelectionChange(null);
+            // DEFERRED TAP EXECUTION (TOUCH ONLY)
+            // If we haven't moved, this was a tap. Execute the selection logic now.
+            if (checkIsTouch(e) && !hasPointerMoved.current && selectionStart) {
+                // Check if we tapped on an existing 1x1 selection -> Deselect
+                // Or just tapped empty space -> Deselect check is below
+                // Actually, if we deferred, we haven't called onSelectionChange yet at all.
+                // So 'selection' state reflects BEFORE the tap.
+
+                const { x, y } = selectionStart;
+                const hitSelection = selection &&
+                    x >= selection.x && x < selection.x + selection.w &&
+                    y >= selection.y && y < selection.y + selection.h;
+
+                // Priority 2: Check for Single Click (Deselect) behavior
+                // If we tapped the SAME 1x1 selection
+                const isSingleCell = selection && selection.w === 1 && selection.h === 1;
+                const isSamePos = selection && selection.x === x && selection.y === y;
+
+                if (hitSelection && isSingleCell && isSamePos) {
+                    onSelectionChange(null);
+                } else {
+                    onSelectionChange({ x, y, w: 1, h: 1 });
+                }
+            } else if (!checkIsTouch(e)) {
+                // Mouse already executed on Down, check specifically for deselect
+                // Priority 2: Check for Single Click (Deselect)
+                const isSingleCell = selection && selection.w === 1 && selection.h === 1;
+                const isSamePos = selection && selectionStart && selection.x === selectionStart.x && selection.y === selectionStart.y;
+
+                if (isSingleCell && isSamePos) {
+                    // It was a click, not a drag -> Deselect
+                    onSelectionChange(null);
+                }
             }
 
             // Priority 3: End Selection Creation
@@ -793,6 +851,9 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const handlePointerCancel = (e: React.PointerEvent) => {
         if (e.pointerId !== undefined) {
             activePointers.current.delete(e.pointerId);
+            if (activePointers.current.size === 0) {
+                wasGesture.current = false;
+            }
         }
         setHoveredCell(null);
         setIsDrawing(false);
