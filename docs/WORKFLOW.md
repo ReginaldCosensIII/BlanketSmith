@@ -361,9 +361,9 @@ The workflow described above is now automated via Agentic Workflows and Skills.
 
 ### 11.1 Workflows
 Executable workflows are located in `.agent/workflows/`.
-- **/new_task**: Automates "Prompt A", enforcing the "Stop and Wait" protocol and File Touch Contract.
-- **/verify_task**: Automates "Prompt C" and the Definition of Done.
-- **/close_branch**: Audits documentation, catalogs commits, and generates PR descriptions.
+- **/new_task**: Automates "Prompt A", enforcing the "Stop and Wait" protocol.
+- **/verify_task**: (Save Game) Verifies a *single task* and generates a Commit Message. Use repeatedly on one branch.
+- **/close_branch**: (Release) Audits the entire branch, forces Documentation updates (Changelog/Roadmap), and generates the final PR Description.
 
 ### 11.2 Skills & Rules
 For a full catalog of active skills and the Staging Area policy, see [AGENT_SKILLS.md](./AGENT_SKILLS.md).
