@@ -1,10 +1,10 @@
 ---
-description: Verify Task & Closeout (Definition of Done)
+description: Verify Task (Commit & Save)
 ---
 
-# Verify Task & Closeout
+# Verify Task (Commit & Save)
 
-This workflow automates the "Prompt C" verification process to ensure the branch is ready for merging.
+This workflow automates the "Definition of Done" for a single task within a branch. **It ends with a Commit, not a PR.**
 
 ## Steps
 
@@ -22,17 +22,14 @@ This workflow automates the "Prompt C" verification process to ensure the branch
 3. **Cleanup**
    - Remove any temporary debug logs (`console.log`).
    - Remove any commented-out dead code.
-   - Ensure `task.md` is fully checked off.
+   - Ensure `task.md` is fully checked off for this specific item.
 
-4. **Documentation Updates**
-   - Update `CHANGELOG.md` with your changes.
-   - Update `docs/BETA_ROADMAP.md` if the task status changed.
-   - Update specific documentation files if architecture changed.
-
-5. **Generate PR Artifacts**
-   - Create a summary of changes.
-   - Draft a PR Title (Conventional Commits).
-   - Draft a PR Description (Summary, Changes, Testing, Risks).
-
-6. **Final Notification**
-   - Call `notify_user` with the PR artifacts and verification results.
+4. **Generate Commit Artifact**
+   - **Analyze**: Look at `git status` and `git diff`.
+   - **Draft**: Create a Conventional Commit message that summarizes strictly what was verified in this step.
+   - **Output**: "Ready to save progress. Run:"
+     ```bash
+     git add .
+     git commit -m "type: description of this specific task"
+     ```
+   - **NOTE**: Do NOT generate a PR description yet. That happens in `/close_branch`.

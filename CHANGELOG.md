@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### [Unreleased]
 - **Fixed**: "Sticky Drag" issues resolved by migrating Editor to PointerEvents.
 - **Changed**: Relaxed drag constraints ("Loose Clamping") to allow dragging selections partially off-canvas.
+- **Workflow Optimization**: Refactored Agentic workflows to support "Multi-Task Branches".
+    - `verify_task`: Now generates Commit Messages ("Save Game") instead of PR artifacts.
+    - `close_branch`: Now aggregates all commits on a branch into a single PR ("Release").
+    - **Safety**: Added checks for "Major Feature" documentation and mandatory Changelog updates.
 - **Mobile Pointer Polish (fix/mobile-pointer-polish)**:
     - **Native Pointer Events**: Migrated `PixelGridEditor` to use Pointer Events, fixing "ghost hovers" and sticky drags.
     - **Gesture Immunity**: Implemented robust gesture protection:
