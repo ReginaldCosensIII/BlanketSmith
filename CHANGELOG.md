@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
         - **Immunity Shield**: Multi-touch gestures (Pinch/Zoom) block selection logic until all fingers are lifted.
         - **Grace Period**: Added 70ms drag buffer to ignore micro-movements during gesture initiation.
     - **Double-Fire Fix**: Removed legacy touch delegation to prevent actions triggering twice.
+- **Mobile Selection (fix/mobile-selection-loop)**:
+    - **Two-Step Dismissal**: Tapping outside a selection on touch devices now prioritizes dismissing the current selection before creating a new one, resolving the "Infinite Selection Loop".
 - **Selection Engine Overhaul (v2)**:
     - **Smart Commit**: Implemented non-destructive "Lift & Float" workflow with atomic commit on release.
     - **Undo Policy**: `Ctrl+Z` is now context-aware (Floating Transform -> Deselect -> Global Undo).

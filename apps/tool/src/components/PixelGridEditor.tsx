@@ -790,24 +790,12 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             // DEFERRED TAP EXECUTION (TOUCH ONLY)
             // If we haven't moved, this was a tap. Execute the selection logic now.
             if (checkIsTouch(e) && !hasPointerMoved.current && selectionStart) {
-                // Check if we tapped on an existing 1x1 selection -> Deselect
-                // Or just tapped empty space -> Deselect check is below
-                // Actually, if we deferred, we haven't called onSelectionChange yet at all.
-                // So 'selection' state reflects BEFORE the tap.
-
-                const { x, y } = selectionStart;
-                const hitSelection = selection &&
-                    x >= selection.x && x < selection.x + selection.w &&
-                    y >= selection.y && y < selection.y + selection.h;
-
-                // Priority 2: Check for Single Click (Deselect) behavior
-                // If we tapped the SAME 1x1 selection
-                const isSingleCell = selection && selection.w === 1 && selection.h === 1;
-                const isSamePos = selection && selection.x === x && selection.y === y;
-
-                if (hitSelection && isSingleCell && isSamePos) {
+                if (selection) {
+                    // Step 1: If ANY selection exists, the tap acts as a "Dismiss" signal.
                     onSelectionChange(null);
                 } else {
+                    // Step 2: Only if NO selection exists, create a new one.
+                    const { x, y } = selectionStart;
                     onSelectionChange({ x, y, w: 1, h: 1 });
                 }
             } else if (!checkIsTouch(e)) {
