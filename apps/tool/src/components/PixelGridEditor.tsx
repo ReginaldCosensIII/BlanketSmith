@@ -132,6 +132,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const activePointers = useRef<Set<number>>(new Set());
     const wasGesture = useRef(false);
     const hasPointerMoved = useRef(false);
+    const touchStartTime = useRef<number>(0);
 
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isFullscreenSupported, setIsFullscreenSupported] = useState(false);
@@ -462,6 +463,9 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         const gridY = Math.floor(y - RULER_SIZE);
 
         const isTouch = checkIsTouch(e);
+        if (isTouch) {
+            touchStartTime.current = Date.now();
+        }
         const touchHoverTools = ['text', 'fill-row', 'fill-column'];
 
         if (activeTool === 'select') {
@@ -583,11 +587,23 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             return;
         }
 
+        const isTouch = checkIsTouch(e);
+
+        // GRACE PERIOD: Ignore micro-movements on touch (70ms) to allow second finger to land
+        // This prevents "Wobble" from triggering a drag before a pinch is detected
+
+        if (isTouch && !wasGesture.current) {
+            const timeElapsed = Date.now() - touchStartTime.current;
+            if (timeElapsed < 70) {
+                return;
+            }
+        }
+
         const { x, y } = getMousePosition('nativeEvent' in e ? e.nativeEvent : e as any);
         const gridX = Math.floor(x - RULER_SIZE);
         const gridY = Math.floor(y - RULER_SIZE);
 
-        const isTouch = checkIsTouch(e);
+
 
         if (!isTouch || touchPlacementRef.current?.active) {
             if (!hoveredCell || hoveredCell.x !== gridX || hoveredCell.y !== gridY) {
