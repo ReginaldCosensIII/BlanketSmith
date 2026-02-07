@@ -125,7 +125,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const currentZoomRef = useRef<number>(zoom);
 
     const pendingScrollRef = useRef<{ left: number, top: number } | null>(null);
-    const pendingTapRef = useRef<{ x: number, y: number, gridX: number, gridY: number, time: number } | null>(null);
+
 
     // ACTIVE POINTER TRACKING: Replaces legacy `e.touches.length` for PointerEvents
     // This is the source of truth for "Is Multi-Touch Occurring?"
@@ -813,34 +813,11 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     });
 
     const handleTouchStart = (e: TouchEvent) => {
-        if (e.touches.length === 1) {
-            const touch = e.touches[0];
-            const { x, y } = getMousePosition(e);
-            const gridX = Math.floor(x - RULER_SIZE);
-            const gridY = Math.floor(y - RULER_SIZE);
-
-            // CLASSIFY TOOL: Instant vs Continuous
-            // Continuous: Brush, Select, Text, Rows, Cols (Drag to operate/place)
-            // Instant: Fill, Eyedropper, Replace (Click to operate)
-            const continuousTools = ['brush', 'select', 'text', 'fill-row', 'fill-column'];
-            const isInstantTool = !continuousTools.includes(activeTool) && !floatingSelection;
-
-            if (isInstantTool) {
-                // DEFER ACTION: Wait for clean release (Tap-to-Execute)
-                touchMode.current = 'paint'; // Use paint mode for single finger tracking
-                pendingTapRef.current = { x, y, gridX, gridY, time: Date.now() };
-            } else {
-                // CONTINUOUS ACTION: Start immediately
-                touchMode.current = 'paint';
-                handlePointerDown(e as any);
-            }
-
-        } else if (e.touches.length === 2) {
+        // SINGLE TOUCH is handled natively by PointerEvents (onPointerDown)
+        // We only intercept 2-finger touches for GestureDetector
+        if (e.touches.length === 2) {
             touchMode.current = 'detecting'; // Start in detecting mode
             if (e.cancelable) e.preventDefault();
-
-            // CANCEL PENDING TAP: If second finger lands, it's a gesture, not a tap
-            pendingTapRef.current = null;
 
             const info = getPinchInfo(e);
             if (info) {
@@ -855,7 +832,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 }
             }
 
-            // ABORT PAINT: If we started drawing with the first finger (stray dot), cancel it!
+            // ABORT PAINT: If we started drawing with the first finger (via PointerEvents), cancel it!
             setIsDrawing(false);
             setPaintedCells(new Set()); // Discard pending pixels
             setHoveredCell(null);
@@ -868,9 +845,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     };
 
     const handleTouchMove = (e: React.TouchEvent) => {
-        if (touchMode.current === 'paint') {
-            handlePointerMove(e);
-        } else if ((touchMode.current === 'detecting' || touchMode.current === 'zooming' || touchMode.current === 'panning') && e.touches.length === 2) {
+        if ((touchMode.current === 'detecting' || touchMode.current === 'zooming' || touchMode.current === 'panning') && e.touches.length === 2) {
             e.preventDefault(); // Critical to prevent browser zoom/pan
             const container = containerRef.current;
             if (!container || pinchDistRef.current === null || !lastPinchCenter.current) return;
@@ -953,10 +928,6 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     };
 
     const handleTouchEnd = (e: React.TouchEvent) => {
-        if (touchMode.current === 'paint') {
-            handlePointerUp(e);
-        }
-
         if (e.touches.length === 0) {
             // Drop locks
             touchMode.current = 'none';
@@ -971,39 +942,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const handleTouchMove_Native = (e: TouchEvent) => {
         const TAP_TOLERANCE = 5; // px
 
-        if (touchMode.current === 'paint') {
-            // CHECK MOVEMENT FOR PENDING TAP
-            if (pendingTapRef.current) {
-                const { x, y } = getMousePosition(e as any); // Safe cast for helper
-                // Note: getMousePosition returns SVG coords. 
-                // We should ideally check screen movement for tap tolerance to be zoom-independent,
-                // but checking grid movement is "okay" if we are careful. 
-                // Better: Check clientX/Y delta!
-                const t = e.touches[0];
-                // We didn't store initial clientX/Y in pendingTap, let's just abort if we move significantly in GRID coords?
-                // Actually, let's be strict. If you drag, it's not a tap.
-
-                // If we had the initial screen coords we could do: dist(start, current) > 10px
-                // Since we only stored converted coords, let's verify if grid changed significantly?
-                // Or better, just utilize the 'brush' logic: 'handleMouseMove' will be called?
-                // No, we SKIPPED handleMouseDown for instant tools, so handleMouseMove might be weird.
-                // Let's just invalidate if we move too far.
-                const dx = Math.abs(x - pendingTapRef.current.x);
-                const dy = Math.abs(y - pendingTapRef.current.y);
-
-                // 10 "Screen Pixels" roughly translates to 10 / Zoom "SVG Units".
-                // Let's use a rough heuristic: if we move > 0.5 grid units, it's a drag?
-                if (dx > 0.5 || dy > 0.5) {
-                    pendingTapRef.current = null;
-                }
-                return;
-            }
-
-            handlePointerMove(e as any);
-        } else if ((touchMode.current === 'detecting' || touchMode.current === 'zooming' || touchMode.current === 'panning') && e.touches.length === 2) {
-            // CANCEL PENDING TAP
-            pendingTapRef.current = null;
-
+        if ((touchMode.current === 'detecting' || touchMode.current === 'zooming' || touchMode.current === 'panning') && e.touches.length === 2) {
             if (e.cancelable) e.preventDefault();
             const container = containerRef.current;
             if (!container || pinchDistRef.current === null || !lastPinchCenter.current) return;
@@ -1076,23 +1015,10 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     };
 
     const handleTouchEnd_Native = (e: TouchEvent) => {
-        if (touchMode.current === 'paint') {
-            // EXECUTE PENDING TAP
-            if (pendingTapRef.current) {
-                // If we are here, we haven't moved significantly or cancelled
-                onCanvasClick(pendingTapRef.current.gridX, pendingTapRef.current.gridY, false);
-                pendingTapRef.current = null;
-            } else {
-                // Since this is native touch end, we must cast or ensure compatibility if we pass it
-                handlePointerUp(e as any);
-            }
-        }
-
         if (e.touches.length === 0) {
             touchMode.current = 'none';
             pinchDistRef.current = null;
             lastPinchCenter.current = null;
-            pendingTapRef.current = null; // Cleanup
         } else if (e.touches.length < 2 && (touchMode.current === 'detecting' || touchMode.current === 'zooming' || touchMode.current === 'panning')) {
             touchMode.current = 'none';
         }
