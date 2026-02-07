@@ -8,6 +8,7 @@
 - [x] **Rotation Engine:** 90/180/270 degree rotation of selections.
 - [x] **Interaction Core:** Pointer Events migration (No "Sticky Drag"), Loose Clamping.
 - [x] **Undo/Redo System:** Unified History + Floating State ("Smart Undo").
+- [x] **Mobile Touch Polish:** Native Pointer Events, Gesture Immunity, Deferred Selection.
 
 ## 🚧 Current Focus (Beta Blockers)
 
@@ -23,5 +24,5 @@
 - [ ] **Palette UI:** Improve color picker to support Brand -> Color selection.
 
 ## 🔮 Beta Wishlist (Post-Blocker)
-- [ ] **Mobile Touch Polish:** Refine pinch-to-zoom smoothness.
+
 - [ ] **Local Storage Autosave:** Prevent data loss on refresh.

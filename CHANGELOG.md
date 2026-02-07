@@ -9,6 +9,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### [Unreleased]
 - **Fixed**: "Sticky Drag" issues resolved by migrating Editor to PointerEvents.
 - **Changed**: Relaxed drag constraints ("Loose Clamping") to allow dragging selections partially off-canvas.
+- **Mobile Pointer Polish (fix/mobile-pointer-polish)**:
+    - **Native Pointer Events**: Migrated `PixelGridEditor` to use Pointer Events, fixing "ghost hovers" and sticky drags.
+    - **Gesture Immunity**: Implemented robust gesture protection:
+        - **Deferral**: Touch selection is deferred until a tap or drag is confirmed, preventing "Setup Clicks".
+        - **Immunity Shield**: Multi-touch gestures (Pinch/Zoom) block selection logic until all fingers are lifted.
+        - **Grace Period**: Added 70ms drag buffer to ignore micro-movements during gesture initiation.
+    - **Double-Fire Fix**: Removed legacy touch delegation to prevent actions triggering twice.
 - **Selection Engine Overhaul (v2)**:
     - **Smart Commit**: Implemented non-destructive "Lift & Float" workflow with atomic commit on release.
     - **Undo Policy**: `Ctrl+Z` is now context-aware (Floating Transform -> Deselect -> Global Undo).

@@ -125,7 +125,14 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const currentZoomRef = useRef<number>(zoom);
 
     const pendingScrollRef = useRef<{ left: number, top: number } | null>(null);
-    const pendingTapRef = useRef<{ x: number, y: number, gridX: number, gridY: number, time: number } | null>(null);
+
+
+    // ACTIVE POINTER TRACKING: Replaces legacy `e.touches.length` for PointerEvents
+    // This is the source of truth for "Is Multi-Touch Occurring?"
+    const activePointers = useRef<Set<number>>(new Set());
+    const wasGesture = useRef(false);
+    const hasPointerMoved = useRef(false);
+    const touchStartTime = useRef<number>(0);
 
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [isFullscreenSupported, setIsFullscreenSupported] = useState(false);
@@ -421,13 +428,19 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const touchPlacementRef = useRef<{ active: boolean, x: number, y: number } | null>(null);
 
     const checkIsTouch = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent | React.PointerEvent) => {
-        return 'touches' in e || ('nativeEvent' in e && 'touches' in (e.nativeEvent as any));
+        return (
+            ('pointerType' in e && (e as React.PointerEvent).pointerType === 'touch') ||
+            'touches' in e ||
+            ('nativeEvent' in e && 'touches' in (e.nativeEvent as any))
+        );
     };
 
     const handlePointerDown = (e: React.PointerEvent | React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent) => {
         if ('pointerId' in e && (e as any).pointerId !== undefined) {
+            const pid = (e as any).pointerId;
+            activePointers.current.add(pid);
             try {
-                (e.target as Element).setPointerCapture((e as any).pointerId);
+                (e.target as Element).setPointerCapture(pid);
             } catch (err) {
                 // Ignore capture errors (e.g. if not a pointer event source)
             }
@@ -450,6 +463,9 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         const gridY = Math.floor(y - RULER_SIZE);
 
         const isTouch = checkIsTouch(e);
+        if (isTouch) {
+            touchStartTime.current = Date.now();
+        }
         const touchHoverTools = ['text', 'fill-row', 'fill-column'];
 
         if (activeTool === 'select') {
@@ -457,7 +473,12 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             // Right click on select tool is now handled by onContextMenu handler
             if (isRightClick) return;
 
-            // Check for floating selection drag
+            // GESTURE IMMUNITY: If multi-touch, ignore selection
+            if (activePointers.current.size > 1) {
+                wasGesture.current = true;
+                return;
+            }
+            if (wasGesture.current) return;
 
 
             if (gridX >= 0 && gridX < width && gridY >= 0 && gridY < height) {
@@ -480,7 +501,15 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
                 setIsDrawing(true);
                 setSelectionStart({ x: gridX, y: gridY });
-                onSelectionChange({ x: gridX, y: gridY, w: 1, h: 1 });
+
+                // DEFER SELECTION ON TOUCH (Wait for Move or Up)
+                // This prevents "Jumping" selection when a second finger hits the screen for zoom
+                if (isTouch) {
+                    hasPointerMoved.current = false;
+                    // Do NOT call onSelectionChange yet
+                } else {
+                    onSelectionChange({ x: gridX, y: gridY, w: 1, h: 1 });
+                }
             } else {
                 onSelectionChange(null);
             }
@@ -506,7 +535,10 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             // TOUCH OPTIMIZATION for Text/Row/Column Tools
             if (isTouch && touchHoverTools.includes(activeTool) && gridX >= 0 && gridX < width && gridY >= 0 && gridY < height) {
                 // Multi-touch guard (Pinch/Zoom)
-                if ('touches' in e && e.touches.length > 1) {
+                // We utilize activePointers for PointerEvents, fallback to touches for TouchEvents
+                const isMultiTouch = activePointers.current.size > 1 || ('touches' in e && e.touches.length > 1);
+
+                if (isMultiTouch) {
                     // Cancel any active placement if second finger touches down
                     if (touchPlacementRef.current) {
                         touchPlacementRef.current = null;
@@ -539,7 +571,9 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         e.preventDefault();
 
         // Multi-touch guard (Pinch/Zoom) - Cancel active placement/drawing
-        if ('touches' in e && e.touches.length > 1) {
+        const isMultiTouch = activePointers.current.size > 1 || ('touches' in e && e.touches.length > 1);
+
+        if (isMultiTouch) {
             // Unconditionally clear hover on multi-touch (fixes Brush tool ghosting)
             setHoveredCell(null);
 
@@ -553,11 +587,23 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
             return;
         }
 
+        const isTouch = checkIsTouch(e);
+
+        // GRACE PERIOD: Ignore micro-movements on touch (70ms) to allow second finger to land
+        // This prevents "Wobble" from triggering a drag before a pinch is detected
+
+        if (isTouch && !wasGesture.current) {
+            const timeElapsed = Date.now() - touchStartTime.current;
+            if (timeElapsed < 70) {
+                return;
+            }
+        }
+
         const { x, y } = getMousePosition('nativeEvent' in e ? e.nativeEvent : e as any);
         const gridX = Math.floor(x - RULER_SIZE);
         const gridY = Math.floor(y - RULER_SIZE);
 
-        const isTouch = checkIsTouch(e);
+
 
         if (!isTouch || touchPlacementRef.current?.active) {
             if (!hoveredCell || hoveredCell.x !== gridX || hoveredCell.y !== gridY) {
@@ -603,6 +649,12 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
 
         if (isDrawing && activeTool === 'select' && selectionStart) {
+            // IMMUNITY CHECK
+            if (wasGesture.current) return;
+
+            // TRACK MOVEMENT
+            hasPointerMoved.current = true;
+
             // ... (Keep existing selection logic)
             const startX = selectionStart.x;
             const startY = selectionStart.y;
@@ -687,8 +739,10 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
     const handlePointerUp = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent | React.PointerEvent) => {
         if ('pointerId' in e && (e as any).pointerId !== undefined) {
+            const pid = (e as any).pointerId;
+            activePointers.current.delete(pid);
             try {
-                (e.target as Element).releasePointerCapture((e as any).pointerId);
+                (e.target as Element).releasePointerCapture(pid);
             } catch (err) {
                 // Ignore
             }
@@ -722,13 +776,50 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
         if (activeTool === 'select') {
 
-            // Priority 2: Check for Single Click (Deselect)
-            const isSingleCell = selection && selection.w === 1 && selection.h === 1;
-            const isSamePos = selection && selectionStart && selection.x === selectionStart.x && selection.y === selectionStart.y;
+            // IMMUNITY CHECK
+            if (wasGesture.current) {
+                // Determine if we need to reset gesture state (if last pointer)
+                if (activePointers.current.size === 0) {
+                    wasGesture.current = false;
+                }
+                setIsDrawing(false);
+                setSelectionStart(null);
+                return;
+            }
 
-            if (isSingleCell && isSamePos) {
-                // It was a click, not a drag -> Deselect
-                onSelectionChange(null);
+            // DEFERRED TAP EXECUTION (TOUCH ONLY)
+            // If we haven't moved, this was a tap. Execute the selection logic now.
+            if (checkIsTouch(e) && !hasPointerMoved.current && selectionStart) {
+                // Check if we tapped on an existing 1x1 selection -> Deselect
+                // Or just tapped empty space -> Deselect check is below
+                // Actually, if we deferred, we haven't called onSelectionChange yet at all.
+                // So 'selection' state reflects BEFORE the tap.
+
+                const { x, y } = selectionStart;
+                const hitSelection = selection &&
+                    x >= selection.x && x < selection.x + selection.w &&
+                    y >= selection.y && y < selection.y + selection.h;
+
+                // Priority 2: Check for Single Click (Deselect) behavior
+                // If we tapped the SAME 1x1 selection
+                const isSingleCell = selection && selection.w === 1 && selection.h === 1;
+                const isSamePos = selection && selection.x === x && selection.y === y;
+
+                if (hitSelection && isSingleCell && isSamePos) {
+                    onSelectionChange(null);
+                } else {
+                    onSelectionChange({ x, y, w: 1, h: 1 });
+                }
+            } else if (!checkIsTouch(e)) {
+                // Mouse already executed on Down, check specifically for deselect
+                // Priority 2: Check for Single Click (Deselect)
+                const isSingleCell = selection && selection.w === 1 && selection.h === 1;
+                const isSamePos = selection && selectionStart && selection.x === selectionStart.x && selection.y === selectionStart.y;
+
+                if (isSingleCell && isSamePos) {
+                    // It was a click, not a drag -> Deselect
+                    onSelectionChange(null);
+                }
             }
 
             // Priority 3: End Selection Creation
@@ -763,9 +854,26 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
         // Legacy: removed
     };
 
-    const handlePointerLeave = () => {
+    const handlePointerLeave = (e: React.MouseEvent | React.TouchEvent | MouseEvent | TouchEvent | React.PointerEvent) => {
+        // Cleanup pointer if it leaves (though capture usually prevents this, safety first)
+        if ('pointerId' in e && (e as any).pointerId !== undefined) {
+            activePointers.current.delete((e as any).pointerId);
+        }
+
         // UI Cleanup only - allows drag to continue off-canvas
         setHoveredCell(null);
+    };
+
+    const handlePointerCancel = (e: React.PointerEvent) => {
+        if (e.pointerId !== undefined) {
+            activePointers.current.delete(e.pointerId);
+            if (activePointers.current.size === 0) {
+                wasGesture.current = false;
+            }
+        }
+        setHoveredCell(null);
+        setIsDrawing(false);
+        touchPlacementRef.current = null;
     };
 
     // GLOBAL MOUSE UP LISTENER REMOVED (REFACTOR-002: Pointer Capture solves this)
@@ -782,34 +890,11 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     });
 
     const handleTouchStart = (e: TouchEvent) => {
-        if (e.touches.length === 1) {
-            const touch = e.touches[0];
-            const { x, y } = getMousePosition(e);
-            const gridX = Math.floor(x - RULER_SIZE);
-            const gridY = Math.floor(y - RULER_SIZE);
-
-            // CLASSIFY TOOL: Instant vs Continuous
-            // Continuous: Brush, Select, Text, Rows, Cols (Drag to operate/place)
-            // Instant: Fill, Eyedropper, Replace (Click to operate)
-            const continuousTools = ['brush', 'select', 'text', 'fill-row', 'fill-column'];
-            const isInstantTool = !continuousTools.includes(activeTool) && !floatingSelection;
-
-            if (isInstantTool) {
-                // DEFER ACTION: Wait for clean release (Tap-to-Execute)
-                touchMode.current = 'paint'; // Use paint mode for single finger tracking
-                pendingTapRef.current = { x, y, gridX, gridY, time: Date.now() };
-            } else {
-                // CONTINUOUS ACTION: Start immediately
-                touchMode.current = 'paint';
-                handlePointerDown(e as any);
-            }
-
-        } else if (e.touches.length === 2) {
+        // SINGLE TOUCH is handled natively by PointerEvents (onPointerDown)
+        // We only intercept 2-finger touches for GestureDetector
+        if (e.touches.length === 2) {
             touchMode.current = 'detecting'; // Start in detecting mode
             if (e.cancelable) e.preventDefault();
-
-            // CANCEL PENDING TAP: If second finger lands, it's a gesture, not a tap
-            pendingTapRef.current = null;
 
             const info = getPinchInfo(e);
             if (info) {
@@ -824,22 +909,17 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 }
             }
 
-            // ABORT PAINT: If we started drawing with the first finger (stray dot), cancel it!
+            // ABORT PAINT: If we started drawing with the first finger (via PointerEvents), cancel it!
             setIsDrawing(false);
             setPaintedCells(new Set()); // Discard pending pixels
             setHoveredCell(null);
 
-            // ABORT SELECTION: If we started selecting, cancel it too!
-            if (activeTool === 'select') {
-                onSelectionChange(null);
-            }
+
         }
     };
 
     const handleTouchMove = (e: React.TouchEvent) => {
-        if (touchMode.current === 'paint') {
-            handlePointerMove(e);
-        } else if ((touchMode.current === 'detecting' || touchMode.current === 'zooming' || touchMode.current === 'panning') && e.touches.length === 2) {
+        if ((touchMode.current === 'detecting' || touchMode.current === 'zooming' || touchMode.current === 'panning') && e.touches.length === 2) {
             e.preventDefault(); // Critical to prevent browser zoom/pan
             const container = containerRef.current;
             if (!container || pinchDistRef.current === null || !lastPinchCenter.current) return;
@@ -922,10 +1002,6 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     };
 
     const handleTouchEnd = (e: React.TouchEvent) => {
-        if (touchMode.current === 'paint') {
-            handlePointerUp(e);
-        }
-
         if (e.touches.length === 0) {
             // Drop locks
             touchMode.current = 'none';
@@ -940,39 +1016,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     const handleTouchMove_Native = (e: TouchEvent) => {
         const TAP_TOLERANCE = 5; // px
 
-        if (touchMode.current === 'paint') {
-            // CHECK MOVEMENT FOR PENDING TAP
-            if (pendingTapRef.current) {
-                const { x, y } = getMousePosition(e as any); // Safe cast for helper
-                // Note: getMousePosition returns SVG coords. 
-                // We should ideally check screen movement for tap tolerance to be zoom-independent,
-                // but checking grid movement is "okay" if we are careful. 
-                // Better: Check clientX/Y delta!
-                const t = e.touches[0];
-                // We didn't store initial clientX/Y in pendingTap, let's just abort if we move significantly in GRID coords?
-                // Actually, let's be strict. If you drag, it's not a tap.
-
-                // If we had the initial screen coords we could do: dist(start, current) > 10px
-                // Since we only stored converted coords, let's verify if grid changed significantly?
-                // Or better, just utilize the 'brush' logic: 'handleMouseMove' will be called?
-                // No, we SKIPPED handleMouseDown for instant tools, so handleMouseMove might be weird.
-                // Let's just invalidate if we move too far.
-                const dx = Math.abs(x - pendingTapRef.current.x);
-                const dy = Math.abs(y - pendingTapRef.current.y);
-
-                // 10 "Screen Pixels" roughly translates to 10 / Zoom "SVG Units".
-                // Let's use a rough heuristic: if we move > 0.5 grid units, it's a drag?
-                if (dx > 0.5 || dy > 0.5) {
-                    pendingTapRef.current = null;
-                }
-                return;
-            }
-
-            handlePointerMove(e as any);
-        } else if ((touchMode.current === 'detecting' || touchMode.current === 'zooming' || touchMode.current === 'panning') && e.touches.length === 2) {
-            // CANCEL PENDING TAP
-            pendingTapRef.current = null;
-
+        if ((touchMode.current === 'detecting' || touchMode.current === 'zooming' || touchMode.current === 'panning') && e.touches.length === 2) {
             if (e.cancelable) e.preventDefault();
             const container = containerRef.current;
             if (!container || pinchDistRef.current === null || !lastPinchCenter.current) return;
@@ -1045,23 +1089,10 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     };
 
     const handleTouchEnd_Native = (e: TouchEvent) => {
-        if (touchMode.current === 'paint') {
-            // EXECUTE PENDING TAP
-            if (pendingTapRef.current) {
-                // If we are here, we haven't moved significantly or cancelled
-                onCanvasClick(pendingTapRef.current.gridX, pendingTapRef.current.gridY, false);
-                pendingTapRef.current = null;
-            } else {
-                // Since this is native touch end, we must cast or ensure compatibility if we pass it
-                handlePointerUp(e as any);
-            }
-        }
-
         if (e.touches.length === 0) {
             touchMode.current = 'none';
             pinchDistRef.current = null;
             lastPinchCenter.current = null;
-            pendingTapRef.current = null; // Cleanup
         } else if (e.touches.length < 2 && (touchMode.current === 'detecting' || touchMode.current === 'zooming' || touchMode.current === 'panning')) {
             touchMode.current = 'none';
         }
@@ -1401,6 +1432,7 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 onPointerMove={handlePointerMove}
                 onPointerUp={handlePointerUp}
                 onPointerLeave={handlePointerLeave}
+                onPointerCancel={handlePointerCancel}
                 data-role="background"
             >
                 <svg
