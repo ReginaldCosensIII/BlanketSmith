@@ -62,6 +62,9 @@ Deno.serve(async (req: Request) => {
             category = category.toLowerCase();
 
             // 2. Select User Template
+            console.log("Processing submission for:", category);
+            console.log("Attempting to render category:", category);
+
             let userTemplate;
             const name = (record.full_name || record.name || 'Maker').split(' ')[0]; // First name or fallback
 
@@ -88,6 +91,7 @@ Deno.serve(async (req: Request) => {
             // 3. Send User Email
             if (record.email) {
                 try {
+                    console.log("Template generated successfully");
                     console.log(`Sending User Email (${category}) to: ${record.email}`);
                     await sendEmail(record.email, userTemplate.subject, userTemplate.html);
                 } catch (userErr: any) {

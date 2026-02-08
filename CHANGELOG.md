@@ -44,6 +44,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Added Dual-Send logic: Users receive confirmation, Admins receive alert with full metadata.
     - Normalized submission categories for consistent handling.
 
+- **Email Fidelity Upgrade (feat/email-fidelity-upgrade)**:
+    - **High-Fidelity Templates**: Migrated React email components to Edge Function `templates.ts` for 1:1 visual parity.
+    - **Cinematic Design**: Implemented dark/light mode support, absolute asset paths, and responsive mobile layouts.
+    - **Social Footer**: Standardized two-row social link layout.
+    - **Reliability**: Fixed 503 boot crashes by ensuring all template functions are properly exported.
+
 - **Palette System Refinement (GEN-004)**:
     - **Feature:** Implemented "Global Search" in Yarn Browser (searches all brands).
     - **Feature:** Added "Clear All" button to Yarn Palette.
