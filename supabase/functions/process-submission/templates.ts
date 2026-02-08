@@ -38,8 +38,8 @@ function getEmailHeaderHTML(): string {
     <table width="100%" cellpadding="0" cellspacing="0" class="email-header" style="background-color: #ffffff; background-image: radial-gradient(ellipse 400px 300px at 0% 0%, rgba(124, 42, 232, 0.15) 0%, transparent 70%), radial-gradient(ellipse 400px 300px at 100% 100%, rgba(14, 200, 252, 0.12) 0%, transparent 70%), linear-gradient(to right, rgba(100, 116, 139, 0.04) 1px, transparent 1px), linear-gradient(to bottom, rgba(100, 116, 139, 0.04) 1px, transparent 1px); background-size: 100% 100%, 100% 100%, 24px 24px, 24px 24px;">
       <tr>
         <td align="center" style="padding: 40px 20px 40px;">
-          <img src="${ASSET_BASE}vertical-logo-slogan.svg" class="logo-light" alt="BlanketSmith" width="180" style="display: block; max-width: 180px; height: auto;" />
-          <img src="${ASSET_BASE}vertical-logo-slogan-white.svg" class="logo-dark" alt="BlanketSmith" width="180" style="display: none; max-width: 180px; height: auto;" />
+          <img src="${ASSET_BASE}vertical-logo-slogan.png" class="logo-light" alt="BlanketSmith" width="180" style="display: block; max-width: 180px; height: auto;" />
+          <img src="${ASSET_BASE}vertical-logo-slogan-white.png" class="logo-dark" alt="BlanketSmith" width="180" style="display: none; max-width: 180px; height: auto;" />
         </td>
       </tr>
     </table>
@@ -56,8 +56,8 @@ function getEmailFooterHTML(): string {
           <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
             <tr>
               <td align="center">
-                <img src="${ASSET_BASE}vertical-logo-slogan.svg" class="logo-light" alt="BlanketSmith" width="160" style="display: block; max-width: 160px; height: auto;" />
-                <img src="${ASSET_BASE}vertical-logo-slogan-white.svg" class="logo-dark" alt="BlanketSmith" width="160" style="display: none; max-width: 160px; height: auto;" />
+                <img src="${ASSET_BASE}vertical-logo-slogan.png" class="logo-light" alt="BlanketSmith" width="160" style="display: block; max-width: 160px; height: auto;" />
+                <img src="${ASSET_BASE}vertical-logo-slogan-white.png" class="logo-dark" alt="BlanketSmith" width="160" style="display: none; max-width: 160px; height: auto;" />
               </td>
             </tr>
           </table>
@@ -102,7 +102,7 @@ function getEmailFooterHTML(): string {
                   <a href="#" class="footer-link" style="color: #64748b; text-decoration: underline;">Terms of Service</a>
                 </p>
                 <p class="footer-text" style="color: #64748b; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0;">
-                  Made with <img src="${ASSET_BASE}favicon-badge.svg" alt="love" width="16" height="16" style="display: inline-block; vertical-align: middle;" /> for the community
+                  Made with <img src="${ASSET_BASE}favicon-badge.png" alt="love" width="16" height="16" style="display: inline-block; vertical-align: middle;" /> for the community
                 </p>
                 <p class="footer-text" style="color: #64748b; font-size: 11px; font-family: Inter, system-ui, sans-serif; margin: 12px 0 0;">
                   © ${year} BlanketSmith. All rights reserved.
