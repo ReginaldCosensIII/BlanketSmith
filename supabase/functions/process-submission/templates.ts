@@ -250,8 +250,11 @@ export function getCinematicShellHTML(content: string, isDarkMode: boolean = fal
         @media (prefers-color-scheme: dark) {
           .email-body { background-color: #0f172a !important; color: #e2e8f0 !important; }
           .email-card { background-color: #1e293b !important; border-color: #334155 !important; }
-          .logo-light { display: none !important; }
-          .logo-dark { display: block !important; }
+          
+          /* Robust Logo Swapping for Dark Mode */
+          .logo-light { display: none !important; width: 0 !important; height: 0 !important; overflow: hidden !important; visibility: hidden !important; }
+          .logo-dark { display: block !important; width: auto !important; height: auto !important; overflow: visible !important; visibility: visible !important; }
+
           .text-primary { color: #e2e8f0 !important; }
           .text-secondary { color: #94a3b8 !important; }
           
@@ -265,6 +268,12 @@ export function getCinematicShellHTML(content: string, isDarkMode: boolean = fal
               linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px) !important;
           }
         }
+
+        /* Outlook.com / Office 365 Dark Mode Attribute Targeting */
+        [data-ogsc] .logo-light, [data-ogsc] .logo-light * { display: none !important; width: 0 !important; height: 0 !important; }
+        [data-ogsc] .logo-dark, [data-ogsc] .logo-dark * { display: block !important; width: auto !important; height: auto !important; }
+        [data-ogsc] .email-body { background-color: #0f172a !important; color: #e2e8f0 !important; }
+
         
         /* Mobile Optimizations */
         @media screen and (max-width: 600px) {
