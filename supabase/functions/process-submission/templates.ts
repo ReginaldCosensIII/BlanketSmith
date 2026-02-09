@@ -47,7 +47,7 @@ export function getEmailHeaderHTML(): string {
           <!-- Horizontal Logo: 260px width -->
           <img src="${ASSET_BASE}horizontal-logo.png" class="logo-light" alt="BlanketSmith" width="260" style="display: block; max-width: 260px; height: auto;" />
           <!-- Dark Mode: Use the WHITE version -->
-          <img src="${ASSET_BASE}horizontal-logo-white.png" class="logo-dark" alt="BlanketSmith" width="260" style="display: none; max-width: 260px; height: auto;" />
+          <img src="${ASSET_BASE}horizontal-logo-white.png?v=5" class="logo-dark" alt="BlanketSmith" width="260" style="display: none; max-width: 260px; height: auto; border: 0;" />
         </td>
       </tr>
     </table>
@@ -289,7 +289,7 @@ export function getCinematicShellHTML(content: string, isDarkMode: boolean = fal
 
               <!-- Main Content Area -->
               <tr>
-                <td class="email-content" style="padding: 40px 32px;">
+                <td class="email-content" style="padding: 0 32px 40px;">
                   ${content}
                 </td>
               </tr>
