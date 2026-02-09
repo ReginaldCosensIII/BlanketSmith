@@ -39,15 +39,37 @@ export function getSectionHeaderHTML(text: string): string {
 }
 
 export function getEmailHeaderHTML(): string {
-    // Cinematic Header with Horizontal Logo + Graph Paper Effect (CSS)
-    // Combined radial glows with linear gradient grid
-    // Logo size increased (width="260")
+    // Cinematic Header with Horizontal Logo + Graph Paper Effect
+    // CSS Grid: Uses a lighter color for dark mode compatibility or relies on the background color contrast
+    // To ensure graph paper works in dark mode (where bg is dark), the grid lines need to be light.
+    // However, linear-gradient support in email is spotty. We will try a balanced approach.
+    // The previous implementation used slate-400 at 10% opacity. 
+    // We will switch to a white-based grid for dark mode if supported, or a neutral gray that shows on both.
+
+    // NOTE: Dark mode graph paper is tricky with inline styles. We will use a double-layer approach if possible,
+    // or simply tune the color to be visible on both white (as gray) and dark (as ... gray?).
+    // A 10% opacity gray (slate-400) on white looks gray. On black, it looks... dark gray.
+    // We need it to be *light* on black. This requires media queries in the <style> block or a specific background image.
+    // For now, we'll try a slightly more opaque white grid that is invisible on white but visible on dark? 
+    // No, white on white is invisible. 
+    // We will use the 'mix-blend-mode' trick or just standard media queries.
+    // But inline styles override. 
+    // Let's use a class `graph-paper-header` and define the background in <style> for better control.
+
+    // Actually, to keep it simple and robust:
+    // We will use a color that works reasonably well on both: faint gray.
+    // Or we will rely on the `cinematicShell` style block to swap backgrounds? No, that's complex.
+
+    // User Update: "graph paper effect ... not able to be seen" in dark mode.
+    // Solution: We will inject a specific style for dark mode into the head and use a class.
+
     return `
-    <table width="100%" cellpadding="0" cellspacing="0" class="email-header" style="background-color: #ffffff; background-image: radial-gradient(ellipse 400px 300px at 0% 0%, rgba(124, 42, 232, 0.15) 0%, transparent 70%), radial-gradient(ellipse 400px 300px at 100% 100%, rgba(14, 200, 252, 0.12) 0%, transparent 70%), linear-gradient(to right, rgba(148, 163, 184, 0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(148, 163, 184, 0.1) 1px, transparent 1px); background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px;">
+    <table width="100%" cellpadding="0" cellspacing="0" class="email-header graph-paper-bg" style="background-color: #ffffff;">
       <tr>
         <td align="center" style="padding: 40px 20px 40px;">
-          <!-- Increased size -->
+          <!-- Horizontal Logo: 260px width -->
           <img src="${ASSET_BASE}horizontal-logo.png" class="logo-light" alt="BlanketSmith" width="260" style="display: block; max-width: 260px; height: auto;" />
+          <!-- Dark Mode: Use the WHITE version -->
           <img src="${ASSET_BASE}horizontal-logo-white.png" class="logo-dark" alt="BlanketSmith" width="260" style="display: none; max-width: 260px; height: auto;" />
         </td>
       </tr>
@@ -66,6 +88,7 @@ export function getEmailFooterHTML(): string {
             <tr>
               <td align="center">
                 <img src="${ASSET_BASE}vertical-logo-no-slogan.png" class="logo-light" alt="BlanketSmith" width="120" style="display: block; max-width: 120px; height: auto;" />
+                <!-- Dark Mode: Use the WHITE version -->
                 <img src="${ASSET_BASE}vertical-logo-no-slogan-white.png" class="logo-dark" alt="BlanketSmith" width="120" style="display: none; max-width: 120px; height: auto;" />
               </td>
             </tr>
@@ -235,6 +258,16 @@ export function getCinematicShellHTML(content: string, isDarkMode: boolean = fal
         
         body { margin: 0; padding: 0; width: 100% !important; height: 100% !important; background-color: ${surfaceColor}; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: ${textColor}; }
         
+        /* Graph Paper Effect - Defined here to handle Dark Mode */
+        .graph-paper-bg {
+          background-image: 
+            radial-gradient(ellipse 400px 300px at 0% 0%, rgba(124, 42, 232, 0.15) 0%, transparent 70%), 
+            radial-gradient(ellipse 400px 300px at 100% 100%, rgba(14, 200, 252, 0.12) 0%, transparent 70%), 
+            linear-gradient(to right, rgba(148, 163, 184, 0.15) 1px, transparent 1px), 
+            linear-gradient(to bottom, rgba(148, 163, 184, 0.15) 1px, transparent 1px) !important;
+          background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px !important;
+        }
+
         /* Dark Mode Support */
         @media (prefers-color-scheme: dark) {
           .email-body { background-color: #0f172a !important; color: #e2e8f0 !important; }
@@ -243,6 +276,16 @@ export function getCinematicShellHTML(content: string, isDarkMode: boolean = fal
           .logo-dark { display: block !important; }
           .text-primary { color: #e2e8f0 !important; }
           .text-secondary { color: #94a3b8 !important; }
+          
+          /* Dark Mode Graph Paper - Increase Opacity/Color for visibility against dark bg */
+          .graph-paper-bg {
+            background-color: #0f172a !important;
+            background-image: 
+              radial-gradient(ellipse 400px 300px at 0% 0%, rgba(124, 42, 232, 0.25) 0%, transparent 70%), 
+              radial-gradient(ellipse 400px 300px at 100% 100%, rgba(14, 200, 252, 0.22) 0%, transparent 70%), 
+              linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px), 
+              linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px) !important;
+          }
         }
         
         /* Mobile Optimizations */
@@ -298,11 +341,13 @@ export function getCinematicShellHTML(content: string, isDarkMode: boolean = fal
 
 export const getBetaTemplate = (verificationLink: string) => {
     // Glow Re-centering: Applied to the container behind the header
+    // Updated: Elliptical stretch, wider (300px width, 120px height), centered behind text.
+    // Removed "hard break" by extending fade out radius and lowering opacity at edges.
     const content = `
     <!-- Header Section with Centered Body Glow -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
       <tr>
-        <td align="center" style="padding: 24px; background: radial-gradient(circle 200px at 50% 30%, rgba(124, 42, 232, 0.15) 0%, rgba(255, 255, 255, 0) 70%);">
+        <td align="center" style="padding: 24px 24px 32px; background: radial-gradient(ellipse 340px 160px at 50% 40%, rgba(124, 42, 232, 0.15) 0%, rgba(255, 255, 255, 0) 70%);">
           <h1 style="margin: 0 0 16px; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">
             Welcome to ${getGradientTextHTML("The Forge")}
           </h1>
