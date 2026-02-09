@@ -6,7 +6,7 @@ const ASSET_BASE = "https://blanket-smith-landing-page.vercel.app/email-assets/"
 // --- Helper Components ---
 
 export function getEmailButtonHTML(text: string, href: string): string {
-    return `
+  return `
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr>
         <td align="center" style="padding: 16px 0;">
@@ -20,12 +20,12 @@ export function getEmailButtonHTML(text: string, href: string): string {
 }
 
 export function getGradientTextHTML(text: string): string {
-    // New Trip-Color Gradient: Purple -> Mid Blue -> Cyan
-    return `<span class="gradient-text" style="background: linear-gradient(135deg, #7C2AE8 0%, #3B82F6 50%, #0EC8FC 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: #0EC8FC;">${text}</span>`;
+  // New Trip-Color Gradient: Purple -> Mid Blue -> Cyan
+  return `<span class="gradient-text" style="background: linear-gradient(135deg, #7C2AE8 0%, #3B82F6 50%, #0EC8FC 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: #0EC8FC;">${text}</span>`;
 }
 
 export function getSectionHeaderHTML(text: string): string {
-    return `
+  return `
     <table width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 24px;">
         <tr>
             <td align="center" style="padding: 24px 0; background: radial-gradient(50% 50% at 50% 50%, rgba(124, 42, 232, 0.1) 0%, rgba(255, 255, 255, 0) 100%);">
@@ -39,14 +39,28 @@ export function getSectionHeaderHTML(text: string): string {
 }
 
 export function getEmailHeaderHTML(): string {
-    // Cinematic Header with Horizontal Logo + Graph Paper Effect (CSS)
-    // Combined radial glows with linear gradient grid
-    return `
-    <table width="100%" cellpadding="0" cellspacing="0" class="email-header" style="background-color: #ffffff; background-image: radial-gradient(ellipse 400px 300px at 0% 0%, rgba(124, 42, 232, 0.15) 0%, transparent 70%), radial-gradient(ellipse 400px 300px at 100% 100%, rgba(14, 200, 252, 0.12) 0%, transparent 70%), linear-gradient(to right, rgba(148, 163, 184, 0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(148, 163, 184, 0.1) 1px, transparent 1px); background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px;">
+  // Cinematic Header with Horizontal Logo + Graph Paper Effect
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" class="email-header graph-paper-bg" style="background-color: #ffffff;">
       <tr>
         <td align="center" style="padding: 40px 20px 40px;">
-          <img src="${ASSET_BASE}horizontal-logo.png" class="logo-light" alt="BlanketSmith" width="220" style="display: block; max-width: 220px; height: auto;" />
-          <img src="${ASSET_BASE}horizontal-logo-white.png" class="logo-dark" alt="BlanketSmith" width="220" style="display: none; max-width: 220px; height: auto;" />
+          <!-- Nested Table for Better Client Compatibility (Outlook) -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 260px;">
+            <tr>
+              <td align="center">
+                <!-- Light Mode Wrapper -->
+                <div class="light-img-box">
+                   <img src="${ASSET_BASE}horizontal-logo.png" alt="BlanketSmith" width="260" style="display: block; max-width: 260px; height: auto;" />
+                </div>
+                <!-- Dark Mode Wrapper (Hidden by default) -->
+                <!--[if !mso]><!-->
+                <div class="dark-img-box">
+                   <img src="https://blanket-smith-landing-page.vercel.app/email-assets/horizontal-logo-white.png?v=8" alt="BlanketSmith" width="260" style="display: block; max-width: 260px; height: auto; border: 0;" />
+                </div>
+                <!--<![endif]-->
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
     </table>
@@ -54,17 +68,25 @@ export function getEmailHeaderHTML(): string {
 }
 
 export function getEmailFooterHTML(): string {
-    const year = new Date().getFullYear();
-    return `
+  const year = new Date().getFullYear();
+  return `
     <table width="100%" cellpadding="0" cellspacing="0" class="email-footer" style="background-color: #f8fafc; border-top: 1px solid #e2e8f0;">
       <tr>
         <td style="padding: 32px 20px 24px;">
-          <!-- Logo - Left Aligned -->
+          <!-- Logo - Centered - Vertical No Slogan -->
           <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
             <tr>
-              <td align="left">
-                <img src="${ASSET_BASE}horizontal-logo.png" class="logo-light" alt="BlanketSmith" width="160" style="display: block; max-width: 160px; height: auto;" />
-                <img src="${ASSET_BASE}horizontal-logo-white.png" class="logo-dark" alt="BlanketSmith" width="160" style="display: none; max-width: 160px; height: auto;" />
+              <td align="center">
+                <!-- Light Mode Wrapper -->
+                <div class="light-img-box">
+                  <img src="${ASSET_BASE}vertical-logo-no-slogan.png" alt="BlanketSmith" width="120" style="display: block; max-width: 120px; height: auto;" />
+                </div>
+                <!-- Dark Mode Wrapper -->
+                <!--[if !mso]><!-->
+                <div class="dark-img-box">
+                  <img src="${ASSET_BASE}PNG/dark-version/Vetical-Lockup-No-Slogan-PNG.png" alt="BlanketSmith" width="120" style="display: block; max-width: 120px; height: auto;" />
+                </div>
+                 <!--<![endif]-->
               </td>
             </tr>
           </table>
@@ -109,8 +131,8 @@ export function getEmailFooterHTML(): string {
                   <a href="#" class="footer-link" style="color: #64748b; text-decoration: underline;">Terms of Service</a>
                 </p>
                 <p class="footer-text" style="color: #64748b; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0;">
-                  <!-- Use same heart icon for both modes -->
-                  Made with <img src="${ASSET_BASE}favicon-heart.png" alt="love" width="16" height="16" style="display: inline-block; vertical-align: middle;" /> for the community
+                  <!-- Single Asset for Heart (White/Standard Version) -->
+                  Made with <img src="${ASSET_BASE}favicon-heart-v2.png" alt="love" width="16" height="16" style="display: inline-block; vertical-align: middle;" /> for the community
                 </p>
                 <p class="footer-text" style="color: #64748b; font-size: 11px; font-family: Inter, system-ui, sans-serif; margin: 12px 0 0;">
                   © ${year} BlanketSmith. All rights reserved.
@@ -125,7 +147,7 @@ export function getEmailFooterHTML(): string {
 }
 
 export function getEmailFeatureCardHTML(title: string, description: string, iconUrl: string): string {
-    return `
+  return `
     <td class="feature-card-wrapper" valign="top" style="padding: 8px;">
       <div class="feature-card" style="background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px; height: 160px; box-sizing: border-box;">
         <!-- Added Glow Effect to Icon Container -->
@@ -140,8 +162,9 @@ export function getEmailFeatureCardHTML(title: string, description: string, icon
 }
 
 export function getInfoBoxHTML(title: string, description: string, iconUrl: string = `${ASSET_BASE}icons/lightbulb.png`): string {
-    return `
-    <div class="info-box" style="background-color: #f1f5f9; border-radius: 12px; padding: 20px; margin-top: 24px; border-left: 4px solid #7C2AE8;">
+  // Styling Updates: Gradient border and icon background
+  return `
+    <div class="info-box" style="background-color: #f1f5f9; border-radius: 12px; padding: 20px; margin-top: 24px; border-left: 4px solid #7C2AE8; border-image: linear-gradient(to bottom, #7C2AE8, #3B82F6) 1 100%;">
         <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
                 <td width="52" valign="top" style="padding-right: 16px;">
@@ -151,6 +174,7 @@ export function getInfoBoxHTML(title: string, description: string, iconUrl: stri
                     </div>
                 </td>
                 <td valign="top">
+                    <!-- Title with Gradient Color if desired, kept dark for readability but could change -->
                     <p class="info-title" style="margin: 0 0 8px; font-size: 15px; font-weight: 600; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">${title}</p>
                     <p class="info-desc" style="margin: 0; font-size: 14px; line-height: 1.6; font-family: Inter, system-ui, sans-serif; color: #64748b;">${description}</p>
                 </td>
@@ -161,33 +185,33 @@ export function getInfoBoxHTML(title: string, description: string, iconUrl: stri
 }
 
 export function getEmailProgressRailHTML(currentStep: number): string {
-    const steps = [
-        { label: "Sign Up", id: 1 },
-        { label: "Verification", id: 2 },
-        { label: "Beta Access", id: 3 },
-        { label: "The Forge", id: 4 },
-    ];
+  const steps = [
+    { label: "Sign Up", id: 1 },
+    { label: "Verification", id: 2 },
+    { label: "Beta Access", id: 3 },
+    { label: "The Forge", id: 4 },
+  ];
 
-    let stepsHTML = "";
+  let stepsHTML = "";
 
-    steps.forEach((step, index) => {
-        const isActive = step.id === currentStep;
-        const isCompleted = step.id < currentStep;
+  steps.forEach((step, index) => {
+    const isActive = step.id === currentStep;
+    const isCompleted = step.id < currentStep;
 
-        let circleStyle = `width: 24px; height: 24px; border-radius: 50%; display: inline-block; vertical-align: middle; text-align: center; line-height: 24px; font-size: 12px; font-weight: 600; font-family: Inter, sans-serif; margin-bottom: 8px;`;
+    let circleStyle = `width: 24px; height: 24px; border-radius: 50%; display: inline-block; vertical-align: middle; text-align: center; line-height: 24px; font-size: 12px; font-weight: 600; font-family: Inter, sans-serif; margin-bottom: 8px;`;
 
-        if (isActive) {
-            // Updated to use brand gradient
-            circleStyle += `background: linear-gradient(135deg, #7C2AE8 0%, #3B82F6 50%, #0EC8FC 100%); color: #ffffff; box-shadow: 0 0 0 4px rgba(124, 42, 232, 0.2);`;
-        } else if (isCompleted) {
-            circleStyle += `background-color: #10b981; color: #ffffff;`;
-        } else {
-            circleStyle += `background-color: #e2e8f0; color: #94a3b8;`;
-        }
+    if (isActive) {
+      // Updated to use brand gradient
+      circleStyle += `background: linear-gradient(135deg, #7C2AE8 0%, #3B82F6 50%, #0EC8FC 100%); color: #ffffff; box-shadow: 0 0 0 4px rgba(124, 42, 232, 0.2);`;
+    } else if (isCompleted) {
+      circleStyle += `background-color: #10b981; color: #ffffff;`;
+    } else {
+      circleStyle += `background-color: #e2e8f0; color: #94a3b8;`;
+    }
 
-        const labelColor = isActive ? "#1e293b" : isCompleted ? "#059669" : "#94a3b8";
+    const labelColor = isActive ? "#1e293b" : isCompleted ? "#059669" : "#94a3b8";
 
-        stepsHTML += `
+    stepsHTML += `
         <td align="center" width="25%">
             <div style="${circleStyle}">
                 ${isCompleted ? "✓" : step.id}
@@ -197,9 +221,9 @@ export function getEmailProgressRailHTML(currentStep: number): string {
             </div>
         </td>
         `;
-    });
+  });
 
-    return `
+  return `
     <table width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
         <tr>
             ${stepsHTML}
@@ -209,37 +233,78 @@ export function getEmailProgressRailHTML(currentStep: number): string {
 }
 
 export function getCinematicShellHTML(content: string, isDarkMode: boolean = false, isMobile: boolean = false): string {
-    // Modern color palette & variables
-    const bgColor = isDarkMode ? "#0f172a" : "#ffffff";
-    const textColor = isDarkMode ? "#e2e8f0" : "#1e293b";
-    const surfaceColor = isDarkMode ? "#1e293b" : "#f8fafc";
+  // Modern color palette & variables
+  const bgColor = isDarkMode ? "#0f172a" : "#ffffff";
+  const textColor = isDarkMode ? "#e2e8f0" : "#1e293b";
+  const surfaceColor = isDarkMode ? "#1e293b" : "#f8fafc";
 
-    return `
+  return `
     <!DOCTYPE html>
     <html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
     <head>
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <meta name="x-apple-disable-message-reformatting">
+      <!-- Explicitly declare Dark Mode support -->
+      <meta name="color-scheme" content="light dark">
+      <meta name="supported-color-schemes" content="light dark">
       <title>BlanketSmith</title>
       <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap');
         
+        /* Enable Dark Mode in Email Clients */
+        /* Enable Dark Mode in Email Clients */
+        /* Note: Meta tags handle this for most clients; :root selector removed to prevent parsing errors */
+
         body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
         table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
         img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
         
         body { margin: 0; padding: 0; width: 100% !important; height: 100% !important; background-color: ${surfaceColor}; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: ${textColor}; }
         
+        /* Robust Logo Swapping via Wrappers */
+        .light-img-box { display: block !important; }
+        .dark-img-box { display: none !important; mso-hide: all; }
+
+        /* Graph Paper Effect */
+        /* Updated: Reduced opacity for softer look (0.15 -> 0.08) */
+        .graph-paper-bg {
+          background-image: 
+            radial-gradient(ellipse 400px 300px at 0% 0%, rgba(124, 42, 232, 0.15) 0%, transparent 70%), 
+            radial-gradient(ellipse 400px 300px at 100% 100%, rgba(14, 200, 252, 0.12) 0%, transparent 70%), 
+            linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px), 
+            linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px) !important;
+          background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px !important;
+        }
+
         /* Dark Mode Support */
         @media (prefers-color-scheme: dark) {
           .email-body { background-color: #0f172a !important; color: #e2e8f0 !important; }
           .email-card { background-color: #1e293b !important; border-color: #334155 !important; }
-          .logo-light { display: none !important; }
-          .logo-dark { display: block !important; }
+          
+          /* Robust Logo Swapping via Wrappers */
+          .light-img-box { display: none !important; mso-hide: all !important; font-size: 0 !important; max-height: 0 !important; line-height: 0 !important; }
+          .dark-img-box { display: block !important; overflow: visible !important; width: auto !important; height: auto !important; max-height: none !important; }
+
           .text-primary { color: #e2e8f0 !important; }
           .text-secondary { color: #94a3b8 !important; }
+          
+          /* Dark Mode Graph Paper */
+          .graph-paper-bg {
+            background-color: #0f172a !important;
+            background-image: 
+              radial-gradient(ellipse 400px 300px at 0% 0%, rgba(124, 42, 232, 0.25) 0%, transparent 70%), 
+              radial-gradient(ellipse 400px 300px at 100% 100%, rgba(14, 200, 252, 0.22) 0%, transparent 70%), 
+              linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px), 
+              linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px) !important;
+          }
         }
+
+        /* Outlook.com / Office 365 Dark Mode Attribute Targeting */
+        [data-ogsc] .light-img-box { display: none !important; mso-hide: all !important; font-size: 0 !important; max-height: 0 !important; }
+        [data-ogsc] .dark-img-box { display: block !important; overflow: visible !important; width: auto !important; height: auto !important; max-height: none !important; }
+        [data-ogsc] .email-body { background-color: #0f172a !important; color: #e2e8f0 !important; }
+
         
         /* Mobile Optimizations */
         @media screen and (max-width: 600px) {
@@ -264,7 +329,7 @@ export function getCinematicShellHTML(content: string, isDarkMode: boolean = fal
 
               <!-- Main Content Area -->
               <tr>
-                <td class="email-content" style="padding: 40px 32px;">
+                <td class="email-content" style="padding: 0 32px 40px;">
                   ${content}
                 </td>
               </tr>
@@ -293,11 +358,15 @@ export function getCinematicShellHTML(content: string, isDarkMode: boolean = fal
 // TEMPLATE EXPORTS
 
 export const getBetaTemplate = (verificationLink: string) => {
-    const content = `
-    <!-- Header Section with Body Glow -->
+  // Glow Re-centering: Applied to the container behind the header
+  // Updated: Elliptical stretch, wider (300px width, 120px height), centered behind text.
+  // Removed "hard break" by extending fade out radius and lowering opacity at edges.
+  // Updated Position: "raised and centered around the header more" -> `at 50% 30%` (higher up)
+  const content = `
+    <!-- Header Section with Centered Body Glow -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
       <tr>
-        <td align="center" style="padding: 24px; background: radial-gradient(50% 50% at 50% 50%, rgba(124, 42, 232, 0.1) 0%, rgba(255, 255, 255, 0) 100%);">
+        <td align="center" style="padding: 24px 24px 32px; background: radial-gradient(ellipse 340px 160px at 50% 30%, rgba(124, 42, 232, 0.18) 0%, rgba(255, 255, 255, 0) 70%);">
           <h1 style="margin: 0 0 16px; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">
             Welcome to ${getGradientTextHTML("The Forge")}
           </h1>
@@ -322,9 +391,9 @@ export const getBetaTemplate = (verificationLink: string) => {
 
      <!-- What Happens Next (Moved Up) -->
     ${getInfoBoxHTML(
-        "What Happens Next?",
-        "Once verified, you'll receive your Beta credentials via email within 24-48 hours. These credentials will grant you early access to The Forge where you can start creating patterns, exploring tools, and joining our community of makers."
-    )}
+    "What Happens Next?",
+    "Once verified, you'll receive your Beta credentials via email within 24-48 hours. These credentials will grant you early access to The Forge where you can start creating patterns, exploring tools, and joining our community of makers."
+  )}
 
     <!-- Verification Call to Action -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0;">
@@ -343,50 +412,50 @@ export const getBetaTemplate = (verificationLink: string) => {
       <tr>
         <td style="padding-bottom: 16px;">
           ${getEmailFeatureCardHTML(
-        "Instant Patterns",
-        "Transform your vision into precise, ready-to-use patterns in seconds.",
-        "https://blanket-smith-landing-page.vercel.app/icons/magic-wand.png"
-    )}
+    "Instant Patterns",
+    "Transform your vision into precise, ready-to-use patterns in seconds.",
+    "https://blanket-smith-landing-page.vercel.app/icons/magic-wand.png"
+  )}
         </td>
       </tr>
       <tr>
         <td style="padding-bottom: 16px;">
           ${getEmailFeatureCardHTML(
-        "Modern Interface",
-        "A beautiful, intuitive design built for the modern maker.",
-        "https://blanket-smith-landing-page.vercel.app/icons/layout.png"
-    )}
+    "Modern Interface",
+    "A beautiful, intuitive design built for the modern maker.",
+    "https://blanket-smith-landing-page.vercel.app/icons/layout.png"
+  )}
         </td>
       </tr>
       <tr>
         <td style="padding-bottom: 16px;">
           ${getEmailFeatureCardHTML(
-        "Precision Tools",
-        "Fine-tune every detail with our professional-grade editing tools.",
-        "https://blanket-smith-landing-page.vercel.app/icons/settings.png"
-    )}
+    "Precision Tools",
+    "Fine-tune every detail with our professional-grade editing tools.",
+    "https://blanket-smith-landing-page.vercel.app/icons/settings.png"
+  )}
         </td>
       </tr>
       <tr>
         <td>
           ${getEmailFeatureCardHTML(
-        "Community First",
-        "Join a growing community of passionate crafters and creators.",
-        "https://blanket-smith-landing-page.vercel.app/icons/users.png"
-    )}
+    "Community First",
+    "Join a growing community of passionate crafters and creators.",
+    "https://blanket-smith-landing-page.vercel.app/icons/users.png"
+  )}
         </td>
       </tr>
     </table>
   `;
 
-    return {
-        subject: "Welcome to The Forge",
-        html: getCinematicShellHTML(content),
-    };
+  return {
+    subject: "Welcome to The Forge",
+    html: getCinematicShellHTML(content),
+  };
 };
 
 export const getPartnershipTemplate = (name: string) => {
-    const content = `
+  const content = `
     <!-- Header Section -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
       <tr>
@@ -402,23 +471,23 @@ export const getPartnershipTemplate = (name: string) => {
     </table>
 
     ${getInfoBoxHTML(
-        "Our Team is Reviewing Your Request",
-        "We're excited to learn more about how we can collaborate. A member of our partnerships team will be in touch shortly."
-    )}
+    "Our Team is Reviewing Your Request",
+    "We're excited to learn more about how we can collaborate. A member of our partnerships team will be in touch shortly."
+  )}
     
     <div style="text-align: center; margin-top: 24px;">
         ${getEmailButtonHTML("Learn More About BlanketSmith", "#")}
     </div>
   `;
 
-    return {
-        subject: "Partnering with BlanketSmith",
-        html: getCinematicShellHTML(content)
-    };
+  return {
+    subject: "Partnering with BlanketSmith",
+    html: getCinematicShellHTML(content)
+  };
 };
 
 export const getFeedbackTemplate = (name: string) => {
-    const content = `
+  const content = `
     <!-- Header Section -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
       <tr>
@@ -434,23 +503,23 @@ export const getFeedbackTemplate = (name: string) => {
     </table>
 
     ${getInfoBoxHTML(
-        "Your Voice Matters",
-        "We truly appreciate you taking the time to share your thoughts. Your feedback helps us shape the future of BlanketSmith."
-    )}
+    "Your Voice Matters",
+    "We truly appreciate you taking the time to share your thoughts. Your feedback helps us shape the future of BlanketSmith."
+  )}
     
     <div style="text-align: center; margin-top: 24px;">
         ${getEmailButtonHTML("View Our Roadmap", "#")}
     </div>
   `;
 
-    return {
-        subject: "We've Received Your Feedback",
-        html: getCinematicShellHTML(content)
-    };
+  return {
+    subject: "We've Received Your Feedback",
+    html: getCinematicShellHTML(content)
+  };
 };
 
 export const getDefaultTemplate = (name: string, email: string, message: string) => {
-    const content = `
+  const content = `
      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
       <tr>
         <td align="center">
@@ -464,18 +533,18 @@ export const getDefaultTemplate = (name: string, email: string, message: string)
       </tr>
     </table>
      ${getInfoBoxHTML(
-        "Message Details",
-        `" ${message} " - Sent from ${email}`
-    )}
+    "Message Details",
+    `" ${message} " - Sent from ${email}`
+  )}
     `;
-    return {
-        subject: "We received your message",
-        html: getCinematicShellHTML(content)
-    };
+  return {
+    subject: "We received your message",
+    html: getCinematicShellHTML(content)
+  };
 };
 
 export const getAdminAlertTemplate = (category: string, email: string, payload: any) => {
-    const content = `
+  const content = `
      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
       <tr>
         <td align="center">
@@ -492,8 +561,8 @@ export const getAdminAlertTemplate = (category: string, email: string, payload: 
 ${JSON.stringify(payload, null, 2)}
     </pre>
     `;
-    return {
-        subject: `[Admin] New Submission: ${category}`,
-        html: getCinematicShellHTML(content)
-    };
+  return {
+    subject: `[Admin] New Submission: ${category}`,
+    html: getCinematicShellHTML(content)
+  };
 };
