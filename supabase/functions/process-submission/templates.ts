@@ -45,7 +45,7 @@ export function getEmailHeaderHTML(): string {
       <tr>
         <td align="center" style="padding: 40px 20px 40px;">
           <!-- Nested Table for Better Client Compatibility (Outlook) -->
-          <table width="100%" cellpadding="0" cellspacing="0">
+          <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 260px;">
             <tr>
               <td align="center">
                 <!-- Light Mode Wrapper -->
@@ -131,19 +131,8 @@ export function getEmailFooterHTML(): string {
                   <a href="#" class="footer-link" style="color: #64748b; text-decoration: underline;">Terms of Service</a>
                 </p>
                 <p class="footer-text" style="color: #64748b; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0;">
-                  <!-- Use same heart icon for both modes, invert for dark mode -->
-                  Made with 
-                  <!-- Light Mode Heart -->
-                  <span class="light-img-box" style="display: inline-block; vertical-align: middle;">
-                    <img src="${ASSET_BASE}favicon-heart.png" alt="love" width="16" height="16" style="display: block;" />
-                  </span>
-                  <!-- Dark Mode Heart (Inverted) -->
-                  <!--[if !mso]><!-->
-                  <span class="dark-img-box" style="display: none; mso-hide: all; vertical-align: middle;">
-                    <img src="${ASSET_BASE}favicon-heart.png" alt="love" width="16" height="16" style="display: block; filter: invert(1); -webkit-filter: invert(1);" />
-                  </span>
-                  <!--<![endif]-->
-                   for the community
+                  <!-- Single Asset for Heart (White/Standard Version) -->
+                  Made with <img src="${ASSET_BASE}favicon-heart-v2.png" alt="love" width="16" height="16" style="display: inline-block; vertical-align: middle;" /> for the community
                 </p>
                 <p class="footer-text" style="color: #64748b; font-size: 11px; font-family: Inter, system-ui, sans-serif; margin: 12px 0 0;">
                   © ${year} BlanketSmith. All rights reserved.
