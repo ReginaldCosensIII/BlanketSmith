@@ -46,8 +46,8 @@ export function getEmailHeaderHTML(): string {
         <td align="center" style="padding: 40px 20px 40px;">
           <!-- Horizontal Logo: 260px width -->
           <img src="${ASSET_BASE}horizontal-logo.png" class="logo-light" alt="BlanketSmith" width="260" style="display: block; max-width: 260px; height: auto;" />
-          <!-- Dark Mode: Use the WHITE version -->
-          <img src="${ASSET_BASE}horizontal-logo-white.png?v=5" class="logo-dark" alt="BlanketSmith" width="260" style="display: none; max-width: 260px; height: auto; border: 0;" />
+          <!-- Dark Mode: Use the explicit white asset (Hardcoded URL) -->
+          <img src="https://blanket-smith-landing-page.vercel.app/email-assets/horizontal-logo-white.png?v=6" class="logo-dark" alt="BlanketSmith" width="260" style="display: none; max-width: 260px; height: auto; border: 0;" />
         </td>
       </tr>
     </table>
