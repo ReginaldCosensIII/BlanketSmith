@@ -6,7 +6,7 @@ const ASSET_BASE = "https://blanket-smith-landing-page.vercel.app/email-assets/"
 // --- Helper Components ---
 
 export function getEmailButtonHTML(text: string, href: string): string {
-    return `
+  return `
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr>
         <td align="center" style="padding: 16px 0;">
@@ -20,12 +20,12 @@ export function getEmailButtonHTML(text: string, href: string): string {
 }
 
 export function getGradientTextHTML(text: string): string {
-    // New Trip-Color Gradient: Purple -> Mid Blue -> Cyan
-    return `<span class="gradient-text" style="background: linear-gradient(135deg, #7C2AE8 0%, #3B82F6 50%, #0EC8FC 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: #0EC8FC;">${text}</span>`;
+  // New Trip-Color Gradient: Purple -> Mid Blue -> Cyan
+  return `<span class="gradient-text" style="background: linear-gradient(135deg, #7C2AE8 0%, #3B82F6 50%, #0EC8FC 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: #0EC8FC;">${text}</span>`;
 }
 
 export function getSectionHeaderHTML(text: string): string {
-    return `
+  return `
     <table width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 24px;">
         <tr>
             <td align="center" style="padding: 24px 0; background: radial-gradient(50% 50% at 50% 50%, rgba(124, 42, 232, 0.1) 0%, rgba(255, 255, 255, 0) 100%);">
@@ -39,18 +39,18 @@ export function getSectionHeaderHTML(text: string): string {
 }
 
 export function getEmailHeaderHTML(): string {
-    // Cinematic Header with Horizontal Logo + Graph Paper Effect
-    return `
+  // Cinematic Header with Horizontal Logo + Graph Paper Effect
+  return `
     <table width="100%" cellpadding="0" cellspacing="0" class="email-header graph-paper-bg" style="background-color: #ffffff;">
       <tr>
         <td align="center" style="padding: 40px 20px 40px;">
           <!-- Light Mode Wrapper -->
-          <div class="light-img-box" style="display: block;">
+          <div class="light-img-box">
              <img src="${ASSET_BASE}horizontal-logo.png" alt="BlanketSmith" width="260" style="display: block; max-width: 260px; height: auto;" />
           </div>
           <!-- Dark Mode Wrapper (Hidden by default) -->
           <!--[if !mso]><!-->
-          <div class="dark-img-box" style="display: none; mso-hide: all; overflow: hidden; width: 0; height: 0; max-height: 0;">
+          <div class="dark-img-box">
              <img src="https://blanket-smith-landing-page.vercel.app/email-assets/horizontal-logo-white.png?v=8" alt="BlanketSmith" width="260" style="display: block; max-width: 260px; height: auto; border: 0;" />
           </div>
           <!--<![endif]-->
@@ -61,8 +61,8 @@ export function getEmailHeaderHTML(): string {
 }
 
 export function getEmailFooterHTML(): string {
-    const year = new Date().getFullYear();
-    return `
+  const year = new Date().getFullYear();
+  return `
     <table width="100%" cellpadding="0" cellspacing="0" class="email-footer" style="background-color: #f8fafc; border-top: 1px solid #e2e8f0;">
       <tr>
         <td style="padding: 32px 20px 24px;">
@@ -71,12 +71,12 @@ export function getEmailFooterHTML(): string {
             <tr>
               <td align="center">
                 <!-- Light Mode Wrapper -->
-                <div class="light-img-box" style="display: block;">
+                <div class="light-img-box">
                   <img src="${ASSET_BASE}vertical-logo-no-slogan.png" alt="BlanketSmith" width="120" style="display: block; max-width: 120px; height: auto;" />
                 </div>
                 <!-- Dark Mode Wrapper -->
                 <!--[if !mso]><!-->
-                <div class="dark-img-box" style="display: none; mso-hide: all; overflow: hidden; width: 0; height: 0; max-height: 0;">
+                <div class="dark-img-box">
                   <img src="${ASSET_BASE}PNG/dark-version/Vetical-Lockup-No-Slogan-PNG.png" alt="BlanketSmith" width="120" style="display: block; max-width: 120px; height: auto;" />
                 </div>
                  <!--<![endif]-->
@@ -140,7 +140,7 @@ export function getEmailFooterHTML(): string {
 }
 
 export function getEmailFeatureCardHTML(title: string, description: string, iconUrl: string): string {
-    return `
+  return `
     <td class="feature-card-wrapper" valign="top" style="padding: 8px;">
       <div class="feature-card" style="background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px; height: 160px; box-sizing: border-box;">
         <!-- Added Glow Effect to Icon Container -->
@@ -155,8 +155,8 @@ export function getEmailFeatureCardHTML(title: string, description: string, icon
 }
 
 export function getInfoBoxHTML(title: string, description: string, iconUrl: string = `${ASSET_BASE}icons/lightbulb.png`): string {
-    // Styling Updates: Gradient border and icon background
-    return `
+  // Styling Updates: Gradient border and icon background
+  return `
     <div class="info-box" style="background-color: #f1f5f9; border-radius: 12px; padding: 20px; margin-top: 24px; border-left: 4px solid #7C2AE8; border-image: linear-gradient(to bottom, #7C2AE8, #3B82F6) 1 100%;">
         <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
@@ -178,33 +178,33 @@ export function getInfoBoxHTML(title: string, description: string, iconUrl: stri
 }
 
 export function getEmailProgressRailHTML(currentStep: number): string {
-    const steps = [
-        { label: "Sign Up", id: 1 },
-        { label: "Verification", id: 2 },
-        { label: "Beta Access", id: 3 },
-        { label: "The Forge", id: 4 },
-    ];
+  const steps = [
+    { label: "Sign Up", id: 1 },
+    { label: "Verification", id: 2 },
+    { label: "Beta Access", id: 3 },
+    { label: "The Forge", id: 4 },
+  ];
 
-    let stepsHTML = "";
+  let stepsHTML = "";
 
-    steps.forEach((step, index) => {
-        const isActive = step.id === currentStep;
-        const isCompleted = step.id < currentStep;
+  steps.forEach((step, index) => {
+    const isActive = step.id === currentStep;
+    const isCompleted = step.id < currentStep;
 
-        let circleStyle = `width: 24px; height: 24px; border-radius: 50%; display: inline-block; vertical-align: middle; text-align: center; line-height: 24px; font-size: 12px; font-weight: 600; font-family: Inter, sans-serif; margin-bottom: 8px;`;
+    let circleStyle = `width: 24px; height: 24px; border-radius: 50%; display: inline-block; vertical-align: middle; text-align: center; line-height: 24px; font-size: 12px; font-weight: 600; font-family: Inter, sans-serif; margin-bottom: 8px;`;
 
-        if (isActive) {
-            // Updated to use brand gradient
-            circleStyle += `background: linear-gradient(135deg, #7C2AE8 0%, #3B82F6 50%, #0EC8FC 100%); color: #ffffff; box-shadow: 0 0 0 4px rgba(124, 42, 232, 0.2);`;
-        } else if (isCompleted) {
-            circleStyle += `background-color: #10b981; color: #ffffff;`;
-        } else {
-            circleStyle += `background-color: #e2e8f0; color: #94a3b8;`;
-        }
+    if (isActive) {
+      // Updated to use brand gradient
+      circleStyle += `background: linear-gradient(135deg, #7C2AE8 0%, #3B82F6 50%, #0EC8FC 100%); color: #ffffff; box-shadow: 0 0 0 4px rgba(124, 42, 232, 0.2);`;
+    } else if (isCompleted) {
+      circleStyle += `background-color: #10b981; color: #ffffff;`;
+    } else {
+      circleStyle += `background-color: #e2e8f0; color: #94a3b8;`;
+    }
 
-        const labelColor = isActive ? "#1e293b" : isCompleted ? "#059669" : "#94a3b8";
+    const labelColor = isActive ? "#1e293b" : isCompleted ? "#059669" : "#94a3b8";
 
-        stepsHTML += `
+    stepsHTML += `
         <td align="center" width="25%">
             <div style="${circleStyle}">
                 ${isCompleted ? "✓" : step.id}
@@ -214,9 +214,9 @@ export function getEmailProgressRailHTML(currentStep: number): string {
             </div>
         </td>
         `;
-    });
+  });
 
-    return `
+  return `
     <table width="100%" cellpadding="0" cellspacing="0" style="margin: 24px 0;">
         <tr>
             ${stepsHTML}
@@ -226,12 +226,12 @@ export function getEmailProgressRailHTML(currentStep: number): string {
 }
 
 export function getCinematicShellHTML(content: string, isDarkMode: boolean = false, isMobile: boolean = false): string {
-    // Modern color palette & variables
-    const bgColor = isDarkMode ? "#0f172a" : "#ffffff";
-    const textColor = isDarkMode ? "#e2e8f0" : "#1e293b";
-    const surfaceColor = isDarkMode ? "#1e293b" : "#f8fafc";
+  // Modern color palette & variables
+  const bgColor = isDarkMode ? "#0f172a" : "#ffffff";
+  const textColor = isDarkMode ? "#e2e8f0" : "#1e293b";
+  const surfaceColor = isDarkMode ? "#1e293b" : "#f8fafc";
 
-    return `
+  return `
     <!DOCTYPE html>
     <html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
     <head>
@@ -256,8 +256,8 @@ export function getCinematicShellHTML(content: string, isDarkMode: boolean = fal
         body { margin: 0; padding: 0; width: 100% !important; height: 100% !important; background-color: ${surfaceColor}; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: ${textColor}; }
         
         /* Robust Logo Swapping via Wrappers */
-        .light-img-box { display: block; }
-        .dark-img-box { display: none; mso-hide: all; }
+        .light-img-box { display: block !important; }
+        .dark-img-box { display: none !important; mso-hide: all; }
 
         /* Graph Paper Effect */
         /* Updated: Reduced opacity for softer look (0.15 -> 0.08) */
@@ -351,11 +351,11 @@ export function getCinematicShellHTML(content: string, isDarkMode: boolean = fal
 // TEMPLATE EXPORTS
 
 export const getBetaTemplate = (verificationLink: string) => {
-    // Glow Re-centering: Applied to the container behind the header
-    // Updated: Elliptical stretch, wider (300px width, 120px height), centered behind text.
-    // Removed "hard break" by extending fade out radius and lowering opacity at edges.
-    // Updated Position: "raised and centered around the header more" -> `at 50% 30%` (higher up)
-    const content = `
+  // Glow Re-centering: Applied to the container behind the header
+  // Updated: Elliptical stretch, wider (300px width, 120px height), centered behind text.
+  // Removed "hard break" by extending fade out radius and lowering opacity at edges.
+  // Updated Position: "raised and centered around the header more" -> `at 50% 30%` (higher up)
+  const content = `
     <!-- Header Section with Centered Body Glow -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
       <tr>
@@ -384,9 +384,9 @@ export const getBetaTemplate = (verificationLink: string) => {
 
      <!-- What Happens Next (Moved Up) -->
     ${getInfoBoxHTML(
-        "What Happens Next?",
-        "Once verified, you'll receive your Beta credentials via email within 24-48 hours. These credentials will grant you early access to The Forge where you can start creating patterns, exploring tools, and joining our community of makers."
-    )}
+    "What Happens Next?",
+    "Once verified, you'll receive your Beta credentials via email within 24-48 hours. These credentials will grant you early access to The Forge where you can start creating patterns, exploring tools, and joining our community of makers."
+  )}
 
     <!-- Verification Call to Action -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0;">
@@ -405,50 +405,50 @@ export const getBetaTemplate = (verificationLink: string) => {
       <tr>
         <td style="padding-bottom: 16px;">
           ${getEmailFeatureCardHTML(
-        "Instant Patterns",
-        "Transform your vision into precise, ready-to-use patterns in seconds.",
-        "https://blanket-smith-landing-page.vercel.app/icons/magic-wand.png"
-    )}
+    "Instant Patterns",
+    "Transform your vision into precise, ready-to-use patterns in seconds.",
+    "https://blanket-smith-landing-page.vercel.app/icons/magic-wand.png"
+  )}
         </td>
       </tr>
       <tr>
         <td style="padding-bottom: 16px;">
           ${getEmailFeatureCardHTML(
-        "Modern Interface",
-        "A beautiful, intuitive design built for the modern maker.",
-        "https://blanket-smith-landing-page.vercel.app/icons/layout.png"
-    )}
+    "Modern Interface",
+    "A beautiful, intuitive design built for the modern maker.",
+    "https://blanket-smith-landing-page.vercel.app/icons/layout.png"
+  )}
         </td>
       </tr>
       <tr>
         <td style="padding-bottom: 16px;">
           ${getEmailFeatureCardHTML(
-        "Precision Tools",
-        "Fine-tune every detail with our professional-grade editing tools.",
-        "https://blanket-smith-landing-page.vercel.app/icons/settings.png"
-    )}
+    "Precision Tools",
+    "Fine-tune every detail with our professional-grade editing tools.",
+    "https://blanket-smith-landing-page.vercel.app/icons/settings.png"
+  )}
         </td>
       </tr>
       <tr>
         <td>
           ${getEmailFeatureCardHTML(
-        "Community First",
-        "Join a growing community of passionate crafters and creators.",
-        "https://blanket-smith-landing-page.vercel.app/icons/users.png"
-    )}
+    "Community First",
+    "Join a growing community of passionate crafters and creators.",
+    "https://blanket-smith-landing-page.vercel.app/icons/users.png"
+  )}
         </td>
       </tr>
     </table>
   `;
 
-    return {
-        subject: "Welcome to The Forge",
-        html: getCinematicShellHTML(content),
-    };
+  return {
+    subject: "Welcome to The Forge",
+    html: getCinematicShellHTML(content),
+  };
 };
 
 export const getPartnershipTemplate = (name: string) => {
-    const content = `
+  const content = `
     <!-- Header Section -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
       <tr>
@@ -464,23 +464,23 @@ export const getPartnershipTemplate = (name: string) => {
     </table>
 
     ${getInfoBoxHTML(
-        "Our Team is Reviewing Your Request",
-        "We're excited to learn more about how we can collaborate. A member of our partnerships team will be in touch shortly."
-    )}
+    "Our Team is Reviewing Your Request",
+    "We're excited to learn more about how we can collaborate. A member of our partnerships team will be in touch shortly."
+  )}
     
     <div style="text-align: center; margin-top: 24px;">
         ${getEmailButtonHTML("Learn More About BlanketSmith", "#")}
     </div>
   `;
 
-    return {
-        subject: "Partnering with BlanketSmith",
-        html: getCinematicShellHTML(content)
-    };
+  return {
+    subject: "Partnering with BlanketSmith",
+    html: getCinematicShellHTML(content)
+  };
 };
 
 export const getFeedbackTemplate = (name: string) => {
-    const content = `
+  const content = `
     <!-- Header Section -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
       <tr>
@@ -496,23 +496,23 @@ export const getFeedbackTemplate = (name: string) => {
     </table>
 
     ${getInfoBoxHTML(
-        "Your Voice Matters",
-        "We truly appreciate you taking the time to share your thoughts. Your feedback helps us shape the future of BlanketSmith."
-    )}
+    "Your Voice Matters",
+    "We truly appreciate you taking the time to share your thoughts. Your feedback helps us shape the future of BlanketSmith."
+  )}
     
     <div style="text-align: center; margin-top: 24px;">
         ${getEmailButtonHTML("View Our Roadmap", "#")}
     </div>
   `;
 
-    return {
-        subject: "We've Received Your Feedback",
-        html: getCinematicShellHTML(content)
-    };
+  return {
+    subject: "We've Received Your Feedback",
+    html: getCinematicShellHTML(content)
+  };
 };
 
 export const getDefaultTemplate = (name: string, email: string, message: string) => {
-    const content = `
+  const content = `
      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
       <tr>
         <td align="center">
@@ -526,18 +526,18 @@ export const getDefaultTemplate = (name: string, email: string, message: string)
       </tr>
     </table>
      ${getInfoBoxHTML(
-        "Message Details",
-        `" ${message} " - Sent from ${email}`
-    )}
+    "Message Details",
+    `" ${message} " - Sent from ${email}`
+  )}
     `;
-    return {
-        subject: "We received your message",
-        html: getCinematicShellHTML(content)
-    };
+  return {
+    subject: "We received your message",
+    html: getCinematicShellHTML(content)
+  };
 };
 
 export const getAdminAlertTemplate = (category: string, email: string, payload: any) => {
-    const content = `
+  const content = `
      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
       <tr>
         <td align="center">
@@ -554,8 +554,8 @@ export const getAdminAlertTemplate = (category: string, email: string, payload: 
 ${JSON.stringify(payload, null, 2)}
     </pre>
     `;
-    return {
-        subject: `[Admin] New Submission: ${category}`,
-        html: getCinematicShellHTML(content)
-    };
+  return {
+    subject: `[Admin] New Submission: ${category}`,
+    html: getCinematicShellHTML(content)
+  };
 };
