@@ -238,17 +238,30 @@ export function getCinematicShellHTML(content: string, isDarkMode: boolean = fal
       <meta charset="utf-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <meta name="x-apple-disable-message-reformatting">
+      <!-- Explicitly declare Dark Mode support -->
+      <meta name="color-scheme" content="light dark">
+      <meta name="supported-color-schemes" content="light dark">
       <title>BlanketSmith</title>
       <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap');
         
+        /* Enable Dark Mode in Email Clients */
+        :root {
+          color-scheme: light dark;
+          supported-color-schemes: light dark;
+        }
+
         body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
         table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
         img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
         
         body { margin: 0; padding: 0; width: 100% !important; height: 100% !important; background-color: ${surfaceColor}; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: ${textColor}; }
         
-        /* Graph Paper Effect - Defined here to handle Dark Mode */
+        /* Robust Logo Swapping via Wrappers */
+        .light-img-box { display: block; }
+        .dark-img-box { display: none; mso-hide: all; }
+
+        /* Graph Paper Effect */
         /* Updated: Reduced opacity for softer look (0.15 -> 0.08) */
         .graph-paper-bg {
           background-image: 
