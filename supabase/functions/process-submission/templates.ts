@@ -20,7 +20,8 @@ export function getEmailButtonHTML(text: string, href: string): string {
 }
 
 export function getGradientTextHTML(text: string): string {
-    return `<span class="gradient-text" style="background: linear-gradient(135deg, #7C2AE8 0%, #0EC8FC 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: #0EC8FC;">${text}</span>`;
+    // New Trip-Color Gradient: Purple -> Mid Blue -> Cyan
+    return `<span class="gradient-text" style="background: linear-gradient(135deg, #7C2AE8 0%, #3B82F6 50%, #0EC8FC 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: #0EC8FC;">${text}</span>`;
 }
 
 export function getSectionHeaderHTML(text: string): string {
@@ -28,7 +29,7 @@ export function getSectionHeaderHTML(text: string): string {
     <table width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 24px;">
         <tr>
             <td align="center" style="padding: 24px 0; background: radial-gradient(50% 50% at 50% 50%, rgba(124, 42, 232, 0.1) 0%, rgba(255, 255, 255, 0) 100%);">
-                <h2 class="section-header" style="margin: 0; font-size: 24px; font-weight: 700; font-family: Poppins, system-ui, sans-serif; text-align: center; background: linear-gradient(135deg, #7C2AE8 0%, #0EC8FC 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: #7C2AE8;">
+                <h2 class="section-header" style="margin: 0; font-size: 24px; font-weight: 700; font-family: Poppins, system-ui, sans-serif; text-align: center; background: linear-gradient(135deg, #7C2AE8 0%, #3B82F6 50%, #0EC8FC 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; color: #7C2AE8;">
                   ${text}
                 </h2>
             </td>
@@ -38,9 +39,10 @@ export function getSectionHeaderHTML(text: string): string {
 }
 
 export function getEmailHeaderHTML(): string {
-    // Cinematic Header with Horizontal Logo
+    // Cinematic Header with Horizontal Logo + Graph Paper Effect (CSS)
+    // Combined radial glows with linear gradient grid
     return `
-    <table width="100%" cellpadding="0" cellspacing="0" class="email-header" style="background-color: #ffffff; background-image: radial-gradient(ellipse 400px 300px at 0% 0%, rgba(124, 42, 232, 0.15) 0%, transparent 70%), radial-gradient(ellipse 400px 300px at 100% 100%, rgba(14, 200, 252, 0.12) 0%, transparent 70%); background-size: 100% 100%, 100% 100%;">
+    <table width="100%" cellpadding="0" cellspacing="0" class="email-header" style="background-color: #ffffff; background-image: radial-gradient(ellipse 400px 300px at 0% 0%, rgba(124, 42, 232, 0.15) 0%, transparent 70%), radial-gradient(ellipse 400px 300px at 100% 100%, rgba(14, 200, 252, 0.12) 0%, transparent 70%), linear-gradient(to right, rgba(148, 163, 184, 0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(148, 163, 184, 0.1) 1px, transparent 1px); background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px;">
       <tr>
         <td align="center" style="padding: 40px 20px 40px;">
           <img src="${ASSET_BASE}horizontal-logo.png" class="logo-light" alt="BlanketSmith" width="220" style="display: block; max-width: 220px; height: auto;" />
@@ -57,10 +59,10 @@ export function getEmailFooterHTML(): string {
     <table width="100%" cellpadding="0" cellspacing="0" class="email-footer" style="background-color: #f8fafc; border-top: 1px solid #e2e8f0;">
       <tr>
         <td style="padding: 32px 20px 24px;">
-          <!-- Logo -->
+          <!-- Logo - Left Aligned -->
           <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
             <tr>
-              <td align="center">
+              <td align="left">
                 <img src="${ASSET_BASE}horizontal-logo.png" class="logo-light" alt="BlanketSmith" width="160" style="display: block; max-width: 160px; height: auto;" />
                 <img src="${ASSET_BASE}horizontal-logo-white.png" class="logo-dark" alt="BlanketSmith" width="160" style="display: none; max-width: 160px; height: auto;" />
               </td>
@@ -107,6 +109,7 @@ export function getEmailFooterHTML(): string {
                   <a href="#" class="footer-link" style="color: #64748b; text-decoration: underline;">Terms of Service</a>
                 </p>
                 <p class="footer-text" style="color: #64748b; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0;">
+                  <!-- Use same heart icon for both modes -->
                   Made with <img src="${ASSET_BASE}favicon-heart.png" alt="love" width="16" height="16" style="display: inline-block; vertical-align: middle;" /> for the community
                 </p>
                 <p class="footer-text" style="color: #64748b; font-size: 11px; font-family: Inter, system-ui, sans-serif; margin: 12px 0 0;">
@@ -125,7 +128,8 @@ export function getEmailFeatureCardHTML(title: string, description: string, icon
     return `
     <td class="feature-card-wrapper" valign="top" style="padding: 8px;">
       <div class="feature-card" style="background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 20px; height: 160px; box-sizing: border-box;">
-        <div class="feature-icon" style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; box-shadow: 0 0 12px rgba(124, 42, 232, 0.2), 0 0 20px rgba(14, 200, 252, 0.1); border: 1px solid rgba(124, 42, 232, 0.15);">
+        <!-- Added Glow Effect to Icon Container -->
+        <div class="feature-icon" style="width: 40px; height: 40px; border-radius: 10px; background: linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; box-shadow: 0 0 15px rgba(124, 42, 232, 0.3), 0 0 25px rgba(14, 200, 252, 0.15); border: 1px solid rgba(124, 42, 232, 0.15);">
           <img src="${iconUrl}" alt="${title} icon" width="20" height="20" class="feature-icon-svg" style="display: block;" />
         </div>
         <h4 class="feature-title" style="margin: 0 0 8px; font-size: 15px; font-weight: 600; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">${title}</h4>
@@ -141,7 +145,8 @@ export function getInfoBoxHTML(title: string, description: string, iconUrl: stri
         <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
                 <td width="52" valign="top" style="padding-right: 16px;">
-                    <div class="info-icon-box" style="width: 36px; height: 36px; border-radius: 8px; background: linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 12px rgba(124, 42, 232, 0.2), 0 0 20px rgba(14, 200, 252, 0.1); border: 1px solid rgba(124, 42, 232, 0.15);">
+                    <!-- Added Glow Effect to Icon Container -->
+                    <div class="info-icon-box" style="width: 36px; height: 36px; border-radius: 8px; background: linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%); display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(124, 42, 232, 0.3), 0 0 25px rgba(14, 200, 252, 0.15); border: 1px solid rgba(124, 42, 232, 0.15);">
                         <img src="${iconUrl}" alt="${title} icon" width="18" height="18" class="info-icon-svg" style="display: block;" />
                     </div>
                 </td>
@@ -172,7 +177,8 @@ export function getEmailProgressRailHTML(currentStep: number): string {
         let circleStyle = `width: 24px; height: 24px; border-radius: 50%; display: inline-block; vertical-align: middle; text-align: center; line-height: 24px; font-size: 12px; font-weight: 600; font-family: Inter, sans-serif; margin-bottom: 8px;`;
 
         if (isActive) {
-            circleStyle += `background-color: #7C2AE8; color: #ffffff; box-shadow: 0 0 0 4px rgba(124, 42, 232, 0.2);`;
+            // Updated to use brand gradient
+            circleStyle += `background: linear-gradient(135deg, #7C2AE8 0%, #3B82F6 50%, #0EC8FC 100%); color: #ffffff; box-shadow: 0 0 0 4px rgba(124, 42, 232, 0.2);`;
         } else if (isCompleted) {
             circleStyle += `background-color: #10b981; color: #ffffff;`;
         } else {
@@ -288,10 +294,10 @@ export function getCinematicShellHTML(content: string, isDarkMode: boolean = fal
 
 export const getBetaTemplate = (verificationLink: string) => {
     const content = `
-    <!-- Header Section -->
+    <!-- Header Section with Body Glow -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
       <tr>
-        <td align="center">
+        <td align="center" style="padding: 24px; background: radial-gradient(50% 50% at 50% 50%, rgba(124, 42, 232, 0.1) 0%, rgba(255, 255, 255, 0) 100%);">
           <h1 style="margin: 0 0 16px; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">
             Welcome to ${getGradientTextHTML("The Forge")}
           </h1>
