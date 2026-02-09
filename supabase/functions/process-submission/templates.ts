@@ -246,10 +246,8 @@ export function getCinematicShellHTML(content: string, isDarkMode: boolean = fal
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap');
         
         /* Enable Dark Mode in Email Clients */
-        :root {
-          color-scheme: light dark;
-          supported-color-schemes: light dark;
-        }
+        /* Enable Dark Mode in Email Clients */
+        /* Note: Meta tags handle this for most clients; :root selector removed to prevent parsing errors */
 
         body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
         table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
