@@ -41,12 +41,14 @@ export function getSectionHeaderHTML(text: string): string {
 export function getEmailHeaderHTML(): string {
     // Cinematic Header with Horizontal Logo + Graph Paper Effect (CSS)
     // Combined radial glows with linear gradient grid
+    // Logo size increased (width="260")
     return `
     <table width="100%" cellpadding="0" cellspacing="0" class="email-header" style="background-color: #ffffff; background-image: radial-gradient(ellipse 400px 300px at 0% 0%, rgba(124, 42, 232, 0.15) 0%, transparent 70%), radial-gradient(ellipse 400px 300px at 100% 100%, rgba(14, 200, 252, 0.12) 0%, transparent 70%), linear-gradient(to right, rgba(148, 163, 184, 0.1) 1px, transparent 1px), linear-gradient(to bottom, rgba(148, 163, 184, 0.1) 1px, transparent 1px); background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px;">
       <tr>
         <td align="center" style="padding: 40px 20px 40px;">
-          <img src="${ASSET_BASE}horizontal-logo.png" class="logo-light" alt="BlanketSmith" width="220" style="display: block; max-width: 220px; height: auto;" />
-          <img src="${ASSET_BASE}horizontal-logo-white.png" class="logo-dark" alt="BlanketSmith" width="220" style="display: none; max-width: 220px; height: auto;" />
+          <!-- Increased size -->
+          <img src="${ASSET_BASE}horizontal-logo.png" class="logo-light" alt="BlanketSmith" width="260" style="display: block; max-width: 260px; height: auto;" />
+          <img src="${ASSET_BASE}horizontal-logo-white.png" class="logo-dark" alt="BlanketSmith" width="260" style="display: none; max-width: 260px; height: auto;" />
         </td>
       </tr>
     </table>
@@ -59,12 +61,12 @@ export function getEmailFooterHTML(): string {
     <table width="100%" cellpadding="0" cellspacing="0" class="email-footer" style="background-color: #f8fafc; border-top: 1px solid #e2e8f0;">
       <tr>
         <td style="padding: 32px 20px 24px;">
-          <!-- Logo - Left Aligned -->
+          <!-- Logo - Centered - Vertical No Slogan -->
           <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
             <tr>
-              <td align="left">
-                <img src="${ASSET_BASE}horizontal-logo.png" class="logo-light" alt="BlanketSmith" width="160" style="display: block; max-width: 160px; height: auto;" />
-                <img src="${ASSET_BASE}horizontal-logo-white.png" class="logo-dark" alt="BlanketSmith" width="160" style="display: none; max-width: 160px; height: auto;" />
+              <td align="center">
+                <img src="${ASSET_BASE}vertical-logo-no-slogan.png" class="logo-light" alt="BlanketSmith" width="120" style="display: block; max-width: 120px; height: auto;" />
+                <img src="${ASSET_BASE}vertical-logo-no-slogan-white.png" class="logo-dark" alt="BlanketSmith" width="120" style="display: none; max-width: 120px; height: auto;" />
               </td>
             </tr>
           </table>
@@ -140,8 +142,9 @@ export function getEmailFeatureCardHTML(title: string, description: string, icon
 }
 
 export function getInfoBoxHTML(title: string, description: string, iconUrl: string = `${ASSET_BASE}icons/lightbulb.png`): string {
+    // Styling Updates: Gradient border and icon background
     return `
-    <div class="info-box" style="background-color: #f1f5f9; border-radius: 12px; padding: 20px; margin-top: 24px; border-left: 4px solid #7C2AE8;">
+    <div class="info-box" style="background-color: #f1f5f9; border-radius: 12px; padding: 20px; margin-top: 24px; border-left: 4px solid #7C2AE8; border-image: linear-gradient(to bottom, #7C2AE8, #3B82F6) 1 100%;">
         <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
                 <td width="52" valign="top" style="padding-right: 16px;">
@@ -151,6 +154,7 @@ export function getInfoBoxHTML(title: string, description: string, iconUrl: stri
                     </div>
                 </td>
                 <td valign="top">
+                    <!-- Title with Gradient Color if desired, kept dark for readability but could change -->
                     <p class="info-title" style="margin: 0 0 8px; font-size: 15px; font-weight: 600; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">${title}</p>
                     <p class="info-desc" style="margin: 0; font-size: 14px; line-height: 1.6; font-family: Inter, system-ui, sans-serif; color: #64748b;">${description}</p>
                 </td>
@@ -293,11 +297,12 @@ export function getCinematicShellHTML(content: string, isDarkMode: boolean = fal
 // TEMPLATE EXPORTS
 
 export const getBetaTemplate = (verificationLink: string) => {
+    // Glow Re-centering: Applied to the container behind the header
     const content = `
-    <!-- Header Section with Body Glow -->
+    <!-- Header Section with Centered Body Glow -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
       <tr>
-        <td align="center" style="padding: 24px; background: radial-gradient(50% 50% at 50% 50%, rgba(124, 42, 232, 0.1) 0%, rgba(255, 255, 255, 0) 100%);">
+        <td align="center" style="padding: 24px; background: radial-gradient(circle 200px at 50% 30%, rgba(124, 42, 232, 0.15) 0%, rgba(255, 255, 255, 0) 70%);">
           <h1 style="margin: 0 0 16px; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">
             Welcome to ${getGradientTextHTML("The Forge")}
           </h1>
