@@ -48,6 +48,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **High-Fidelity Templates**: Migrated React email components to Edge Function `templates.ts` for 1:1 visual parity.
     - **Cinematic Design**: Implemented dark/light mode support, absolute asset paths, and responsive mobile layouts.
     - **Social Footer**: Standardized two-row social link layout.
+    - **Asset Compatibility**: Switched to PNG assets for broad email client support (Gmail/Outlook).
+    - **Layout Refinements**: Reordered Beta Welcome email and improved section header styling.
+    - **Bug Fixes**: Resolved variable name crash and signature mismatches in email dispatcher.
     - **Reliability**: Fixed 503 boot crashes by ensuring all template functions are properly exported.
 
 - **Palette System Refinement (GEN-004)**:
