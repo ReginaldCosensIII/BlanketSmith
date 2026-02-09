@@ -68,9 +68,13 @@ Deno.serve(async (req: Request) => {
             let userTemplate;
             const name = (record.full_name || record.name || 'Maker').split(' ')[0]; // First name or fallback
 
+            // Attempt to get verification link from record or env, fallback to homepage
+            // TODO: Ensure this links to the actual Supabase verification flow if available
+            const verificationLink = record.confirmation_url || record.verification_link || "https://blanket-smith-landing-page.vercel.app/verify";
+
             switch (category) {
                 case 'beta':
-                    userTemplate = getBetaTemplate(name);
+                    userTemplate = getBetaTemplate(verificationLink);
                     break;
                 case 'partnership':
                     userTemplate = getPartnershipTemplate(name);
@@ -79,12 +83,12 @@ Deno.serve(async (req: Request) => {
                     userTemplate = getFeedbackTemplate(name);
                     break;
                 case 'contact':
-                    userTemplate = getDefaultTemplate(name);
+                    userTemplate = getDefaultTemplate(name, record.email, record.message || "No message provided");
                     break;
                 default:
                     // Safety Fallback
                     console.warn(`Unknown category '${category}' - prompting default template.`);
-                    userTemplate = getDefaultTemplate(name);
+                    userTemplate = getDefaultTemplate(name, record.email || "unknown@example.com", record.message || "No message provided");
                     break;
             }
 
@@ -94,23 +98,21 @@ Deno.serve(async (req: Request) => {
                     console.log("Template generated successfully");
                     console.log(`Sending User Email (${category}) to: ${record.email}`);
                     await sendEmail(record.email, userTemplate.subject, userTemplate.html);
+                    console.log("User Email sent successfully");
                 } catch (userErr: any) {
                     console.error("Failed to send User Email:", userErr);
-                    // Continue to Admin Alert even if user email fails? 
-                    // Yes, we want to know about the submission.
                 }
             } else {
                 console.warn("Skipping User Email: No recipient email found in record");
-                // We typically stop here if it's invalid, but for Admin Alert purposes, we might still want to notify Admin.
-                // However, the previous logic returned 200 skipped. 
-                // Let's keep the Admin Alert active even if user email is missing, so we can debug the data.
             }
 
             // 4. Send Admin Alert
             try {
-                const adminTmpl = getAdminAlertTemplate(record);
+                // Signature: (category: string, email: string, payload: any)
+                const adminTmpl = getAdminAlertTemplate(category, record.email || "no-email", record);
                 console.log(`Sending Admin Alert to info@BlanketSmith.com`);
                 await sendEmail("info@BlanketSmith.com", adminTmpl.subject, adminTmpl.html);
+                console.log("Admin Alert sent successfully");
             } catch (adminErr: any) {
                 console.error("Failed to send Admin Alert:", adminErr);
                 // If Admin fails, we should probably report error, but we've potentially already sent user email.

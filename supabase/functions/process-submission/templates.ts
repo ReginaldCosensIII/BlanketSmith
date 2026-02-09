@@ -166,8 +166,8 @@ export function getEmailProgressRailHTML(currentStep: number): string {
     let stepsHTML = "";
 
     steps.forEach((step, index) => {
-        const isActive = step.id === activeStep;
-        const isCompleted = step.id < activeStep;
+        const isActive = step.id === currentStep;
+        const isCompleted = step.id < currentStep;
 
         let circleStyle = `width: 24px; height: 24px; border-radius: 50%; display: inline-block; vertical-align: middle; text-align: center; line-height: 24px; font-size: 12px; font-weight: 600; font-family: Inter, sans-serif; margin-bottom: 8px;`;
 
