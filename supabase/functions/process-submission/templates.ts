@@ -44,10 +44,16 @@ export function getEmailHeaderHTML(): string {
     <table width="100%" cellpadding="0" cellspacing="0" class="email-header graph-paper-bg" style="background-color: #ffffff;">
       <tr>
         <td align="center" style="padding: 40px 20px 40px;">
-          <!-- Horizontal Logo: 260px width -->
-          <img src="${ASSET_BASE}horizontal-logo.png" class="logo-light" alt="BlanketSmith" width="260" style="display: block; max-width: 260px; height: auto;" />
-          <!-- Dark Mode: Use the explicit white asset (Hardcoded URL) -->
-          <img src="https://blanket-smith-landing-page.vercel.app/email-assets/horizontal-logo-white.png?v=6" class="logo-dark" alt="BlanketSmith" width="260" style="display: none; max-width: 260px; height: auto; border: 0;" />
+          <!-- Light Mode Wrapper -->
+          <div class="light-img-box" style="display: block;">
+             <img src="${ASSET_BASE}horizontal-logo.png" alt="BlanketSmith" width="260" style="display: block; max-width: 260px; height: auto;" />
+          </div>
+          <!-- Dark Mode Wrapper (Hidden by default) -->
+          <!--[if !mso]><!-->
+          <div class="dark-img-box" style="display: none; mso-hide: all; overflow: hidden; width: 0; height: 0; max-height: 0;">
+             <img src="https://blanket-smith-landing-page.vercel.app/email-assets/horizontal-logo-white.png?v=8" alt="BlanketSmith" width="260" style="display: block; max-width: 260px; height: auto; border: 0;" />
+          </div>
+          <!--<![endif]-->
         </td>
       </tr>
     </table>
@@ -64,9 +70,16 @@ export function getEmailFooterHTML(): string {
           <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
             <tr>
               <td align="center">
-                <img src="${ASSET_BASE}vertical-logo-no-slogan.png" class="logo-light" alt="BlanketSmith" width="120" style="display: block; max-width: 120px; height: auto;" />
-                <!-- Dark Mode: Use the deep-linked asset confirmed by user -->
-                <img src="${ASSET_BASE}PNG/dark-version/Vetical-Lockup-No-Slogan-PNG.png" class="logo-dark" alt="BlanketSmith" width="120" style="display: none; max-width: 120px; height: auto;" />
+                <!-- Light Mode Wrapper -->
+                <div class="light-img-box" style="display: block;">
+                  <img src="${ASSET_BASE}vertical-logo-no-slogan.png" alt="BlanketSmith" width="120" style="display: block; max-width: 120px; height: auto;" />
+                </div>
+                <!-- Dark Mode Wrapper -->
+                <!--[if !mso]><!-->
+                <div class="dark-img-box" style="display: none; mso-hide: all; overflow: hidden; width: 0; height: 0; max-height: 0;">
+                  <img src="${ASSET_BASE}PNG/dark-version/Vetical-Lockup-No-Slogan-PNG.png" alt="BlanketSmith" width="120" style="display: block; max-width: 120px; height: auto;" />
+                </div>
+                 <!--<![endif]-->
               </td>
             </tr>
           </table>
@@ -251,14 +264,14 @@ export function getCinematicShellHTML(content: string, isDarkMode: boolean = fal
           .email-body { background-color: #0f172a !important; color: #e2e8f0 !important; }
           .email-card { background-color: #1e293b !important; border-color: #334155 !important; }
           
-          /* Robust Logo Swapping for Dark Mode */
-          .logo-light { display: none !important; width: 0 !important; height: 0 !important; overflow: hidden !important; visibility: hidden !important; }
-          .logo-dark { display: block !important; width: auto !important; height: auto !important; overflow: visible !important; visibility: visible !important; }
+          /* Robust Logo Swapping via Wrappers */
+          .light-img-box { display: none !important; mso-hide: all !important; font-size: 0 !important; max-height: 0 !important; line-height: 0 !important; }
+          .dark-img-box { display: block !important; overflow: visible !important; width: auto !important; height: auto !important; max-height: none !important; }
 
           .text-primary { color: #e2e8f0 !important; }
           .text-secondary { color: #94a3b8 !important; }
           
-          /* Dark Mode Graph Paper - Increase Opacity/Color for visibility against dark bg */
+          /* Dark Mode Graph Paper */
           .graph-paper-bg {
             background-color: #0f172a !important;
             background-image: 
@@ -270,8 +283,8 @@ export function getCinematicShellHTML(content: string, isDarkMode: boolean = fal
         }
 
         /* Outlook.com / Office 365 Dark Mode Attribute Targeting */
-        [data-ogsc] .logo-light, [data-ogsc] .logo-light * { display: none !important; width: 0 !important; height: 0 !important; }
-        [data-ogsc] .logo-dark, [data-ogsc] .logo-dark * { display: block !important; width: auto !important; height: auto !important; }
+        [data-ogsc] .light-img-box { display: none !important; mso-hide: all !important; font-size: 0 !important; max-height: 0 !important; }
+        [data-ogsc] .dark-img-box { display: block !important; overflow: visible !important; width: auto !important; height: auto !important; max-height: none !important; }
         [data-ogsc] .email-body { background-color: #0f172a !important; color: #e2e8f0 !important; }
 
         
