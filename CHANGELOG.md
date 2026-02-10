@@ -13,6 +13,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - `verify_task`: Now generates Commit Messages ("Save Game") instead of PR artifacts.
     - `close_branch`: Now aggregates all commits on a branch into a single PR ("Release").
     - **Safety**: Added checks for "Major Feature" documentation and mandatory Changelog updates.
+- **Email Dark Mode Assets (fix/email-dark-mode-assets)**:
+    - **Asset Fix**: Corrected logo imports to use verified `Vetical-` filenames.
+    - **Dark Mode**: Implemented CSS-based dual-image swapping for Header and Footer logos.
+    - **Outlook Compatibility**: Added `mso-hide: all` to prevent dark mode artifacts in Outlook.
+    - **Backend Sync**: Updated `process-submission` Edge Function templates to match React component logic.
+    - **Footer Heart**: Applied CSS filter (`brightness(0) invert(1)`) to the "Made with love" icon for dark mode visibility.
 - **Mobile Pointer Polish (fix/mobile-pointer-polish)**:
     - **Native Pointer Events**: Migrated `PixelGridEditor` to use Pointer Events, fixing "ghost hovers" and sticky drags.
     - **Gesture Immunity**: Implemented robust gesture protection:
