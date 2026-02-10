@@ -3,8 +3,8 @@
 // ========================================
 
 
-import verticalLogoSlogan from "@/assets/vertical-logo-slogan.svg";
-import verticalLogoSloganWhite from "@/assets/vertical-logo-slogan-white.svg";
+import verticalLogoSlogan from "@/assets/Vetical-Logo-SLOGAN.svg";
+import verticalLogoSloganWhite from "@/assets/Vetical-Logo-SLOGAN-WHITE.svg";
 import faviconBadge from "@/assets/favicon-badge.svg";
 
 interface EmailFooterProps {
@@ -29,7 +29,6 @@ export function EmailFooter({ isDarkMode }: EmailFooterProps) {
     const textColor = isDarkMode ? "#94a3b8" : "#64748b";
     const linkColor = isDarkMode ? "#0ec8fc" : "#7c2ae8";
     const borderColor = isDarkMode ? "#1e293b" : "#e2e8f0";
-    const logo = isDarkMode ? verticalLogoSloganWhite : verticalLogoSlogan;
 
     return (
         <table
@@ -46,14 +45,37 @@ export function EmailFooter({ isDarkMode }: EmailFooterProps) {
                             <tbody>
                                 <tr>
                                     <td align="center">
+                                        <style>
+                                            {`
+                                            @media (prefers-color-scheme: dark) {
+                                                .light-img { display: none !important; }
+                                                .dark-img { display: block !important; }
+                                            }
+                                            `}
+                                        </style>
                                         <img
-                                            src={logo}
+                                            src={verticalLogoSlogan}
+                                            className="light-img"
                                             alt="BlanketSmith"
                                             width="160"
                                             style={{
                                                 display: "block",
                                                 maxWidth: "160px",
                                                 height: "auto",
+                                            }}
+                                        />
+                                        {/* @ts-ignore */}
+                                        <img
+                                            src={verticalLogoSloganWhite}
+                                            className="dark-img"
+                                            alt="BlanketSmith"
+                                            width="160"
+                                            style={{
+                                                display: "none",
+                                                maxWidth: "160px",
+                                                height: "auto",
+                                                // @ts-ignore
+                                                msoHide: "all"
                                             }}
                                         />
                                     </td>
@@ -210,7 +232,8 @@ export function EmailFooter({ isDarkMode }: EmailFooterProps) {
 export function getEmailFooterHTML(
     isDarkMode: boolean,
     logoUrl: string,
-    faviconUrl: string
+    faviconUrl: string,
+    logoDarkUrl?: string
 ): string {
     const bgColor = isDarkMode ? "#0f172a" : "#f8fafc";
     const textColor = isDarkMode ? "#94a3b8" : "#64748b";
@@ -218,14 +241,23 @@ export function getEmailFooterHTML(
     const borderColor = isDarkMode ? "#1e293b" : "#e2e8f0";
     const year = new Date().getFullYear();
 
+    const darkUrl = logoDarkUrl || logoUrl;
+
     return `
     <table width="100%" cellpadding="0" cellspacing="0" style="background-color: ${bgColor}; border-top: 1px solid ${borderColor};">
       <tr>
         <td style="padding: 32px 20px 24px;">
           <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
             <tr>
-              <td align="left">
-                <img src="${logoUrl}" alt="BlanketSmith" width="140" style="display: block; max-width: 140px; height: auto;" />
+              <td align="center">
+                <style>
+                  @media (prefers-color-scheme: dark) {
+                    .light-img { display: none !important; }
+                    .dark-img { display: block !important; }
+                  }
+                </style>
+                <img src="${logoUrl}" class="light-img" alt="BlanketSmith" width="140" style="display: block; max-width: 140px; height: auto;" />
+                <img src="${darkUrl}" class="dark-img" alt="BlanketSmith" width="140" style="display: none; max-width: 140px; height: auto; mso-hide: all;" />
               </td>
             </tr>
           </table>
@@ -274,7 +306,24 @@ export function getEmailFooterHTML(
             <tr>
               <td align="center">
                 <p style="color: ${textColor}; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0;">
-                  Made with <img src="${faviconUrl}" alt="love" width="16" height="16" style="display: inline-block; vertical-align: middle;" /> for the community
+                  Made with <span style="display: inline-block; vertical-align: middle;">
+                    <img
+                        src="${faviconUrl}"
+                        class="light-img"
+                        alt="love"
+                        width="16"
+                        height="16"
+                        style="display: inline-block; width: 16px; height: 16px; vertical-align: middle;"
+                    />
+                    <img
+                        src="${faviconUrl}"
+                        class="dark-img"
+                        alt="love"
+                        width="16"
+                        height="16"
+                        style="display: none; width: 16px; height: 16px; vertical-align: middle; filter: brightness(0) invert(1); mso-hide: all;"
+                    />
+                  </span> for the community
                 </p>
               </td>
             </tr>

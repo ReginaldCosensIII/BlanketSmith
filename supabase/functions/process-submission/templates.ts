@@ -40,27 +40,33 @@ export function getSectionHeaderHTML(text: string): string {
 
 export function getEmailHeaderHTML(): string {
   // Cinematic Header with Horizontal Logo + Graph Paper Effect
+  // Updated to match React component logic (CSS swap + Verified Assets)
   return `
     <table width="100%" cellpadding="0" cellspacing="0" class="email-header graph-paper-bg" style="background-color: #ffffff;">
       <tr>
         <td align="center" style="padding: 40px 20px 40px;">
-          <!-- Nested Table for Better Client Compatibility (Outlook) -->
-          <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 260px;">
-            <tr>
-              <td align="center">
-                <!-- Light Mode Wrapper -->
-                <div class="light-img-box">
-                   <img src="${ASSET_BASE}horizontal-logo.png" alt="BlanketSmith" width="260" style="display: block; max-width: 260px; height: auto;" />
-                </div>
-                <!-- Dark Mode Wrapper (Hidden by default) -->
-                <!--[if !mso]><!-->
-                <div class="dark-img-box">
-                   <img src="https://blanket-smith-landing-page.vercel.app/email-assets/horizontal-logo-white.png?v=8" alt="BlanketSmith" width="260" style="display: block; max-width: 260px; height: auto; border: 0;" />
-                </div>
-                <!--<![endif]-->
-              </td>
-            </tr>
-          </table>
+          <style>
+            @media (prefers-color-scheme: dark) {
+                .light-img { display: none !important; }
+                .dark-img { display: block !important; }
+            }
+          </style>
+          <!-- Light Mode Logo -->
+          <img 
+            src="${ASSET_BASE}Vetical-Logo-SLOGAN.svg" 
+            class="light-img" 
+            alt="BlanketSmith" 
+            width="180" 
+            style="display: block; max-width: 180px; height: auto;" 
+          />
+          <!-- Dark Mode Logo -->
+          <img 
+            src="${ASSET_BASE}Vetical-Logo-SLOGAN-WHITE.svg" 
+            class="dark-img" 
+            alt="BlanketSmith" 
+            width="180" 
+            style="display: none; max-width: 180px; height: auto; mso-hide: all;" 
+          />
         </td>
       </tr>
     </table>
@@ -73,20 +79,32 @@ export function getEmailFooterHTML(): string {
     <table width="100%" cellpadding="0" cellspacing="0" class="email-footer" style="background-color: #f8fafc; border-top: 1px solid #e2e8f0;">
       <tr>
         <td style="padding: 32px 20px 24px;">
-          <!-- Logo - Centered - Vertical No Slogan -->
+          <!-- Logo - Centered -->
           <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
             <tr>
               <td align="center">
-                <!-- Light Mode Wrapper -->
-                <div class="light-img-box">
-                  <img src="${ASSET_BASE}vertical-logo-no-slogan.png" alt="BlanketSmith" width="120" style="display: block; max-width: 120px; height: auto;" />
-                </div>
-                <!-- Dark Mode Wrapper -->
-                <!--[if !mso]><!-->
-                <div class="dark-img-box">
-                  <img src="${ASSET_BASE}PNG/dark-version/Vetical-Lockup-No-Slogan-PNG.png" alt="BlanketSmith" width="120" style="display: block; max-width: 120px; height: auto;" />
-                </div>
-                 <!--<![endif]-->
+                <style>
+                  @media (prefers-color-scheme: dark) {
+                    .light-img { display: none !important; }
+                    .dark-img { display: block !important; }
+                  }
+                </style>
+                <!-- Light Mode Logo -->
+                <img 
+                    src="${ASSET_BASE}Vetical-Logo-SLOGAN.svg" 
+                    class="light-img" 
+                    alt="BlanketSmith" 
+                    width="160" 
+                    style="display: block; max-width: 160px; height: auto;" 
+                />
+                <!-- Dark Mode Logo -->
+                <img 
+                    src="${ASSET_BASE}Vetical-Logo-SLOGAN-WHITE.svg" 
+                    class="dark-img" 
+                    alt="BlanketSmith" 
+                    width="160" 
+                    style="display: none; max-width: 160px; height: auto; mso-hide: all;" 
+                />
               </td>
             </tr>
           </table>
@@ -131,8 +149,14 @@ export function getEmailFooterHTML(): string {
                   <a href="#" class="footer-link" style="color: #64748b; text-decoration: underline;">Terms of Service</a>
                 </p>
                 <p class="footer-text" style="color: #64748b; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0;">
-                  <!-- Single Asset for Heart (White/Standard Version) -->
-                  Made with <img src="${ASSET_BASE}favicon-heart-v2.png" alt="love" width="16" height="16" style="display: inline-block; vertical-align: middle;" /> for the community
+                  Made with 
+                  <span style="display: inline-block; vertical-align: middle;">
+                      <!-- Light Mode Heart -->
+                      <img src="${ASSET_BASE}favicon-heart-v2.png" class="light-img" alt="love" width="16" height="16" style="display: inline-block; width: 16px; height: 16px; vertical-align: middle;" />
+                      <!-- Dark Mode Heart (Inverted) -->
+                      <img src="${ASSET_BASE}favicon-heart-v2.png" class="dark-img" alt="love" width="16" height="16" style="display: none; width: 16px; height: 16px; vertical-align: middle; filter: brightness(0) invert(1); mso-hide: all;" />
+                  </span> 
+                  for the community
                 </p>
                 <p class="footer-text" style="color: #64748b; font-size: 11px; font-family: Inter, system-ui, sans-serif; margin: 12px 0 0;">
                   © ${year} BlanketSmith. All rights reserved.
