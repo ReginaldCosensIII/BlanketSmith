@@ -102,10 +102,6 @@ export function getInfoBoxHTML(title: string, description: string, iconUrl: stri
         </table>
     </div>
   `;
-  </tr>
-    </table>
-    </div>
-      `;
 }
 
 export function getEmailProgressRailHTML(currentStep: number): string {
@@ -138,10 +134,10 @@ export function getEmailProgressRailHTML(currentStep: number): string {
     stepsHTML += `
     < td align = "center" width = "25%" >
       <div style="${circleStyle}" >
-        ${ isCompleted ? "✓" : step.id }
+        ${isCompleted ? "✓" : step.id}
   </div>
     < div style = "font-size: 11px; font-weight: 600; font-family: Inter, sans-serif; color: ${labelColor}; white-space: nowrap; letter-spacing: -0.01em;" >
-      ${ step.label }
+      ${step.label}
   </div>
     </td>
       `;
@@ -150,7 +146,7 @@ export function getEmailProgressRailHTML(currentStep: number): string {
   return `
     < table width = "100%" cellpadding = "0" cellspacing = "0" style = "margin-top: 32px; margin-bottom: 0;" >
       <tr>
-      ${ stepsHTML }
+      ${stepsHTML}
   </tr>
     </table>
       `;
@@ -179,7 +175,7 @@ export function getCinematicShellHTML(content: string, isMobile: boolean = false
   table, td { mso - table - lspace: 0pt; mso - table - rspace: 0pt; }
         img { -ms - interpolation - mode: bicubic; border: 0; outline: none; text - decoration: none; }
         
-        body { margin: 0; padding: 0; width: 100 % !important; height: 100 % !important; background - color: ${ surfaceColor }; font - family: 'Inter', system - ui, -apple - system, sans - serif; color: ${ textColor }; }
+        body { margin: 0; padding: 0; width: 100 % !important; height: 100 % !important; background - color: ${surfaceColor}; font - family: 'Inter', system - ui, -apple - system, sans - serif; color: ${textColor}; }
 
         /* Robust Logo Swapping via Wrappers */
         .light - img - box { display: block!important; }
@@ -203,18 +199,18 @@ export function getCinematicShellHTML(content: string, isMobile: boolean = false
   /* Aggressively force white background and dark text even if client is in Dark Mode */
   @media(prefers - color - scheme: dark) {
     body, table, td, .email - body, .email - container, .email - content {
-      background - color: ${ surfaceColor } !important;
-      color: ${ textColor } !important;
+      background - color: ${surfaceColor} !important;
+      color: ${textColor} !important;
     }
             .email - container, .feature - card, .info - box {
-      background - color: ${ bgColor } !important;
-      color: ${ textColor } !important;
+      background - color: ${bgColor} !important;
+      color: ${textColor} !important;
     }
     h1, h2, h3, h4, p, span, a {
       color: inherit!important;
     }
             /* Re-assert specific text colors that might get overridden */
-            .feature - title, .info - title { color: ${ textColor } !important; }
+            .feature - title, .info - title { color: ${textColor} !important; }
             .feature - desc, .info - desc, .footer - text { color: #64748b!important; }
 
             /* Ensure the graph paper background persists */
@@ -231,7 +227,7 @@ export function getCinematicShellHTML(content: string, isMobile: boolean = false
 
   /* Mobile Optimizations */
   @media screen and(max - width: 600px) {
-            .email - container { width: 100 % !important; padding: 0!important; background - image: linear - gradient(${ bgColor }, ${ bgColor })!important; }
+            .email - container { width: 100 % !important; padding: 0!important; background - image: linear - gradient(${bgColor}, ${bgColor})!important; }
             .email - content { padding: 24px 16px!important; }
             .stack - column { display: block!important; width: 100 % !important; max - width: 100 % !important; direction: ltr!important; }
   }
@@ -246,21 +242,21 @@ export function getCinematicShellHTML(content: string, isMobile: boolean = false
             <!--Cinematic Header-- >
               <tr>
               <td>
-              ${ getEmailHeaderHTML() }
+              ${getEmailHeaderHTML()}
   </td>
     </tr>
 
     < !--Main Content Area with Multicolored Ambient Glow-- >
       <tr>
       <td class="email-content" style = "padding: 0 32px 40px; background-color: #ffffff; background-image: radial-gradient(circle at 50% 0%, rgba(124, 42, 232, 0.06) 0%, transparent 40%); background-repeat: no-repeat;" >
-        ${ content }
+        ${content}
   </td>
     </tr>
 
     < !--Footer -->
       <tr>
       <td>
-      ${ getEmailFooterHTML() }
+      ${getEmailFooterHTML()}
   </td>
     </tr>
 
@@ -291,12 +287,12 @@ export const getBetaTemplate = (verificationLink: string) => {
         <tr>
         <td align="center" style = "padding: 24px 24px 32px; background: radial-gradient(ellipse 340px 160px at 50% 30%, rgba(124, 42, 232, 0.18) 0%, rgba(255, 255, 255, 0) 70%);" >
           <h1 style="margin: 0 0 16px; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;" >
-            Welcome to ${ getGradientTextHTML("The Forge") }
+            Welcome to ${getGradientTextHTML("The Forge")}
   </h1>
     < p style = "margin: 0 0 24px; font-size: 18px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;" >
       You're in.
         </p>
-          ${ getEmailProgressRailHTML(2) }
+          ${getEmailProgressRailHTML(2)}
   </td>
     </tr>
     </table>
@@ -313,12 +309,11 @@ export const getBetaTemplate = (verificationLink: string) => {
               </table>
 
               < !--What Happens Next(Moved Up)-- >
-                ${
-    getInfoBoxHTML(
-      "What Happens Next?",
-      "Once verified, you'll receive your Beta credentials via email within 24-48 hours. These credentials will grant you early access to The Forge where you can start creating patterns, exploring tools, and joining our community of makers."
-    )
-  }
+                ${getInfoBoxHTML(
+    "What Happens Next?",
+    "Once verified, you'll receive your Beta credentials via email within 24-48 hours. These credentials will grant you early access to The Forge where you can start creating patterns, exploring tools, and joining our community of makers."
+  )
+    }
 
   <!--Verification Call to Action-- >
     <table width="100%" cellpadding = "0" cellspacing = "0" style = "margin: 32px 0;" >
@@ -327,7 +322,7 @@ export const getBetaTemplate = (verificationLink: string) => {
         <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;" >
           Please verify your email to continue your journey into The Forge.
             </p>
-            ${ getEmailButtonHTML("Verify Email Address", verificationLink) }
+            ${getEmailButtonHTML("Verify Email Address", verificationLink)}
   </td>
     </tr>
     </table>
@@ -336,46 +331,42 @@ export const getBetaTemplate = (verificationLink: string) => {
       <table width="100%" cellpadding = "0" cellspacing = "0" >
         <tr>
         <td style="padding-bottom: 16px;" >
-          ${
-    getEmailFeatureCardHTML(
+          ${getEmailFeatureCardHTML(
       "Generate Patterns",
       "Upload an image or snap a photo on mobile to instantly generate a custom pattern based on your unique settings.",
       `${ASSET_BASE}icons/374FD9/image-sparkle.png`
     )
-  }
+    }
   </td>
     </tr>
     < tr >
     <td style="padding-bottom: 16px;" >
-      ${
-    getEmailFeatureCardHTML(
+      ${getEmailFeatureCardHTML(
       "Modern Interface",
       "Experience a beautiful, intuitive design built specifically for the modern maker, with dark mode and touch controls.",
       `${ASSET_BASE}icons/374FD9/dashboard.png`
     )
-  }
+    }
   </td>
     </tr>
     < tr >
     <td style="padding-bottom: 16px;" >
-      ${
-    getEmailFeatureCardHTML(
+      ${getEmailFeatureCardHTML(
       "Precision Tools",
       "Fine-tune every stitch with professional-grade editing tools designed to give you complete control over your work.",
       `${ASSET_BASE}icons/374FD9/spanner.png`
     )
-  }
+    }
   </td>
     </tr>
     < tr >
     <td style="padding-bottom: 16px;" >
-      ${
-    getEmailFeatureCardHTML(
+      ${getEmailFeatureCardHTML(
       "Community First",
       "Join a thriving community of makers. Share patterns, get feedback, and help shape the future of the platform.",
       `${ASSET_BASE}icons/374FD9/community.png`
     )
-  }
+    }
   </td>
     </tr>
 
@@ -398,21 +389,20 @@ export const getPartnershipTemplate = (name: string) => {
             Partnership Request Received
               </h1>
               < p style = "margin: 0 0 24px; font-size: 18px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;" >
-                Thank you for reaching out, ${ name }!
+                Thank you for reaching out, ${name}!
                   </p>
                   </td>
                   </tr>
                   </table>
 
-    ${
-    getInfoBoxHTML(
-      "Our Team is Reviewing Your Request",
-      "We're excited to learn more about how we can collaborate. A member of our partnerships team will be in touch shortly."
-    )
-  }
+    ${getInfoBoxHTML(
+    "Our Team is Reviewing Your Request",
+    "We're excited to learn more about how we can collaborate. A member of our partnerships team will be in touch shortly."
+  )
+    }
 
   <div style="text-align: center; margin-top: 24px;" >
-    ${ getEmailButtonHTML("Learn More About BlanketSmith", "#") }
+    ${getEmailButtonHTML("Learn More About BlanketSmith", "#")}
   </div>
     `;
 
@@ -432,21 +422,20 @@ export const getFeedbackTemplate = (name: string) => {
             Feedback Received
               </h1>
               < p style = "margin: 0 0 24px; font-size: 18px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;" >
-                Thanks for your input, ${ name }!
+                Thanks for your input, ${name}!
                   </p>
                   </td>
                   </tr>
                   </table>
 
-    ${
-    getInfoBoxHTML(
-      "Your Voice Matters",
-      "We truly appreciate you taking the time to share your thoughts. Your feedback helps us shape the future of BlanketSmith."
-    )
-  }
+    ${getInfoBoxHTML(
+    "Your Voice Matters",
+    "We truly appreciate you taking the time to share your thoughts. Your feedback helps us shape the future of BlanketSmith."
+  )
+    }
 
   <div style="text-align: center; margin-top: 24px;" >
-    ${ getEmailButtonHTML("View Our Roadmap", "#") }
+    ${getEmailButtonHTML("View Our Roadmap", "#")}
   </div>
     `;
 
@@ -465,17 +454,16 @@ export const getDefaultTemplate = (name: string, email: string, message: string)
           Submission Received
             </h1>
             < p style = "margin: 0 0 24px; font-size: 18px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;" >
-              Hello ${ name }, we have received your message.
+              Hello ${name}, we have received your message.
           </p>
                 </td>
                 </tr>
                 </table>
-     ${
-    getInfoBoxHTML(
-      "Message Details",
-      `" ${message} " - Sent from ${email}`
-    )
-  }
+     ${getInfoBoxHTML(
+    "Message Details",
+    `" ${message} " - Sent from ${email}`
+  )
+    }
   `;
   return {
     subject: "We received your message",
@@ -489,20 +477,20 @@ export const getAdminAlertTemplate = (category: string, email: string, payload: 
       <tr>
       <td align="center" >
         <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;" >
-          New Submission: ${ category }
+          New Submission: ${category}
   </h1>
     < p style = "margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;" >
-      From: ${ email }
+      From: ${email}
   </p>
     </td>
     </tr>
     </table>
     < pre style = "background: #f1f5f9; padding: 16px; border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 12px; color: #334155;" >
-      ${ JSON.stringify(payload, null, 2) }
+      ${JSON.stringify(payload, null, 2)}
   </pre>
     `;
   return {
-    subject: `[Admin] New Submission: ${ category } `,
+    subject: `[Admin] New Submission: ${category} `,
     html: getCinematicShellHTML(content)
   };
 };
