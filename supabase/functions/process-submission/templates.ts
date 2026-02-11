@@ -280,98 +280,92 @@ export const getBetaTemplate = (verificationLink: string) => {
   // Glow Re-centering: Applied to the container behind the header
   // Updated: Elliptical stretch, wider (300px width, 120px height), centered behind text.
   // Removed "hard break" by extending fade out radius and lowering opacity at edges.
-  // Updated Position: "raised and centered around the header more" -> `at 50 % 30 % ` (higher up)
+  // Updated Position: "raised and centered around the header more" -> `at 50% 30%` (higher up)
   const content = `
-    < !--Header Section with Centered Body Glow-- >
-      <table width="100%" cellpadding = "0" cellspacing = "0" style = "margin-bottom: 32px;" >
-        <tr>
-        <td align="center" style = "padding: 24px 24px 32px; background: radial-gradient(ellipse 340px 160px at 50% 30%, rgba(124, 42, 232, 0.18) 0%, rgba(255, 255, 255, 0) 70%);" >
-          <h1 style="margin: 0 0 16px; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;" >
+    <!-- Header Section with Centered Body Glow -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
+      <tr>
+        <td align="center" style="padding: 24px 24px 32px; background: radial-gradient(ellipse 340px 160px at 50% 30%, rgba(124, 42, 232, 0.18) 0%, rgba(255, 255, 255, 0) 70%);">
+          <h1 style="margin: 0 0 16px; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">
             Welcome to ${getGradientTextHTML("The Forge")}
-  </h1>
-    < p style = "margin: 0 0 24px; font-size: 18px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;" >
-      You're in.
-        </p>
+          </h1>
+          <p style="margin: 0 0 24px; font-size: 18px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;">
+            You're in.
+          </p>
           ${getEmailProgressRailHTML(2)}
-  </td>
-    </tr>
+        </td>
+      </tr>
     </table>
 
-    < !--Intro Text-- >
-      <table width="100%" cellpadding = "0" cellspacing = "0" style = "margin-bottom: 32px;" >
-        <tr>
-        <td align="left" >
-          <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;" >
+    <!-- Intro Text -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
+      <tr>
+        <td align="left">
+          <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
             BlanketSmith is currently in a limited Beta, and you've secured a front-row seat to the future of pattern design. We're building something special for makers who value precision, creativity, and a streamlined workflow.
-            </p>
-              </td>
-              </tr>
-              </table>
+          </p>
+        </td>
+      </tr>
+    </table>
 
-              < !--What Happens Next(Moved Up)-- >
-                ${getInfoBoxHTML(
+    <!-- What Happens Next (Moved Up) -->
+    ${getInfoBoxHTML(
     "What Happens Next?",
     "Once verified, you'll receive your Beta credentials via email within 24-48 hours. These credentials will grant you early access to The Forge where you can start creating patterns, exploring tools, and joining our community of makers."
-  )
-    }
+  )}
 
-  <!--Verification Call to Action-- >
-    <table width="100%" cellpadding = "0" cellspacing = "0" style = "margin: 32px 0;" >
+    <!-- Verification Call to Action -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0;">
       <tr>
-      <td align="center" >
-        <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;" >
-          Please verify your email to continue your journey into The Forge.
-            </p>
-            ${getEmailButtonHTML("Verify Email Address", verificationLink)}
-  </td>
-    </tr>
+        <td align="center">
+          <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+            Please verify your email to continue your journey into The Forge.
+          </p>
+          ${getEmailButtonHTML("Verify Email Address", verificationLink)}
+        </td>
+      </tr>
     </table>
 
-    < !--Features Grid-- >
-      <table width="100%" cellpadding = "0" cellspacing = "0" >
-        <tr>
-        <td style="padding-bottom: 16px;" >
+    <!-- Features Grid -->
+    <table width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td style="padding-bottom: 16px;">
           ${getEmailFeatureCardHTML(
-      "Generate Patterns",
-      "Upload an image or snap a photo on mobile to instantly generate a custom pattern based on your unique settings.",
-      `${ASSET_BASE}icons/374FD9/image-sparkle.png`
-    )
-    }
-  </td>
-    </tr>
-    < tr >
-    <td style="padding-bottom: 16px;" >
-      ${getEmailFeatureCardHTML(
-      "Modern Interface",
-      "Experience a beautiful, intuitive design built specifically for the modern maker, with dark mode and touch controls.",
-      `${ASSET_BASE}icons/374FD9/dashboard.png`
-    )
-    }
-  </td>
-    </tr>
-    < tr >
-    <td style="padding-bottom: 16px;" >
-      ${getEmailFeatureCardHTML(
-      "Precision Tools",
-      "Fine-tune every stitch with professional-grade editing tools designed to give you complete control over your work.",
-      `${ASSET_BASE}icons/374FD9/spanner.png`
-    )
-    }
-  </td>
-    </tr>
-    < tr >
-    <td style="padding-bottom: 16px;" >
-      ${getEmailFeatureCardHTML(
-      "Community First",
-      "Join a thriving community of makers. Share patterns, get feedback, and help shape the future of the platform.",
-      `${ASSET_BASE}icons/374FD9/community.png`
-    )
-    }
-  </td>
-    </tr>
-
+    "Generate Patterns",
+    "Upload an image or snap a photo on mobile to instantly generate a custom pattern based on your unique settings.",
+    `${ASSET_BASE}icons/374FD9/image-sparkle.png`
+  )}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px;">
+          ${getEmailFeatureCardHTML(
+    "Modern Interface",
+    "Experience a beautiful, intuitive design built specifically for the modern maker, with dark mode and touch controls.",
+    `${ASSET_BASE}icons/374FD9/dashboard.png`
+  )}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px;">
+          ${getEmailFeatureCardHTML(
+    "Precision Tools",
+    "Fine-tune every stitch with professional-grade editing tools designed to give you complete control over your work.",
+    `${ASSET_BASE}icons/374FD9/spanner.png`
+  )}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px;">
+          ${getEmailFeatureCardHTML(
+    "Community First",
+    "Join a thriving community of makers. Share patterns, get feedback, and help shape the future of the platform.",
+    `${ASSET_BASE}icons/374FD9/community.png`
+  )}
+        </td>
+      </tr>
     </table>
-      `;
+  `;
 
   return {
     subject: "Welcome to The Forge",
@@ -381,30 +375,29 @@ export const getBetaTemplate = (verificationLink: string) => {
 
 export const getPartnershipTemplate = (name: string) => {
   const content = `
-    < !--Header Section-- >
-      <table width="100%" cellpadding = "0" cellspacing = "0" style = "margin-bottom: 32px;" >
-        <tr>
-        <td align="center" >
-          <h1 style="margin: 0 0 16px; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;" >
+    <!-- Header Section -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
+      <tr>
+        <td align="center">
+          <h1 style="margin: 0 0 16px; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">
             Partnership Request Received
-              </h1>
-              < p style = "margin: 0 0 24px; font-size: 18px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;" >
-                Thank you for reaching out, ${name}!
-                  </p>
-                  </td>
-                  </tr>
-                  </table>
+          </h1>
+          <p style="margin: 0 0 24px; font-size: 18px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;">
+            Thank you for reaching out, ${name}!
+          </p>
+        </td>
+      </tr>
+    </table>
 
     ${getInfoBoxHTML(
     "Our Team is Reviewing Your Request",
     "We're excited to learn more about how we can collaborate. A member of our partnerships team will be in touch shortly."
-  )
-    }
+  )}
 
-  <div style="text-align: center; margin-top: 24px;" >
-    ${getEmailButtonHTML("Learn More About BlanketSmith", "#")}
-  </div>
-    `;
+    <div style="text-align: center; margin-top: 24px;">
+      ${getEmailButtonHTML("Learn More About BlanketSmith", "#")}
+    </div>
+  `;
 
   return {
     subject: "Partnering with BlanketSmith",
@@ -414,30 +407,29 @@ export const getPartnershipTemplate = (name: string) => {
 
 export const getFeedbackTemplate = (name: string) => {
   const content = `
-    < !--Header Section-- >
-      <table width="100%" cellpadding = "0" cellspacing = "0" style = "margin-bottom: 32px;" >
-        <tr>
-        <td align="center" >
-          <h1 style="margin: 0 0 16px; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;" >
+    <!-- Header Section -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
+      <tr>
+        <td align="center">
+          <h1 style="margin: 0 0 16px; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">
             Feedback Received
-              </h1>
-              < p style = "margin: 0 0 24px; font-size: 18px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;" >
-                Thanks for your input, ${name}!
-                  </p>
-                  </td>
-                  </tr>
-                  </table>
+          </h1>
+          <p style="margin: 0 0 24px; font-size: 18px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;">
+            Thanks for your input, ${name}!
+          </p>
+        </td>
+      </tr>
+    </table>
 
     ${getInfoBoxHTML(
     "Your Voice Matters",
     "We truly appreciate you taking the time to share your thoughts. Your feedback helps us shape the future of BlanketSmith."
-  )
-    }
+  )}
 
-  <div style="text-align: center; margin-top: 24px;" >
-    ${getEmailButtonHTML("View Our Roadmap", "#")}
-  </div>
-    `;
+    <div style="text-align: center; margin-top: 24px;">
+      ${getEmailButtonHTML("View Our Roadmap", "#")}
+    </div>
+  `;
 
   return {
     subject: "We've Received Your Feedback",
@@ -447,23 +439,22 @@ export const getFeedbackTemplate = (name: string) => {
 
 export const getDefaultTemplate = (name: string, email: string, message: string) => {
   const content = `
-    < table width = "100%" cellpadding = "0" cellspacing = "0" style = "margin-bottom: 32px;" >
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
       <tr>
-      <td align="center" >
-        <h1 style="margin: 0 0 16px; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;" >
-          Submission Received
-            </h1>
-            < p style = "margin: 0 0 24px; font-size: 18px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;" >
-              Hello ${name}, we have received your message.
+        <td align="center">
+          <h1 style="margin: 0 0 16px; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">
+            Submission Received
+          </h1>
+          <p style="margin: 0 0 24px; font-size: 18px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;">
+            Hello ${name}, we have received your message.
           </p>
-                </td>
-                </tr>
-                </table>
-     ${getInfoBoxHTML(
+        </td>
+      </tr>
+    </table>
+    ${getInfoBoxHTML(
     "Message Details",
-    `" ${message} " - Sent from ${email}`
-  )
-    }
+    `"${message}" - Sent from ${email}`
+  )}
   `;
   return {
     subject: "We received your message",
@@ -473,24 +464,24 @@ export const getDefaultTemplate = (name: string, email: string, message: string)
 
 export const getAdminAlertTemplate = (category: string, email: string, payload: any) => {
   const content = `
-    < table width = "100%" cellpadding = "0" cellspacing = "0" style = "margin-bottom: 32px;" >
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
       <tr>
-      <td align="center" >
-        <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;" >
-          New Submission: ${category}
-  </h1>
-    < p style = "margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;" >
-      From: ${email}
-  </p>
-    </td>
-    </tr>
+        <td align="center">
+          <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">
+            New Submission: ${category}
+          </h1>
+          <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;">
+            From: ${email}
+          </p>
+        </td>
+      </tr>
     </table>
-    < pre style = "background: #f1f5f9; padding: 16px; border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 12px; color: #334155;" >
+    <pre style="background: #f1f5f9; padding: 16px; border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 12px; color: #334155;">
       ${JSON.stringify(payload, null, 2)}
-  </pre>
-    `;
+    </pre>
+  `;
   return {
-    subject: `[Admin] New Submission: ${category} `,
+    subject: `[Admin] New Submission: ${category}`,
     html: getCinematicShellHTML(content)
   };
 };
