@@ -10,20 +10,20 @@ import { SectionHeader } from "../SectionHeader";
 import { InfoBox } from "../InfoBox";
 
 interface EmailTemplateProps {
-    isDarkMode: boolean;
+    name: string;
     isMobile?: boolean;
 }
 
-export function BetaCredentialsEmail({ isDarkMode, isMobile = false }: EmailTemplateProps) {
-    const textColor = isDarkMode ? "#e2e8f0" : "#1e293b";
-    const mutedColor = isDarkMode ? "#94a3b8" : "#64748b";
-    const iconStroke = isDarkMode ? "#0ec8fc" : "#7c2ae8";
-    const infoBoxBg = isDarkMode ? "#1e293b" : "#f1f5f9";
-    const codeBg = isDarkMode ? "#0a0f1a" : "#f1f5f9";
-    const codeColor = isDarkMode ? "#0ec8fc" : "#7c2ae8";
+export function BetaCredentialsEmail({ name, isMobile = false }: EmailTemplateProps) {
+    const textColor = "#1e293b";
+    const mutedColor = "#64748b";
+    const iconStroke = "#7c2ae8";
+    const infoBoxBg = "#f1f5f9";
+    const codeBg = "#f1f5f9";
+    const codeColor = "#7c2ae8";
 
     return (
-        <CinematicShell isDarkMode={isDarkMode} isMobile={isMobile}>
+        <CinematicShell isMobile={isMobile}>
             {/* Key Icon */}
             <div style={{ textAlign: "center", marginBottom: "24px" }}>
                 <div
@@ -51,12 +51,12 @@ export function BetaCredentialsEmail({ isDarkMode, isMobile = false }: EmailTemp
                 </div>
             </div>
 
-            <SectionHeader isDarkMode={isDarkMode}>
+            <SectionHeader>
                 Your Beta <GradientText>Credentials</GradientText>
             </SectionHeader>
 
             {/* Progress Rail - Step 3 (Beta Access) */}
-            <EmailProgressRail currentStep={2} isDarkMode={isDarkMode} />
+            <EmailProgressRail currentStep={2} />
 
             <p
                 style={{
@@ -76,7 +76,7 @@ export function BetaCredentialsEmail({ isDarkMode, isMobile = false }: EmailTemp
                     backgroundColor: codeBg,
                     borderRadius: "12px",
                     padding: isMobile ? "20px" : "24px",
-                    border: `1px solid ${isDarkMode ? "#1e293b" : "#e2e8f0"}`,
+                    border: "1px solid #e2e8f0",
                     marginBottom: "24px",
                 }}
             >
@@ -93,7 +93,7 @@ export function BetaCredentialsEmail({ isDarkMode, isMobile = false }: EmailTemp
                             </td>
                         </tr>
                         <tr>
-                            <td style={{ paddingBottom: "12px", borderTop: `1px solid ${isDarkMode ? "#1e293b" : "#e2e8f0"}`, paddingTop: "12px" }}>
+                            <td style={{ paddingBottom: "12px", borderTop: "1px solid #e2e8f0", paddingTop: "12px" }}>
                                 <p style={{ margin: "0 0 4px", fontSize: "11px", fontWeight: "600", textTransform: "uppercase" as const, letterSpacing: "0.1em", color: mutedColor, fontFamily: "Inter, system-ui, sans-serif" }}>
                                     Username
                                 </p>
@@ -103,7 +103,7 @@ export function BetaCredentialsEmail({ isDarkMode, isMobile = false }: EmailTemp
                             </td>
                         </tr>
                         <tr>
-                            <td style={{ borderTop: `1px solid ${isDarkMode ? "#1e293b" : "#e2e8f0"}`, paddingTop: "12px" }}>
+                            <td style={{ borderTop: "1px solid #e2e8f0", paddingTop: "12px" }}>
                                 <p style={{ margin: "0 0 4px", fontSize: "11px", fontWeight: "600", textTransform: "uppercase" as const, letterSpacing: "0.1em", color: mutedColor, fontFamily: "Inter, system-ui, sans-serif" }}>
                                     Temporary Password
                                 </p>
@@ -124,7 +124,6 @@ export function BetaCredentialsEmail({ isDarkMode, isMobile = false }: EmailTemp
             <InfoBox
                 title="Important"
                 description="You'll be prompted to set a new password on your first login. Your temporary credentials expire in 7 days."
-                isDarkMode={isDarkMode}
                 isMobile={isMobile}
                 borderColor="#7C2AE8"
                 icon={

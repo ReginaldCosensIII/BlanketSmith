@@ -9,15 +9,15 @@ import { GradientText } from "../GradientText";
 import { SectionHeader } from "../SectionHeader";
 
 interface EmailTemplateProps {
-    isDarkMode: boolean;
-    isMobile?: boolean;
+    name: string;
+    isMobile?: boolean; // Added isMobile prop
 }
 
-export function PartnershipEmail({ isDarkMode, isMobile = false }: EmailTemplateProps) {
-    const bgColor = isDarkMode ? "#0a0f1a" : "#f8fafc";
-    const cardBg = isDarkMode ? "#0f172a" : "#ffffff";
-    const textColor = isDarkMode ? "#e2e8f0" : "#1e293b";
-    const mutedColor = isDarkMode ? "#94a3b8" : "#64748b";
+export function PartnershipEmail({ name, isMobile = false }: EmailTemplateProps) {
+    const bgColor = "#f8fafc";
+    const cardBg = "#ffffff";
+    const textColor = "#1e293b";
+    const mutedColor = "#64748b";
 
     const containerPadding = isMobile ? "24px 20px 32px" : "32px 40px 40px";
 
@@ -42,22 +42,20 @@ export function PartnershipEmail({ isDarkMode, isMobile = false }: EmailTemplate
                                 backgroundColor: cardBg,
                                 borderRadius: "16px",
                                 overflow: "hidden",
-                                boxShadow: isDarkMode
-                                    ? "0 25px 50px -12px rgba(0, 0, 0, 0.5)"
-                                    : "0 25px 50px -12px rgba(0, 0, 0, 0.1)",
+                                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.1)",
                                 maxWidth: "600px",
                             }}
                         >
                             <tbody>
                                 <tr>
                                     <td>
-                                        <EmailHeader isDarkMode={isDarkMode} />
+                                        <EmailHeader />
                                     </td>
                                 </tr>
 
                                 <tr>
                                     <td style={{ padding: containerPadding }}>
-                                        <SectionHeader isDarkMode={isDarkMode}>
+                                        <SectionHeader>
                                             Let's Build the <GradientText>Future of Craft</GradientText>
                                         </SectionHeader>
 
@@ -107,7 +105,7 @@ export function PartnershipEmail({ isDarkMode, isMobile = false }: EmailTemplate
 
                                 <tr>
                                     <td>
-                                        <EmailFooter isDarkMode={isDarkMode} />
+                                        <EmailFooter />
                                     </td>
                                 </tr>
                             </tbody>

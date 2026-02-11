@@ -9,18 +9,21 @@ import { EmailButton } from "../EmailButton";
 import { GradientText } from "../GradientText";
 
 interface EmailTemplateProps {
-    isDarkMode: boolean;
-    isMobile?: boolean;
+    name: string;
+    patternName: string;
+    imageUrl?: string;
+    isMobile?: boolean; // Added isMobile prop
 }
 
-export function FirstPatternEmail({ isDarkMode, isMobile = false }: EmailTemplateProps) {
-    const textColor = isDarkMode ? "#e2e8f0" : "#1e293b";
-    const mutedColor = isDarkMode ? "#94a3b8" : "#64748b";
-    const iconStroke = isDarkMode ? "#0ec8fc" : "#7c2ae8";
+export function FirstPatternEmail({ name, patternName, imageUrl, isMobile = false }: EmailTemplateProps) {
+    // Fixed Light Mode Colors
+    const textColor = "#1e293b";
+    const mutedColor = "#64748b";
+    const iconStroke = "#7c2ae8";
     const achievementColor = "#f59e0b";
 
     return (
-        <CinematicShell isDarkMode={isDarkMode} isMobile={isMobile}>
+        <CinematicShell isMobile={isMobile}>
             {/* Trophy Icon */}
             <div style={{ textAlign: "center", marginBottom: "24px" }}>
                 <div
@@ -52,7 +55,7 @@ export function FirstPatternEmail({ isDarkMode, isMobile = false }: EmailTemplat
                 </div>
             </div>
 
-            <SectionHeader isDarkMode={isDarkMode}>
+            <SectionHeader>
                 Your First <GradientText>Pattern!</GradientText>
             </SectionHeader>
 
@@ -85,12 +88,10 @@ export function FirstPatternEmail({ isDarkMode, isMobile = false }: EmailTemplat
             {/* Achievement Card */}
             <div
                 style={{
-                    background: isDarkMode
-                        ? "linear-gradient(135deg, rgba(245, 158, 11, 0.1) 0%, rgba(234, 88, 12, 0.08) 100%)"
-                        : "linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(234, 88, 12, 0.05) 100%)",
+                    background: "linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(234, 88, 12, 0.05) 100%)",
                     borderRadius: "12px",
                     padding: isMobile ? "20px" : "24px",
-                    border: `1px solid ${isDarkMode ? "rgba(245, 158, 11, 0.2)" : "rgba(245, 158, 11, 0.3)"}`,
+                    border: "1px solid rgba(245, 158, 11, 0.3)",
                     textAlign: "center",
                     marginBottom: "28px",
                 }}
@@ -133,7 +134,6 @@ export function FirstPatternEmail({ isDarkMode, isMobile = false }: EmailTemplat
                                 <EmailFeatureCard
                                     title="Share Your Work"
                                     description="Show your creation to the BlanketSmith community and inspire others."
-                                    isDarkMode={isDarkMode}
                                     icon="users"
                                     fullWidth
                                 />
@@ -142,7 +142,6 @@ export function FirstPatternEmail({ isDarkMode, isMobile = false }: EmailTemplat
                                 <EmailFeatureCard
                                     title="Explore Templates"
                                     description="Discover community patterns and find inspiration for your next project."
-                                    isDarkMode={isDarkMode}
                                     icon="layout"
                                     fullWidth
                                 />
@@ -153,13 +152,11 @@ export function FirstPatternEmail({ isDarkMode, isMobile = false }: EmailTemplat
                             <EmailFeatureCard
                                 title="Share Your Work"
                                 description="Show your creation to the BlanketSmith community and inspire others."
-                                isDarkMode={isDarkMode}
                                 icon="users"
                             />
                             <EmailFeatureCard
                                 title="Explore Templates"
                                 description="Discover community patterns and find inspiration for your next project."
-                                isDarkMode={isDarkMode}
                                 icon="layout"
                             />
                         </tr>
@@ -170,6 +167,6 @@ export function FirstPatternEmail({ isDarkMode, isMobile = false }: EmailTemplat
             <div style={{ textAlign: "center" }}>
                 <EmailButton href="#">View Your Pattern</EmailButton>
             </div>
-        </CinematicShell>
+        </CinematicShell >
     );
 }
