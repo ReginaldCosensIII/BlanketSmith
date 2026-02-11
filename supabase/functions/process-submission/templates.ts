@@ -118,36 +118,36 @@ export function getEmailProgressRailHTML(currentStep: number): string {
     const isActive = step.id === currentStep;
     const isCompleted = step.id < currentStep;
 
-    let circleStyle = `width: 40px; height: 40px; border - radius: 50 %; display: inline - block; vertical - align: middle; text - align: center; line - height: 40px; font - size: 16px; font - weight: 600; font - family: Inter, sans - serif; margin - bottom: 12px; `;
+    let circleStyle = `width: 40px; height: 40px; border-radius: 50%; display: inline-block; vertical-align: middle; text-align: center; line-height: 40px; font-size: 16px; font-weight: 600; font-family: Inter, sans-serif; margin-bottom: 12px;`;
 
     if (isActive) {
       // Updated to use brand gradient
-      circleStyle += `background: linear - gradient(135deg, #7C2AE8 0 %, #374FD9 62 %, #0EC8FC 100 %); color: #ffffff; box - shadow: 0 0 0 4px rgba(124, 42, 232, 0.2); `;
+      circleStyle += `background: linear-gradient(135deg, #7C2AE8 0%, #374FD9 62%, #0EC8FC 100%); color: #ffffff; box-shadow: 0 0 0 4px rgba(124, 42, 232, 0.2);`;
     } else if (isCompleted) {
-      circleStyle += `background - color: #10b981; color: #ffffff; `;
+      circleStyle += `background-color: #10b981; color: #ffffff;`;
     } else {
-      circleStyle += `background - color: #e2e8f0; color: #94a3b8; `;
+      circleStyle += `background-color: #e2e8f0; color: #94a3b8;`;
     }
 
     const labelColor = isActive ? "#1e293b" : isCompleted ? "#059669" : "#94a3b8";
 
     stepsHTML += `
-    < td align = "center" width = "25%" >
-      <div style="${circleStyle}" >
+    <td align="center" width="25%">
+      <div style="${circleStyle}">
         ${isCompleted ? "✓" : step.id}
-  </div>
-    < div style = "font-size: 11px; font-weight: 600; font-family: Inter, sans-serif; color: ${labelColor}; white-space: nowrap; letter-spacing: -0.01em;" >
-      ${step.label}
-  </div>
+      </div>
+      <div style="font-size: 11px; font-weight: 600; font-family: Inter, sans-serif; color: ${labelColor}; white-space: nowrap; letter-spacing: -0.01em;">
+        ${step.label}
+      </div>
     </td>
       `;
   });
 
   return `
-    < table width = "100%" cellpadding = "0" cellspacing = "0" style = "margin-top: 32px; margin-bottom: 0;" >
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 32px; margin-bottom: 0;">
       <tr>
       ${stepsHTML}
-  </tr>
+      </tr>
     </table>
       `;
 }
@@ -159,119 +159,119 @@ export function getCinematicShellHTML(content: string, isMobile: boolean = false
   const surfaceColor = "#f8fafc";
 
   return `
-    < !DOCTYPE html >
-      <html lang="en" xmlns: v = "urn:schemas-microsoft-com:vml" xmlns: o = "urn:schemas-microsoft-com:office:office" >
+    <!DOCTYPE html>
+      <html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
         <head>
-        <meta charset="utf-8" >
-          <meta name="viewport" content = "width=device-width, initial-scale=1.0" >
-            <meta name="x-apple-disable-message-reformatting" >
-              <meta name="color-scheme" content = "light dark" >
-                <meta name="supported-color-schemes" content = "light dark" >
-                  <title>BlanketSmith </title>
-                  <style>
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap');
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <meta name="x-apple-disable-message-reformatting">
+          <meta name="color-scheme" content="light dark">
+          <meta name="supported-color-schemes" content="light dark">
+          <title>BlanketSmith</title>
+          <style>
+            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap');
 
-  body, table, td, a { -webkit - text - size - adjust: 100 %; -ms - text - size - adjust: 100 %; }
-  table, td { mso - table - lspace: 0pt; mso - table - rspace: 0pt; }
-        img { -ms - interpolation - mode: bicubic; border: 0; outline: none; text - decoration: none; }
-        
-        body { margin: 0; padding: 0; width: 100 % !important; height: 100 % !important; background - color: ${surfaceColor}; font - family: 'Inter', system - ui, -apple - system, sans - serif; color: ${textColor}; }
+            body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+            table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+            img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+            
+            body { margin: 0; padding: 0; width: 100% !important; height: 100% !important; background-color: ${surfaceColor}; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: ${textColor}; }
 
-        /* Robust Logo Swapping via Wrappers */
-        .light - img - box { display: block!important; }
+            /* Robust Logo Swapping via Wrappers */
+            .light-img-box { display: block !important; }
 
-        /* Graph Paper Effect */
-        .graph - paper - bg {
-    background - image:
-    radial - gradient(ellipse 400px 300px at 0 % 0 %, rgba(124, 42, 232, 0.15) 0 %, transparent 70 %),
-      radial - gradient(ellipse 400px 300px at 100 % 100 %, rgba(14, 200, 252, 0.12) 0 %, transparent 70 %),
-      linear - gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
-      linear - gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px)!important;
-    background - size: 100 % 100 %, 100 % 100 %, 30px 30px, 30px 30px!important;
-  }
+            /* Graph Paper Effect */
+            .graph-paper-bg {
+              background-image:
+                radial-gradient(ellipse 400px 300px at 0% 0%, rgba(124, 42, 232, 0.15) 0%, transparent 70%),
+                radial-gradient(ellipse 400px 300px at 100% 100%, rgba(14, 200, 252, 0.12) 0%, transparent 70%),
+                linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px) !important;
+              background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px !important;
+            }
 
-          /* FORCE LIGHT MODE OVERRIDES */
-          :root {
-    color - scheme: light;
-    supported - color - schemes: light;
-  }
+            /* FORCE LIGHT MODE OVERRIDES */
+            :root {
+              color-scheme: light;
+              supported-color-schemes: light;
+            }
 
-  /* Aggressively force white background and dark text even if client is in Dark Mode */
-  @media(prefers - color - scheme: dark) {
-    body, table, td, .email - body, .email - container, .email - content {
-      background - color: ${surfaceColor} !important;
-      color: ${textColor} !important;
-    }
-            .email - container, .feature - card, .info - box {
-      background - color: ${bgColor} !important;
-      color: ${textColor} !important;
-    }
-    h1, h2, h3, h4, p, span, a {
-      color: inherit!important;
-    }
-            /* Re-assert specific text colors that might get overridden */
-            .feature - title, .info - title { color: ${textColor} !important; }
-            .feature - desc, .info - desc, .footer - text { color: #64748b!important; }
+            /* Aggressively force white background and dark text even if client is in Dark Mode */
+            @media (prefers-color-scheme: dark) {
+              body, table, td, .email-body, .email-container, .email-content {
+                background-color: ${surfaceColor} !important;
+                color: ${textColor} !important;
+              }
+              .email-container, .feature-card, .info-box {
+                background-color: ${bgColor} !important;
+                color: ${textColor} !important;
+              }
+              h1, h2, h3, h4, p, span, a {
+                color: inherit !important;
+              }
+              /* Re-assert specific text colors that might get overridden */
+              .feature-title, .info-title { color: ${textColor} !important; }
+              .feature-desc, .info-desc, .footer-text { color: #64748b !important; }
 
-            /* Ensure the graph paper background persists */
-            .graph - paper - bg {
-      background - color: #183067!important;
-      background - image:
-      radial - gradient(ellipse 400px 300px at 0 % 0 %, rgba(124, 42, 232, 0.40) 0 %, transparent 70 %),
-        radial - gradient(ellipse 400px 300px at 100 % 100 %, rgba(14, 200, 252, 0.40) 0 %, transparent 70 %),
-        linear - gradient(to right, rgba(255, 255, 255, 0.14) 1px, transparent 1px),
-        linear - gradient(to bottom, rgba(255, 255, 255, 0.14) 1px, transparent 1px)!important;
-      background - size: 100 % 100 %, 100 % 100 %, 30px 30px, 30px 30px!important;
-    }
-  }
+              /* Ensure the graph paper background persists */
+              .graph-paper-bg {
+                background-color: #183067 !important;
+                background-image:
+                  radial-gradient(ellipse 400px 300px at 0% 0%, rgba(124, 42, 232, 0.40) 0%, transparent 70%),
+                  radial-gradient(ellipse 400px 300px at 100% 100%, rgba(14, 200, 252, 0.40) 0%, transparent 70%),
+                  linear-gradient(to right, rgba(255, 255, 255, 0.14) 1px, transparent 1px),
+                  linear-gradient(to bottom, rgba(255, 255, 255, 0.14) 1px, transparent 1px) !important;
+                background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px !important;
+              }
+            }
 
-  /* Mobile Optimizations */
-  @media screen and(max - width: 600px) {
-            .email - container { width: 100 % !important; padding: 0!important; background - image: linear - gradient(${bgColor}, ${bgColor})!important; }
-            .email - content { padding: 24px 16px!important; }
-            .stack - column { display: block!important; width: 100 % !important; max - width: 100 % !important; direction: ltr!important; }
-  }
-  </style>
-    </head>
-    < body class="email-body" >
-      <table width="100%" cellpadding = "0" cellspacing = "0" role = "presentation" style = "background-color: ${surfaceColor}; margin: 0; padding: 0;" >
-        <tr>
-        <td align="center" >
-          <table class="email-container" width = "100%" cellpadding = "0" cellspacing = "0" role = "presentation" style = "max-width: 600px; margin: 0 auto; background-color: ${bgColor}; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);" >
+            /* Mobile Optimizations */
+            @media screen and (max-width: 600px) {
+              .email-container { width: 100% !important; padding: 0 !important; background-image: linear-gradient(${bgColor}, ${bgColor}) !important; }
+              .email-content { padding: 24px 16px !important; }
+              .stack-column { display: block !important; width: 100% !important; max-width: 100% !important; direction: ltr !important; }
+            }
+          </style>
+        </head>
+        <body class="email-body">
+          <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: ${surfaceColor}; margin: 0; padding: 0;">
+            <tr>
+              <td align="center">
+                <table class="email-container" width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 600px; margin: 0 auto; background-color: ${bgColor}; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+                  
+                  <!-- Cinematic Header -->
+                  <tr>
+                    <td>
+                      ${getEmailHeaderHTML()}
+                    </td>
+                  </tr>
 
-            <!--Cinematic Header-- >
-              <tr>
-              <td>
-              ${getEmailHeaderHTML()}
-  </td>
-    </tr>
+                  <!-- Main Content Area with Multicolored Ambient Glow -->
+                  <tr>
+                    <td class="email-content" style="padding: 0 32px 40px; background-color: #ffffff; background-image: radial-gradient(circle at 50% 0%, rgba(124, 42, 232, 0.06) 0%, transparent 40%); background-repeat: no-repeat;">
+                      ${content}
+                    </td>
+                  </tr>
 
-    < !--Main Content Area with Multicolored Ambient Glow-- >
-      <tr>
-      <td class="email-content" style = "padding: 0 32px 40px; background-color: #ffffff; background-image: radial-gradient(circle at 50% 0%, rgba(124, 42, 232, 0.06) 0%, transparent 40%); background-repeat: no-repeat;" >
-        ${content}
-  </td>
-    </tr>
+                  <!-- Footer -->
+                  <tr>
+                    <td>
+                      ${getEmailFooterHTML()}
+                    </td>
+                  </tr>
 
-    < !--Footer -->
-      <tr>
-      <td>
-      ${getEmailFooterHTML()}
-  </td>
-    </tr>
+                </table>
 
-    </table>
-
-    < !--Spacer for bottom padding-- >
-      <table width= "100%" cellpadding = "0" cellspacing = "0" role = "presentation" >
-        <tr><td height="40" style = "font-size: 0; line-height: 0;" >& nbsp; </td></tr >
+                <!-- Spacer for bottom padding -->
+                <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+                  <tr><td height="40" style="font-size: 0; line-height: 0;">&nbsp;</td></tr>
+                </table>
+              </td>
+            </tr>
           </table>
-          </td>
-          </tr>
-          </table>
-          </body>
-          </html>
-            `;
+        </body>
+      </html>
+    `;
 }
 
 // TEMPLATE EXPORTS
