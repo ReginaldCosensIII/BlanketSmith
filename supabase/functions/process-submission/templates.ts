@@ -62,46 +62,50 @@ export function getEmailHeaderHTML(): string {
 export function getEmailFooterHTML(): string {
   const year = new Date().getFullYear();
   return `
-    <table width="100%" cellpadding="0" cellspacing="0" class="email-footer" style="background: linear-gradient(to bottom, #1e293b, #0f172a); border-top: 1px solid #334155;"><tr><td style="padding: 32px 20px 24px;"><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;"><tr><td align="center"><img src="${ASSET_BASE}vertical-logo-no-slogan-white.png" alt="BlanketSmith" width="140" style="display: block; max-width: 140px; height: auto;" /></td></tr></table><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td style="padding: 0 8px;"><a href="https://www.instagram.com/BlanketSmith_/" style="color: #a78bfa; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Instagram</a></td><td style="padding: 0 8px;"><a href="https://www.x.com/BlanketSmith/" style="color: #a78bfa; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">X (Twitter)</a></td><td style="padding: 0 8px;"><a href="https://youtube.com/@blanketsmithdotcom" style="color: #a78bfa; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">YouTube</a></td></tr><tr><td height="8" style="font-size: 0; line-height: 0;">&nbsp;</td></tr><tr><td style="padding: 0 8px;"><a href="https://www.facebook.com/people/BlanketSmith/61585611386677/" style="color: #a78bfa; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Facebook</a></td><td style="padding: 0 8px;"><a href="https://www.tiktok.com/@blanketsmith_" style="color: #a78bfa; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">TikTok</a></td><td style="padding: 0 8px;"><a href="https://discord.com/invite/cmsAYn7d" style="color: #a78bfa; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Discord</a></td></tr></table></td></tr></table><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center"><p style="color: #94a3b8; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0 0 16px;"><a href="#" style="color: #94a3b8; text-decoration: underline;">Unsubscribe</a> · <a href="#" style="color: #94a3b8; text-decoration: underline;">Privacy Policy</a> · <a href="#" style="color: #94a3b8; text-decoration: underline;">Terms of Service</a></p><p style="color: #94a3b8; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0;">Made with <img src="${ASSET_BASE}favicon-heart-v2.png" alt="love" width="16" height="16" style="display: inline-block; vertical-align: middle;" /> for the community</p><p style="color: #94a3b8; font-size: 11px; font-family: Inter, system-ui, sans-serif; margin: 12px 0 0;">© ${year} BlanketSmith. All rights reserved.</p></td></tr></table></td></tr></table>`;
+    <table width="100%" cellpadding="0" cellspacing="0" class="email-footer" style="background: linear-gradient(to bottom, #1e293b, #0f172a); border-top: 1px solid #334155;"><tr><td style="padding: 32px 20px 24px;"><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;"><tr><td align="center"><img src="${ASSET_BASE}vertical-logo-no-slogan-white.png" alt="BlanketSmith" width="140" style="display: block; max-width: 140px; height: auto;" /></td></tr></table><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td style="padding: 0 8px;"><a href="https://www.instagram.com/BlanketSmith_/" style="color: #a78bfa; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Instagram</a></td><td style="padding: 0 8px;"><a href="https://www.x.com/BlanketSmith/" style="color: #a78bfa; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">X (Twitter)</a></td><td style="padding: 0 8px;"><a href="https://youtube.com/@blanketsmithdotcom" style="color: #a78bfa; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">YouTube</a></td></tr><tr><td height="8" style="font-size: 0; line-height: 0;">&nbsp;</td></tr><tr><td style="padding: 0 8px;"><a href="https://www.facebook.com/people/BlanketSmith/61585611386677/" style="color: #a78bfa; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Facebook</a></td><td style="padding: 0 8px;"><a href="https://www.tiktok.com/@blanketsmith_" style="color: #a78bfa; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">TikTok</a></td><td style="padding: 0 8px;"><a href="https://discord.com/invite/cmsAYn7d" style="color: #a78bfa; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Discord</a></td></tr></table></td></tr></table><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center"><p style="color: #94a3b8; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0 0 16px;"><a href="#" style="color: #94a3b8; text-decoration: underline;">Unsubscribe</a> · <a href="#" style="color: #94a3b8; text-decoration: underline;">Privacy Policy</a> · <a href="#" style="color: #94a3b8; text-decoration: underline;">Terms of Service</a></p><p style="color: #94a3b8; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0;">Made with <img src="${ASSET_BASE}favicon-heart-v2.png" alt="love" width="16" height="16" style="display: inline-block; vertical-align: middle;" /> for the community</p><p style="color: #94a3b8; font-size: 11px; font-family: Inter, system-ui, sans-serif; margin: 12px 0 0;">© ${year} BlanketSmith. All rights reserved.</p></td></tr></table></td></tr></table>
   `;
 }
 
 export function getEmailFeatureCardHTML(title: string, description: string, iconUrl: string): string {
   return `
-    < td class="feature-card-wrapper" valign = "top" style = "padding: 8px;" >
-      <div class="feature-card" style = "background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 24px 20px; min-height: 160px; height: auto; box-sizing: border-box;" >
-        <!--Added Glow Effect to Icon Container-- >
-          <div class="feature-icon" style = "width: 40px; height: 40px; line-height: 40px; text-align: center; border-radius: 10px; background: linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%); margin-bottom: 12px; box-shadow: 0 0 12px rgba(124, 42, 232, 0.2), 0 0 20px rgba(14, 200, 252, 0.1); border: 1px solid rgba(124, 42, 232, 0.15);" >
-            <img src="${iconUrl}" alt = "${title} icon" width = "28" height = "28" class="feature-icon-svg" style = "display: inline-block; vertical-align: middle;" />
-              </div>
-              < h4 class="feature-title" style = "margin: 0 0 8px; font-size: 15px; font-weight: 600; font-family: Poppins, system-ui, sans-serif; color: #1e293b;" > ${ title } </h4>
-                < p class="feature-desc" style = "margin: 0; font-size: 13px; line-height: 1.5; font-family: Inter, system-ui, sans-serif; color: #64748b;" > ${ description } </p>
-                  </div>
-                  </td>
-                    `;
+    <td class="feature-card-wrapper" valign="top" style="padding: 8px;">
+      <div class="feature-card" style="background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 24px 20px; min-height: 160px; height: auto; box-sizing: border-box;">
+        <!-- Added Glow Effect to Icon Container -->
+        <div class="feature-icon" style="width: 40px; height: 40px; line-height: 40px; text-align: center; border-radius: 10px; background: linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%); margin-bottom: 12px; box-shadow: 0 0 12px rgba(124, 42, 232, 0.2), 0 0 20px rgba(14, 200, 252, 0.1); border: 1px solid rgba(124, 42, 232, 0.15);">
+          <img src="${iconUrl}" alt="${title} icon" width="28" height="28" class="feature-icon-svg" style="display: inline-block; vertical-align: middle;" />
+        </div>
+        <h4 class="feature-title" style="margin: 0 0 8px; font-size: 15px; font-weight: 600; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">${title}</h4>
+        <p class="feature-desc" style="margin: 0; font-size: 13px; line-height: 1.5; font-family: Inter, system-ui, sans-serif; color: #64748b;">${description}</p>
+      </div>
+    </td>
+  `;
 }
 
-export function getInfoBoxHTML(title: string, description: string, iconUrl: string = `${ ASSET_BASE } icons / 374FD9 / light - bulb.png`): string {
+export function getInfoBoxHTML(title: string, description: string, iconUrl: string = `${ASSET_BASE}icons/374FD9/light-bulb.png`): string {
   // Styling Updates: Gradient border and icon background
   return `
-    < div class="info-box" style = "background-color: #f1f5f9; border-radius: 12px; padding: 20px; margin-top: 24px; border-left: 4px solid #7C2AE8;" >
-      <table width="100%" cellpadding = "0" cellspacing = "0" >
-        <tr>
-        <td width="52" valign = "top" style = "padding-right: 16px;" >
-          <!--Added Glow Effect to Icon Container-- >
-            <div class="info-icon-box" style = "width: 36px; height: 36px; line-height: 36px; text-align: center; border-radius: 8px; background: linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%); box-shadow: 0 0 12px rgba(124, 42, 232, 0.2), 0 0 20px rgba(14, 200, 252, 0.1); border: 1px solid rgba(124, 42, 232, 0.15);" >
-              <img src="${iconUrl}" alt = "${title} icon" width = "24" height = "24" class="info-icon-svg" style = "display: inline-block; vertical-align: middle;" />
-                </div>
+    <div class="info-box" style="background-color: #f1f5f9; border-radius: 12px; padding: 20px; margin-top: 24px; border-left: 4px solid #7C2AE8;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+                <td width="52" valign="top" style="padding-right: 16px;">
+                    <!-- Added Glow Effect to Icon Container -->
+                    <div class="info-icon-box" style="width: 36px; height: 36px; line-height: 36px; text-align: center; border-radius: 8px; background: linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%); box-shadow: 0 0 12px rgba(124, 42, 232, 0.2), 0 0 20px rgba(14, 200, 252, 0.1); border: 1px solid rgba(124, 42, 232, 0.15);">
+                        <img src="${iconUrl}" alt="${title} icon" width="24" height="24" class="info-icon-svg" style="display: inline-block; vertical-align: middle;" />
+                    </div>
                 </td>
-                < td valign = "top" >
-                  <!--Title with Gradient Color if desired, kept dark for readability but could change-- >
-                    <p class="info-title" style = "margin: 0 0 8px; font-size: 15px; font-weight: 600; font-family: Poppins, system-ui, sans-serif; color: #1e293b;" > ${ title } </p>
-                      < p class="info-desc" style = "margin: 0; font-size: 14px; line-height: 1.6; font-family: Inter, system-ui, sans-serif; color: #64748b;" > ${ description } </p>
-                        </td>
-                        </tr>
-                        </table>
-                        </div>
-                          `;
+                <td valign="top">
+                    <!-- Title with Gradient Color if desired, kept dark for readability but could change -->
+                    <p class="info-title" style="margin: 0 0 8px; font-size: 15px; font-weight: 600; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">${title}</p>
+                    <p class="info-desc" style="margin: 0; font-size: 14px; line-height: 1.6; font-family: Inter, system-ui, sans-serif; color: #64748b;">${description}</p>
+                </td>
+            </tr>
+        </table>
+    </div>
+  `;
+  </tr>
+    </table>
+    </div>
+      `;
 }
 
 export function getEmailProgressRailHTML(currentStep: number): string {
@@ -310,10 +314,10 @@ export const getBetaTemplate = (verificationLink: string) => {
 
               < !--What Happens Next(Moved Up)-- >
                 ${
-                  getInfoBoxHTML(
-                    "What Happens Next?",
-                    "Once verified, you'll receive your Beta credentials via email within 24-48 hours. These credentials will grant you early access to The Forge where you can start creating patterns, exploring tools, and joining our community of makers."
-                  )
+    getInfoBoxHTML(
+      "What Happens Next?",
+      "Once verified, you'll receive your Beta credentials via email within 24-48 hours. These credentials will grant you early access to The Forge where you can start creating patterns, exploring tools, and joining our community of makers."
+    )
   }
 
   <!--Verification Call to Action-- >
@@ -333,44 +337,44 @@ export const getBetaTemplate = (verificationLink: string) => {
         <tr>
         <td style="padding-bottom: 16px;" >
           ${
-            getEmailFeatureCardHTML(
-              "Generate Patterns",
-              "Upload an image or snap a photo on mobile to instantly generate a custom pattern based on your unique settings.",
-              `${ASSET_BASE}icons/374FD9/image-sparkle.png`
-            )
+    getEmailFeatureCardHTML(
+      "Generate Patterns",
+      "Upload an image or snap a photo on mobile to instantly generate a custom pattern based on your unique settings.",
+      `${ASSET_BASE}icons/374FD9/image-sparkle.png`
+    )
   }
   </td>
     </tr>
     < tr >
     <td style="padding-bottom: 16px;" >
       ${
-        getEmailFeatureCardHTML(
-          "Modern Interface",
-          "Experience a beautiful, intuitive design built specifically for the modern maker, with dark mode and touch controls.",
-          `${ASSET_BASE}icons/374FD9/dashboard.png`
-        )
+    getEmailFeatureCardHTML(
+      "Modern Interface",
+      "Experience a beautiful, intuitive design built specifically for the modern maker, with dark mode and touch controls.",
+      `${ASSET_BASE}icons/374FD9/dashboard.png`
+    )
   }
   </td>
     </tr>
     < tr >
     <td style="padding-bottom: 16px;" >
       ${
-        getEmailFeatureCardHTML(
-          "Precision Tools",
-          "Fine-tune every stitch with professional-grade editing tools designed to give you complete control over your work.",
-          `${ASSET_BASE}icons/374FD9/spanner.png`
-        )
+    getEmailFeatureCardHTML(
+      "Precision Tools",
+      "Fine-tune every stitch with professional-grade editing tools designed to give you complete control over your work.",
+      `${ASSET_BASE}icons/374FD9/spanner.png`
+    )
   }
   </td>
     </tr>
     < tr >
     <td style="padding-bottom: 16px;" >
       ${
-        getEmailFeatureCardHTML(
-          "Community First",
-          "Join a thriving community of makers. Share patterns, get feedback, and help shape the future of the platform.",
-          `${ASSET_BASE}icons/374FD9/community.png`
-        )
+    getEmailFeatureCardHTML(
+      "Community First",
+      "Join a thriving community of makers. Share patterns, get feedback, and help shape the future of the platform.",
+      `${ASSET_BASE}icons/374FD9/community.png`
+    )
   }
   </td>
     </tr>
