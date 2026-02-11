@@ -9,18 +9,18 @@ import { InfoBox } from "../InfoBox";
 import { CinematicShell } from "../EmailShell";
 
 interface EmailTemplateProps {
-    isDarkMode: boolean;
+    resetLink: string;
     isMobile?: boolean;
 }
 
-export function PasswordResetEmail({ isDarkMode, isMobile = false }: EmailTemplateProps) {
-    const textColor = isDarkMode ? "#e2e8f0" : "#1e293b";
-    const mutedColor = isDarkMode ? "#94a3b8" : "#64748b";
-    const iconStroke = isDarkMode ? "#0ec8fc" : "#7c2ae8";
+export function PasswordResetEmail({ resetLink, isMobile = false }: EmailTemplateProps) {
+    const textColor = "#1e293b";
+    const mutedColor = "#64748b";
+    const iconStroke = "#7c2ae8";
     const warningColor = "#f59e0b";
 
     return (
-        <CinematicShell isDarkMode={isDarkMode} isMobile={isMobile}>
+        <CinematicShell isMobile={isMobile}>
             {/* Lock Icon */}
             <div style={{ textAlign: "center", marginBottom: "24px" }}>
                 <div
@@ -49,7 +49,7 @@ export function PasswordResetEmail({ isDarkMode, isMobile = false }: EmailTempla
                 </div>
             </div>
 
-            <SectionHeader isDarkMode={isDarkMode}>
+            <SectionHeader>
                 Reset Your <GradientText>Password</GradientText>
             </SectionHeader>
 
@@ -75,7 +75,6 @@ export function PasswordResetEmail({ isDarkMode, isMobile = false }: EmailTempla
             <InfoBox
                 title="Security Notice"
                 description="This link expires in 60 minutes. If you didn't request a password reset, you can safely ignore this email — your account remains secure."
-                isDarkMode={isDarkMode}
                 isMobile={isMobile}
                 borderColor={warningColor}
                 icon={

@@ -5,7 +5,6 @@
 interface EmailFeatureCardProps {
     title: string;
     description: string;
-    isDarkMode: boolean;
     icon?: "zap" | "layout" | "settings" | "users" | "lightbulb";
     fullWidth?: boolean;
 }
@@ -18,18 +17,15 @@ const iconPaths: Record<string, string> = {
     lightbulb: "M9 21h6 M12 3a6 6 0 016 6c0 2.22-1.21 4.16-3 5.2V17a1 1 0 01-1 1h-4a1 1 0 01-1-1v-2.8c-1.79-1.04-3-2.98-3-5.2a6 6 0 016-6z",
 };
 
-export function EmailFeatureCard({ title, description, isDarkMode, icon = "zap", fullWidth = false }: EmailFeatureCardProps) {
-    const bgColor = isDarkMode ? "#1e293b" : "#ffffff";
-    const borderColor = isDarkMode ? "#334155" : "#e2e8f0";
-    const titleColor = isDarkMode ? "#f1f5f9" : "#1e293b";
-    const textColor = isDarkMode ? "#94a3b8" : "#64748b";
-    const iconBgGradient = isDarkMode
-        ? "linear-gradient(135deg, rgba(124, 42, 232, 0.2) 0%, rgba(14, 200, 252, 0.15) 100%)"
-        : "linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%)";
-    const iconStroke = isDarkMode ? "#0ec8fc" : "#7c2ae8";
-    const iconGlow = isDarkMode
-        ? "0 0 12px rgba(14, 200, 252, 0.3), 0 0 20px rgba(124, 42, 232, 0.2)"
-        : "0 0 12px rgba(124, 42, 232, 0.2), 0 0 20px rgba(14, 200, 252, 0.1)";
+export function EmailFeatureCard({ title, description, icon = "zap", fullWidth = false }: EmailFeatureCardProps) {
+    // Fixed Light Mode Colors
+    const bgColor = "#ffffff";
+    const borderColor = "#e2e8f0";
+    const titleColor = "#1e293b";
+    const textColor = "#64748b";
+    const iconBgGradient = "linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%)";
+    const iconStroke = "#7c2ae8";
+    const iconGlow = "0 0 12px rgba(124, 42, 232, 0.2), 0 0 20px rgba(14, 200, 252, 0.1)";
 
     return (
         <td
@@ -63,7 +59,7 @@ export function EmailFeatureCard({ title, description, isDarkMode, icon = "zap",
                         justifyContent: "center",
                         marginBottom: "12px",
                         boxShadow: iconGlow,
-                        border: `1px solid ${isDarkMode ? "rgba(14, 200, 252, 0.2)" : "rgba(124, 42, 232, 0.15)"}`,
+                        border: "1px solid rgba(124, 42, 232, 0.15)",
                         flexShrink: 0,
                     }}
                 >
@@ -111,21 +107,16 @@ export function EmailFeatureCard({ title, description, isDarkMode, icon = "zap",
 export function getEmailFeatureCardHTML(
     title: string,
     description: string,
-    isDarkMode: boolean,
     icon: string = "zap"
 ): string {
-    const bgColor = isDarkMode ? "#1e293b" : "#ffffff";
-    const borderColor = isDarkMode ? "#334155" : "#e2e8f0";
-    const titleColor = isDarkMode ? "#f1f5f9" : "#1e293b";
-    const textColor = isDarkMode ? "#94a3b8" : "#64748b";
-    const iconBgGradient = isDarkMode
-        ? "linear-gradient(135deg, rgba(124, 42, 232, 0.2) 0%, rgba(14, 200, 252, 0.15) 100%)"
-        : "linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%)";
-    const iconStroke = isDarkMode ? "#0ec8fc" : "#7c2ae8";
-    const iconGlow = isDarkMode
-        ? "0 0 12px rgba(14, 200, 252, 0.3), 0 0 20px rgba(124, 42, 232, 0.2)"
-        : "0 0 12px rgba(124, 42, 232, 0.2), 0 0 20px rgba(14, 200, 252, 0.1)";
-    const iconBorder = isDarkMode ? "rgba(14, 200, 252, 0.2)" : "rgba(124, 42, 232, 0.15)";
+    const bgColor = "#ffffff";
+    const borderColor = "#e2e8f0";
+    const titleColor = "#1e293b";
+    const textColor = "#64748b";
+    const iconBgGradient = "linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%)";
+    const iconStroke = "#7c2ae8";
+    const iconGlow = "0 0 12px rgba(124, 42, 232, 0.2), 0 0 20px rgba(14, 200, 252, 0.1)";
+    const iconBorder = "rgba(124, 42, 232, 0.15)";
 
     return `
     <td width="50%" valign="top" style="padding: 8px;">

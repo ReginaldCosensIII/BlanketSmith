@@ -6,26 +6,21 @@ export function InfoBox({
     title,
     description,
     icon,
-    isDarkMode,
     isMobile,
     borderColor: borderAccent,
 }: {
     title: string;
     description: string;
     icon: React.ReactNode;
-    isDarkMode: boolean;
     isMobile: boolean;
     borderColor?: string;
 }) {
-    const infoBoxBg = isDarkMode ? "#1e293b" : "#f1f5f9";
-    const textColor = isDarkMode ? "#e2e8f0" : "#1e293b";
-    const mutedColor = isDarkMode ? "#94a3b8" : "#64748b";
-    const iconBgGradient = isDarkMode
-        ? "linear-gradient(135deg, rgba(124, 42, 232, 0.2) 0%, rgba(14, 200, 252, 0.15) 100%)"
-        : "linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%)";
-    const iconGlow = isDarkMode
-        ? "0 0 12px rgba(14, 200, 252, 0.3), 0 0 20px rgba(124, 42, 232, 0.2)"
-        : "0 0 12px rgba(124, 42, 232, 0.2), 0 0 20px rgba(14, 200, 252, 0.1)";
+    // Fixed Light Mode Colors
+    const infoBoxBg = "#f1f5f9";
+    const textColor = "#1e293b";
+    const mutedColor = "#64748b";
+    const iconBgGradient = "linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%)";
+    const iconGlow = "0 0 12px rgba(124, 42, 232, 0.2), 0 0 20px rgba(14, 200, 252, 0.1)";
 
     return (
         <div
@@ -55,7 +50,7 @@ export function InfoBox({
                                     alignItems: "center",
                                     justifyContent: "center",
                                     boxShadow: iconGlow,
-                                    border: `1px solid ${isDarkMode ? "rgba(14, 200, 252, 0.2)" : "rgba(124, 42, 232, 0.15)"}`,
+                                    border: "1px solid rgba(124, 42, 232, 0.15)",
                                 }}
                             >
                                 {icon}

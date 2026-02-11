@@ -12,23 +12,19 @@ import { SectionHeader } from "../SectionHeader";
 
 
 interface EmailTemplateProps {
-    isDarkMode: boolean;
-    isMobile?: boolean;
+    name: string;
+    isMobile?: boolean; // Added isMobile prop
 }
 
-export function BetaWelcomeEmail({ isDarkMode, isMobile = false }: EmailTemplateProps) {
-    const bgColor = isDarkMode ? "#0a0f1a" : "#f8fafc";
-    const cardBg = isDarkMode ? "#0f172a" : "#ffffff";
-    const textColor = isDarkMode ? "#e2e8f0" : "#1e293b";
-    const mutedColor = isDarkMode ? "#94a3b8" : "#64748b";
-    const infoBoxBg = isDarkMode ? "#1e293b" : "#f1f5f9";
-    const iconStroke = isDarkMode ? "#0ec8fc" : "#7c2ae8";
-    const iconGlow = isDarkMode
-        ? "0 0 12px rgba(14, 200, 252, 0.3), 0 0 20px rgba(124, 42, 232, 0.2)"
-        : "0 0 12px rgba(124, 42, 232, 0.2), 0 0 20px rgba(14, 200, 252, 0.1)";
-    const iconBgGradient = isDarkMode
-        ? "linear-gradient(135deg, rgba(124, 42, 232, 0.2) 0%, rgba(14, 200, 252, 0.15) 100%)"
-        : "linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%)";
+export function BetaWelcomeEmail({ name, isMobile = false }: EmailTemplateProps) {
+    const bgColor = "#f8fafc";
+    const cardBg = "#ffffff";
+    const textColor = "#1e293b";
+    const mutedColor = "#64748b";
+    const infoBoxBg = "#f1f5f9";
+    const iconStroke = "#7c2ae8";
+    const iconGlow = "0 0 12px rgba(124, 42, 232, 0.2), 0 0 20px rgba(14, 200, 252, 0.1)";
+    const iconBgGradient = "linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%)";
 
     const containerPadding = isMobile ? "24px 20px 32px" : "32px 40px 40px";
 
@@ -53,9 +49,7 @@ export function BetaWelcomeEmail({ isDarkMode, isMobile = false }: EmailTemplate
                                 backgroundColor: cardBg,
                                 borderRadius: "16px",
                                 overflow: "hidden",
-                                boxShadow: isDarkMode
-                                    ? "0 25px 50px -12px rgba(0, 0, 0, 0.5)"
-                                    : "0 25px 50px -12px rgba(0, 0, 0, 0.1)",
+                                boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.1)",
                                 maxWidth: "600px",
                             }}
                         >
@@ -63,7 +57,7 @@ export function BetaWelcomeEmail({ isDarkMode, isMobile = false }: EmailTemplate
                                 {/* Header */}
                                 <tr>
                                     <td>
-                                        <EmailHeader isDarkMode={isDarkMode} />
+                                        <EmailHeader />
                                     </td>
                                 </tr>
 
@@ -71,7 +65,7 @@ export function BetaWelcomeEmail({ isDarkMode, isMobile = false }: EmailTemplate
                                 <tr>
                                     <td style={{ padding: containerPadding }}>
                                         {/* Welcome Title */}
-                                        <SectionHeader isDarkMode={isDarkMode}>
+                                        <SectionHeader>
                                             Welcome to <GradientText>The Forge</GradientText>
                                         </SectionHeader>
 
@@ -88,7 +82,7 @@ export function BetaWelcomeEmail({ isDarkMode, isMobile = false }: EmailTemplate
                                         </p>
 
                                         {/* Progress Rail */}
-                                        <EmailProgressRail currentStep={1} isDarkMode={isDarkMode} />
+                                        <EmailProgressRail currentStep={1} />
 
                                         {/* Main Copy */}
                                         <p
@@ -129,7 +123,6 @@ export function BetaWelcomeEmail({ isDarkMode, isMobile = false }: EmailTemplate
                                                             <EmailFeatureCard
                                                                 title="Instant Patterns"
                                                                 description="Transform your vision into precise, ready-to-use patterns in seconds."
-                                                                isDarkMode={isDarkMode}
                                                                 icon="zap"
                                                                 fullWidth
                                                             />
@@ -138,7 +131,6 @@ export function BetaWelcomeEmail({ isDarkMode, isMobile = false }: EmailTemplate
                                                             <EmailFeatureCard
                                                                 title="Modern Interface"
                                                                 description="A beautiful, intuitive design built for the modern maker."
-                                                                isDarkMode={isDarkMode}
                                                                 icon="layout"
                                                                 fullWidth
                                                             />
@@ -147,7 +139,6 @@ export function BetaWelcomeEmail({ isDarkMode, isMobile = false }: EmailTemplate
                                                             <EmailFeatureCard
                                                                 title="Precision Tools"
                                                                 description="Fine-tune every detail with our professional-grade editing tools."
-                                                                isDarkMode={isDarkMode}
                                                                 icon="settings"
                                                                 fullWidth
                                                             />
@@ -156,7 +147,6 @@ export function BetaWelcomeEmail({ isDarkMode, isMobile = false }: EmailTemplate
                                                             <EmailFeatureCard
                                                                 title="Community First"
                                                                 description="Join a growing community of passionate crafters and creators."
-                                                                isDarkMode={isDarkMode}
                                                                 icon="users"
                                                                 fullWidth
                                                             />
@@ -168,13 +158,11 @@ export function BetaWelcomeEmail({ isDarkMode, isMobile = false }: EmailTemplate
                                                             <EmailFeatureCard
                                                                 title="Instant Patterns"
                                                                 description="Transform your vision into precise, ready-to-use patterns in seconds."
-                                                                isDarkMode={isDarkMode}
                                                                 icon="zap"
                                                             />
                                                             <EmailFeatureCard
                                                                 title="Modern Interface"
                                                                 description="A beautiful, intuitive design built for the modern maker."
-                                                                isDarkMode={isDarkMode}
                                                                 icon="layout"
                                                             />
                                                         </tr>
@@ -182,13 +170,11 @@ export function BetaWelcomeEmail({ isDarkMode, isMobile = false }: EmailTemplate
                                                             <EmailFeatureCard
                                                                 title="Precision Tools"
                                                                 description="Fine-tune every detail with our professional-grade editing tools."
-                                                                isDarkMode={isDarkMode}
                                                                 icon="settings"
                                                             />
                                                             <EmailFeatureCard
                                                                 title="Community First"
                                                                 description="Join a growing community of passionate crafters and creators."
-                                                                isDarkMode={isDarkMode}
                                                                 icon="users"
                                                             />
                                                         </tr>
@@ -226,7 +212,7 @@ export function BetaWelcomeEmail({ isDarkMode, isMobile = false }: EmailTemplate
                                                                     alignItems: "center",
                                                                     justifyContent: "center",
                                                                     boxShadow: iconGlow,
-                                                                    border: `1px solid ${isDarkMode ? "rgba(14, 200, 252, 0.2)" : "rgba(124, 42, 232, 0.15)"}`,
+                                                                    border: "1px solid rgba(124, 42, 232, 0.15)",
                                                                 }}
                                                             >
                                                                 <svg
@@ -279,7 +265,7 @@ export function BetaWelcomeEmail({ isDarkMode, isMobile = false }: EmailTemplate
                                 {/* Footer */}
                                 <tr>
                                     <td>
-                                        <EmailFooter isDarkMode={isDarkMode} />
+                                        <EmailFooter />
                                     </td>
                                 </tr>
                             </tbody>

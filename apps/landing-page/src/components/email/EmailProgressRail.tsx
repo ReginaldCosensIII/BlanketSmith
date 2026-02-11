@@ -5,7 +5,6 @@
 
 interface EmailProgressRailProps {
     currentStep: number;
-    isDarkMode: boolean;
 }
 
 const steps = ["Signup", "Verification", "Beta Access", "Forge"];
@@ -13,11 +12,12 @@ const steps = ["Signup", "Verification", "Beta Access", "Forge"];
 // Checkmark SVG path
 const checkmarkPath = "M20 6L9 17l-5-5";
 
-export function EmailProgressRail({ currentStep, isDarkMode }: EmailProgressRailProps) {
-    const textColor = isDarkMode ? "#e2e8f0" : "#1e293b";
-    const mutedColor = isDarkMode ? "#64748b" : "#94a3b8";
+export function EmailProgressRail({ currentStep }: EmailProgressRailProps) {
+    // Fixed Light Mode Colors
+    const textColor = "#1e293b";
+    const mutedColor = "#94a3b8";
     const activeGradient = "linear-gradient(135deg, #7C2AE8 0%, #374FD9 75%, #0EC8FC 100%)";
-    const inactiveBg = isDarkMode ? "#1e293b" : "#e2e8f0";
+    const inactiveBg = "#e2e8f0";
     const completedGreen = "#22c55e"; // Bright green for completed steps
 
     return (
@@ -126,11 +126,11 @@ export function EmailProgressRail({ currentStep, isDarkMode }: EmailProgressRail
     );
 }
 
-export function getEmailProgressRailHTML(currentStep: number, isDarkMode: boolean): string {
-    const textColor = isDarkMode ? "#e2e8f0" : "#1e293b";
-    const mutedColor = isDarkMode ? "#64748b" : "#94a3b8";
+export function getEmailProgressRailHTML(currentStep: number): string {
+    const textColor = "#1e293b";
+    const mutedColor = "#94a3b8";
     const activeGradient = "linear-gradient(135deg, #7C2AE8 0%, #374FD9 75%, #0EC8FC 100%)";
-    const inactiveBg = isDarkMode ? "#1e293b" : "#e2e8f0";
+    const inactiveBg = "#e2e8f0";
     const completedGreen = "#22c55e";
     const steps = ["Signup", "Verification", "Beta Access", "Forge"];
 

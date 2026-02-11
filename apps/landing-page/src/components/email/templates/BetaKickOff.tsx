@@ -10,17 +10,15 @@ import { EmailFeatureCard } from "../EmailFeatureCard";
 import { InfoBox } from "../InfoBox";
 
 interface EmailTemplateProps {
-    isDarkMode: boolean;
-    isMobile?: boolean;
+    name: string;
+    isMobile?: boolean; // Added isMobile prop
 }
 
-export function BetaKickOffEmail({ isDarkMode, isMobile = false }: EmailTemplateProps) {
-    const textColor = isDarkMode ? "#e2e8f0" : "#1e293b";
-    const mutedColor = isDarkMode ? "#94a3b8" : "#64748b";
-    const iconStroke = isDarkMode ? "#0ec8fc" : "#7c2ae8";
+export function BetaKickOffEmail({ name, isMobile = false }: EmailTemplateProps) {
+    const textColor = "#1e293b";
 
     return (
-        <CinematicShell isDarkMode={isDarkMode} isMobile={isMobile}>
+        <CinematicShell isMobile={isMobile}>
             {/* Rocket Icon */}
             <div style={{ textAlign: "center", marginBottom: "24px" }}>
                 <div
@@ -51,7 +49,7 @@ export function BetaKickOffEmail({ isDarkMode, isMobile = false }: EmailTemplate
                 </div>
             </div>
 
-            <SectionHeader isDarkMode={isDarkMode}>
+            <SectionHeader>
                 The Beta is <GradientText>Live!</GradientText>
             </SectionHeader>
 
@@ -91,7 +89,6 @@ export function BetaKickOffEmail({ isDarkMode, isMobile = false }: EmailTemplate
                                 <EmailFeatureCard
                                     title="Pattern Generator"
                                     description="Create precise, production-ready patterns from your measurements."
-                                    isDarkMode={isDarkMode}
                                     icon="zap"
                                     fullWidth
                                 />
@@ -100,7 +97,6 @@ export function BetaKickOffEmail({ isDarkMode, isMobile = false }: EmailTemplate
                                 <EmailFeatureCard
                                     title="Precision Editor"
                                     description="Fine-tune every stitch with our professional-grade editing suite."
-                                    isDarkMode={isDarkMode}
                                     icon="settings"
                                     fullWidth
                                 />
@@ -109,7 +105,6 @@ export function BetaKickOffEmail({ isDarkMode, isMobile = false }: EmailTemplate
                                 <EmailFeatureCard
                                     title="The Community"
                                     description="Connect with makers, share patterns, and get feedback in Discord."
-                                    isDarkMode={isDarkMode}
                                     icon="users"
                                     fullWidth
                                 />
@@ -118,7 +113,6 @@ export function BetaKickOffEmail({ isDarkMode, isMobile = false }: EmailTemplate
                                 <EmailFeatureCard
                                     title="Feedback Loop"
                                     description="Shape the product — your input directly influences our roadmap."
-                                    isDarkMode={isDarkMode}
                                     icon="lightbulb"
                                     fullWidth
                                 />
@@ -130,13 +124,11 @@ export function BetaKickOffEmail({ isDarkMode, isMobile = false }: EmailTemplate
                                 <EmailFeatureCard
                                     title="Pattern Generator"
                                     description="Create precise, production-ready patterns from your measurements."
-                                    isDarkMode={isDarkMode}
                                     icon="zap"
                                 />
                                 <EmailFeatureCard
                                     title="Precision Editor"
                                     description="Fine-tune every stitch with our professional-grade editing suite."
-                                    isDarkMode={isDarkMode}
                                     icon="settings"
                                 />
                             </tr>
@@ -144,13 +136,11 @@ export function BetaKickOffEmail({ isDarkMode, isMobile = false }: EmailTemplate
                                 <EmailFeatureCard
                                     title="The Community"
                                     description="Connect with makers, share patterns, and get feedback in Discord."
-                                    isDarkMode={isDarkMode}
                                     icon="users"
                                 />
                                 <EmailFeatureCard
                                     title="Feedback Loop"
                                     description="Shape the product — your input directly influences our roadmap."
-                                    isDarkMode={isDarkMode}
                                     icon="lightbulb"
                                 />
                             </tr>
@@ -162,10 +152,9 @@ export function BetaKickOffEmail({ isDarkMode, isMobile = false }: EmailTemplate
             <InfoBox
                 title="How to make the most of Beta"
                 description="Explore freely, break things, and tell us about it. We've built a dedicated feedback channel in Discord and an in-app feedback tool. Every bug report and feature request helps us build a better Forge."
-                isDarkMode={isDarkMode}
                 isMobile={isMobile}
                 icon={
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={iconStroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7c2ae8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
                     </svg>
                 }
