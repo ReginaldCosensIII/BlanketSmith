@@ -10,7 +10,7 @@ export function getEmailButtonHTML(text: string, href: string): string {
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr>
         <td align="center" style="padding: 16px 0;">
-          <a href="${href}" class="email-button" style="display: inline-block; padding: 14px 32px; background: linear-gradient(135deg, #7C2AE8 0%, #374FD9 75%, #0EC8FC 100%); color: #ffffff; font-family: Inter, system-ui, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(124, 42, 232, 0.2), 0 2px 4px -1px rgba(124, 42, 232, 0.1);">
+          <a href="${href}" class="email-button" style="display: inline-block; padding: 14px 32px; background-color: #374FD9; background: linear-gradient(135deg, #7C2AE8 0%, #374FD9 75%, #0EC8FC 100%) no-repeat; color: #ffffff; font-family: Inter, system-ui, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(124, 42, 232, 0.2), 0 2px 4px -1px rgba(124, 42, 232, 0.1);">
             ${text}
           </a>
         </td>
@@ -30,7 +30,7 @@ export function getSectionHeaderHTML(text: string): string {
   return `
     <table width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 24px;">
         <tr>
-            <td align="center" style="padding: 24px 0; background: radial-gradient(50% 50% at 50% 50%, rgba(124, 42, 232, 0.1) 0%, rgba(255, 255, 255, 0) 100%);">
+            <td align="center" style="padding: 24px 0; background-color: #f8fafc; background: radial-gradient(50% 50% at 50% 50%, rgba(124, 42, 232, 0.1) 0%, rgba(255, 255, 255, 0) 100%);">
                 <h2 class="section-header" style="margin: 0; font-size: 24px; font-weight: 700; font-family: Poppins, system-ui, sans-serif; text-align: center;">
                   <span style="display: inline-block; background-image: linear-gradient(135deg, #7C2AE8 0%, #374FD9 75%, #0EC8FC 100%); -webkit-background-clip: text; background-clip: text; color: #7C2AE8; -webkit-text-fill-color: transparent;">${text}</span>
                 </h2>
@@ -43,16 +43,22 @@ export function getSectionHeaderHTML(text: string): string {
 export function getEmailHeaderHTML(): string {
   // Universal Dark Header with Horizontal Logo + Graph Paper Effect
   return `
-    <table width="100%" cellpadding="0" cellspacing="0" class="email-header graph-paper-bg" style="background-color: #0f172a;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0f172a" style="background-color: #0f172a;">
       <tr>
-        <td align="center" style="padding: 40px 20px 40px;">
-          <!-- Universal White Logo -->
-          <img 
-            src="${ASSET_BASE}horizontal-logo-white.png" 
-            alt="BlanketSmith" 
-            width="180" 
-            style="display: block; max-width: 180px; height: auto;" 
-          />
+        <td align="center" valign="top">
+          <table width="100%" cellpadding="0" cellspacing="0" class="email-header graph-paper-bg" style="background-color: #0f172a;" bgcolor="#0f172a">
+            <tr>
+              <td align="center" style="padding: 40px 20px 40px;">
+                <!-- Universal White Logo -->
+                <img 
+                  src="${ASSET_BASE}horizontal-logo-white.png" 
+                  alt="BlanketSmith" 
+                  width="180" 
+                  style="display: block; max-width: 180px; height: auto;" 
+                />
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
     </table>
@@ -62,7 +68,13 @@ export function getEmailHeaderHTML(): string {
 export function getEmailFooterHTML(): string {
   const year = new Date().getFullYear();
   return `
-    <table width="100%" cellpadding="0" cellspacing="0" class="email-footer" style="background: linear-gradient(to bottom, #1e293b, #0f172a); border-top: 1px solid #334155;"><tr><td style="padding: 32px 20px 24px;"><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;"><tr><td align="center"><img src="${ASSET_BASE}vertical-logo-no-slogan-white.png" alt="BlanketSmith" width="140" style="display: block; max-width: 140px; height: auto;" /></td></tr></table><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td style="padding: 0 8px;"><a href="https://www.instagram.com/BlanketSmith_/" style="color: #a78bfa; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Instagram</a></td><td style="padding: 0 8px;"><a href="https://www.x.com/BlanketSmith/" style="color: #a78bfa; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">X (Twitter)</a></td><td style="padding: 0 8px;"><a href="https://youtube.com/@blanketsmithdotcom" style="color: #a78bfa; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">YouTube</a></td></tr><tr><td height="8" style="font-size: 0; line-height: 0;">&nbsp;</td></tr><tr><td style="padding: 0 8px;"><a href="https://www.facebook.com/people/BlanketSmith/61585611386677/" style="color: #a78bfa; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Facebook</a></td><td style="padding: 0 8px;"><a href="https://www.tiktok.com/@blanketsmith_" style="color: #a78bfa; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">TikTok</a></td><td style="padding: 0 8px;"><a href="https://discord.com/invite/cmsAYn7d" style="color: #a78bfa; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Discord</a></td></tr></table></td></tr></table><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center"><p style="color: #94a3b8; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0 0 16px;"><a href="#" style="color: #94a3b8; text-decoration: underline;">Unsubscribe</a> · <a href="#" style="color: #94a3b8; text-decoration: underline;">Privacy Policy</a> · <a href="#" style="color: #94a3b8; text-decoration: underline;">Terms of Service</a></p><p style="color: #94a3b8; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0;">Made with <img src="${ASSET_BASE}favicon-heart-v2.png" alt="love" width="16" height="16" style="display: inline-block; vertical-align: middle;" /> for the community</p><p style="color: #94a3b8; font-size: 11px; font-family: Inter, system-ui, sans-serif; margin: 12px 0 0;">© ${year} BlanketSmith. All rights reserved.</p></td></tr></table></td></tr></table>
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1e293b" style="background-color: #1e293b;">
+      <tr>
+        <td align="center" valign="top">
+          <table width="100%" cellpadding="0" cellspacing="0" class="email-footer" style="background-color: #1e293b; background-image: linear-gradient(to bottom, #1e293b, #0f172a); border-top: 1px solid #334155;" bgcolor="#1e293b"><tr><td style="padding: 32px 20px 24px;"><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;"><tr><td align="center"><img src="${ASSET_BASE}vertical-logo-no-slogan-white.png" alt="BlanketSmith" width="140" style="display: block; max-width: 140px; height: auto;" /></td></tr></table><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td style="padding: 0 8px;"><a href="https://www.instagram.com/BlanketSmith_/" style="color: #cbd5e1 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Instagram</a></td><td style="padding: 0 8px;"><a href="https://www.x.com/BlanketSmith/" style="color: #cbd5e1 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">X (Twitter)</a></td><td style="padding: 0 8px;"><a href="https://youtube.com/@blanketsmithdotcom" style="color: #cbd5e1 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">YouTube</a></td></tr><tr><td height="8" style="font-size: 0; line-height: 0;">&nbsp;</td></tr><tr><td style="padding: 0 8px;"><a href="https://www.facebook.com/people/BlanketSmith/61585611386677/" style="color: #cbd5e1 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Facebook</a></td><td style="padding: 0 8px;"><a href="https://www.tiktok.com/@blanketsmith_" style="color: #cbd5e1 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">TikTok</a></td><td style="padding: 0 8px;"><a href="https://discord.com/invite/cmsAYn7d" style="color: #cbd5e1 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Discord</a></td></tr></table></td></tr></table><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center"><p style="color: #94a3b8; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0 0 16px;"><a href="#" style="color: #cbd5e1 !important; text-decoration: underline;">Unsubscribe</a> · <a href="#" style="color: #cbd5e1 !important; text-decoration: underline;">Privacy Policy</a> · <a href="#" style="color: #cbd5e1 !important; text-decoration: underline;">Terms of Service</a></p><p style="color: #cbd5e1 !important; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0;">Made with <img src="${ASSET_BASE}favicon-heart-v2.png" alt="love" width="16" height="16" style="display: inline-block; vertical-align: middle;" /> for the community</p><p style="color: #cbd5e1 !important; font-size: 11px; font-family: Inter, system-ui, sans-serif; margin: 12px 0 0;">© ${year} BlanketSmith. All rights reserved.</p></td></tr></table></td></tr></table>
+        </td>
+      </tr>
+    </table>
   `;
 }
 
@@ -71,7 +83,7 @@ export function getEmailFeatureCardHTML(title: string, description: string, icon
     <td class="feature-card-wrapper" valign="top" style="padding: 8px;">
       <div class="feature-card" style="background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 24px 20px; min-height: 160px; height: auto; box-sizing: border-box;">
         <!-- Added Glow Effect to Icon Container -->
-        <div class="feature-icon" style="width: 40px; height: 40px; line-height: 40px; text-align: center; border-radius: 10px; background: linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%); margin-bottom: 12px; box-shadow: 0 0 12px rgba(124, 42, 232, 0.2), 0 0 20px rgba(14, 200, 252, 0.1); border: 1px solid rgba(124, 42, 232, 0.15);">
+        <div class="feature-icon" style="width: 40px; height: 40px; line-height: 40px; text-align: center; border-radius: 10px; background-color: #f3e8ff; background: linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%) no-repeat; margin-bottom: 12px; box-shadow: 0 0 12px rgba(124, 42, 232, 0.2), 0 0 20px rgba(14, 200, 252, 0.1); border: 1px solid rgba(124, 42, 232, 0.15);">
           <img src="${iconUrl}" alt="${title} icon" width="28" height="28" class="feature-icon-svg" style="display: inline-block; vertical-align: middle;" />
         </div>
         <h4 class="feature-title" style="margin: 0 0 8px; font-size: 15px; font-weight: 600; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">${title}</h4>
@@ -89,7 +101,7 @@ export function getInfoBoxHTML(title: string, description: string, iconUrl: stri
             <tr>
                 <td width="52" valign="top" style="padding-right: 16px;">
                     <!-- Added Glow Effect to Icon Container -->
-                    <div class="info-icon-box" style="width: 36px; height: 36px; line-height: 36px; text-align: center; border-radius: 8px; background: linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%); box-shadow: 0 0 12px rgba(124, 42, 232, 0.2), 0 0 20px rgba(14, 200, 252, 0.1); border: 1px solid rgba(124, 42, 232, 0.15);">
+                    <div class="info-icon-box" style="width: 36px; height: 36px; line-height: 36px; text-align: center; border-radius: 8px; background-color: #f3e8ff; background: linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%) no-repeat; box-shadow: 0 0 12px rgba(124, 42, 232, 0.2), 0 0 20px rgba(14, 200, 252, 0.1); border: 1px solid rgba(124, 42, 232, 0.15);">
                         <img src="${iconUrl}" alt="${title} icon" width="24" height="24" class="info-icon-svg" style="display: inline-block; vertical-align: middle;" />
                     </div>
                 </td>
@@ -122,7 +134,7 @@ export function getEmailProgressRailHTML(currentStep: number): string {
 
     if (isActive) {
       // Updated to use brand gradient
-      circleStyle += `background: linear-gradient(135deg, #7C2AE8 0%, #374FD9 62%, #0EC8FC 100%); color: #ffffff; box-shadow: 0 0 0 4px rgba(124, 42, 232, 0.2);`;
+      circleStyle += `background-color: #374FD9; background: linear-gradient(135deg, #7C2AE8 0%, #374FD9 62%, #0EC8FC 100%) no-repeat; color: #ffffff; border: 2px solid #0EC8FC; background-clip: padding-box;`;
     } else if (isCompleted) {
       circleStyle += `background-color: #10b981; color: #ffffff;`;
     } else {
@@ -198,13 +210,18 @@ export function getCinematicShellHTML(content: string, isMobile: boolean = false
 
             /* Aggressively force white background and dark text even if client is in Dark Mode */
             @media (prefers-color-scheme: dark) {
-              body, table, td, .email-body, .email-container, .email-content {
+              body, .email-body, .email-container, .email-content {
                 background-color: ${surfaceColor} !important;
                 color: ${textColor} !important;
               }
               .email-container, .feature-card, .info-box {
                 background-color: ${bgColor} !important;
                 color: ${textColor} !important;
+              }
+              /* Dark Mode Override for Info Box specifically */
+              .info-box {
+                  background-color: #f1f5f9 !important; /* Force light background for info box to maintain contrast */
+                  color: #1e293b !important;
               }
               h1, h2, h3, h4, p, span, a {
                 color: inherit !important;
