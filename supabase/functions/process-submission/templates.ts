@@ -40,6 +40,26 @@ export function getSectionHeaderHTML(text: string): string {
   `;
 }
 
+export function getEmailHeadingHTML(title: string, subtitle: string, extraHTML: string = ""): string {
+  // Cinematic Glow Header
+  // Radial gradient: Elliptical stretch, wide and centered behind text.
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
+      <tr>
+        <td align="center" style="padding: 24px 24px 32px; background: radial-gradient(ellipse 340px 160px at 50% 30%, rgba(124, 42, 232, 0.18) 0%, rgba(255, 255, 255, 0) 70%);">
+          <h1 style="margin: 0 0 16px; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">
+            ${title}
+          </h1>
+          <p style="margin: 0 0 24px; font-size: 18px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;">
+            ${subtitle}
+          </p>
+          ${extraHTML}
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
 export function getEmailHeaderHTML(): string {
   // Universal Dark Header with Horizontal Logo + Graph Paper Effect
   return `
@@ -321,19 +341,11 @@ export const getBetaTemplate = (verificationLink: string) => {
   // Updated Position: "raised and centered around the header more" -> `at 50% 30%` (higher up)
   const content = `
     <!-- Header Section with Centered Body Glow -->
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
-      <tr>
-        <td align="center" style="padding: 24px 24px 32px; background: radial-gradient(ellipse 340px 160px at 50% 30%, rgba(124, 42, 232, 0.18) 0%, rgba(255, 255, 255, 0) 70%);">
-          <h1 style="margin: 0 0 16px; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">
-            Welcome to ${getGradientTextHTML("The Forge")}
-          </h1>
-          <p style="margin: 0 0 24px; font-size: 18px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;">
-            🎉 You're in! 🎉
-          </p>
-          ${getEmailProgressRailHTML(2)}
-        </td>
-      </tr>
-    </table>
+    ${getEmailHeadingHTML(
+    `Welcome to ${getGradientTextHTML("The Forge")}`,
+    "🎉 You're in! 🎉",
+    getEmailProgressRailHTML(2)
+  )}
 
     <!-- Intro Text -->
     <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
@@ -414,18 +426,10 @@ export const getBetaTemplate = (verificationLink: string) => {
 export const getPartnershipTemplate = (name: string) => {
   const content = `
     <!-- Header Section -->
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
-      <tr>
-        <td align="center">
-          <h1 style="margin: 0 0 16px; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">
-            Partnership Request Received
-          </h1>
-          <p style="margin: 0 0 24px; font-size: 18px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;">
-            Thank you for reaching out, ${name}!
-          </p>
-        </td>
-      </tr>
-    </table>
+    ${getEmailHeadingHTML(
+    "Partnership Request Received",
+    `Thank you for reaching out, ${name}!`
+  )}
 
     ${getInfoBoxHTML(
     "Our Team is Reviewing Your Request",
@@ -446,18 +450,10 @@ export const getPartnershipTemplate = (name: string) => {
 export const getFeedbackTemplate = (name: string) => {
   const content = `
     <!-- Header Section -->
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
-      <tr>
-        <td align="center">
-          <h1 style="margin: 0 0 16px; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">
-            Feedback Received
-          </h1>
-          <p style="margin: 0 0 24px; font-size: 18px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;">
-            Thanks for your input, ${name}!
-          </p>
-        </td>
-      </tr>
-    </table>
+    ${getEmailHeadingHTML(
+    "Feedback Received",
+    `Thanks for your input, ${name}!`
+  )}
 
     ${getInfoBoxHTML(
     "Your Voice Matters",
@@ -477,18 +473,10 @@ export const getFeedbackTemplate = (name: string) => {
 
 export const getDefaultTemplate = (name: string, email: string, message: string) => {
   const content = `
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
-      <tr>
-        <td align="center">
-          <h1 style="margin: 0 0 16px; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">
-            Submission Received
-          </h1>
-          <p style="margin: 0 0 24px; font-size: 18px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;">
-            Hello ${name}, we have received your message.
-          </p>
-        </td>
-      </tr>
-    </table>
+    ${getEmailHeadingHTML(
+    "Submission Received",
+    `Hello ${name}, we have received your message.`
+  )}
     ${getInfoBoxHTML(
     "Message Details",
     `"${message}" - Sent from ${email}`
@@ -502,19 +490,11 @@ export const getDefaultTemplate = (name: string, email: string, message: string)
 
 export const getAdminAlertTemplate = (category: string, email: string, payload: any) => {
   const content = `
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
-      <tr>
-        <td align="center">
-          <h1 style="margin: 0 0 16px; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">
-            New Submission: ${category}
-          </h1>
-          <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;">
-            From: ${email}
-          </p>
-        </td>
-      </tr>
-    </table>
-    <pre style="background: #f1f5f9; padding: 16px; border-radius: 8px; overflow-x: auto; font-family: monospace; font-size: 12px; color: #334155;">
+    ${getEmailHeadingHTML(
+    `New Submission: ${category}`,
+    `From: ${email}`
+  )}
+    <pre style="background: #f1f5f9; padding: 16px; border-radius: 8px; overflow-x: auto; white-space: pre-wrap; word-break: break-word; font-family: monospace; font-size: 12px; color: #334155;">
       ${JSON.stringify(payload, null, 2)}
     </pre>
   `;
