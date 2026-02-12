@@ -10,9 +10,16 @@ export function getEmailButtonHTML(text: string, href: string): string {
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr>
         <td align="center" style="padding: 16px 0;">
-          <a href="${href}" class="email-button" style="display: inline-block; padding: 14px 32px; background-color: #374FD9; background: linear-gradient(135deg, #7C2AE8 0%, #374FD9 75%, #0EC8FC 100%) no-repeat; color: #ffffff !important; font-family: Inter, system-ui, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(124, 42, 232, 0.2), 0 2px 4px -1px rgba(124, 42, 232, 0.1);">
-            <span style="color: #ffffff !important">${text}</span>
-          </a>
+          <!-- Outlook-compatible button with fallback bgcolor -->
+          <table border="0" cellspacing="0" cellpadding="0">
+            <tr>
+              <td align="center" bgcolor="#374FD9" style="border-radius: 8px; background: linear-gradient(135deg, #7C2AE8 0%, #374FD9 75%, #0EC8FC 100%); padding: 14px 32px;">
+                <a href="${href}" class="email-button" style="display: inline-block; color: #ffffff !important; font-family: Inter, system-ui, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px; background: transparent;">
+                  <span style="color: #ffffff !important">${text}</span>
+                </a>
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
     </table>
@@ -44,9 +51,9 @@ export function getEmailHeadingHTML(title: string, subtitle: string, extraHTML: 
   // Cinematic Glow Header
   // Radial gradient: Elliptical stretch, wide and centered behind text.
   return `
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
       <tr>
-        <td align="center" style="padding: 24px 24px 32px; background: radial-gradient(ellipse 340px 160px at 50% 30%, rgba(124, 42, 232, 0.18) 0%, rgba(255, 255, 255, 0) 70%);">
+        <td align="center" style="padding: 24px 24px 24px; background: radial-gradient(ellipse 340px 160px at 50% 30%, rgba(124, 42, 232, 0.18) 0%, rgba(255, 255, 255, 0) 70%);">
           <h1 style="margin: 0 0 16px; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">
             ${title}
           </h1>
@@ -92,7 +99,9 @@ export function getEmailFooterHTML(): string {
     <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0f172a" style="background-color: #0f172a;">
       <tr>
         <td align="center" valign="top">
-          <table width="100%" cellpadding="0" cellspacing="0" class="email-footer" style="background-color: #0f172a; background-image: linear-gradient(to bottom, #0f172a, #020617); border-top: 1px solid #334155;" bgcolor="#0f172a"><tr><td style="padding: 32px 20px 24px;"><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;"><tr><td align="center"><img src="${ASSET_BASE}vertical-logo-no-slogan-white.png" alt="BlanketSmith" width="140" style="display: block; max-width: 140px; height: auto;" /></td></tr></table><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td style="padding: 0 8px; color: #7C2AE8;"><a href="https://www.instagram.com/BlanketSmith_/" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Instagram</a></td><td style="padding: 0 8px; color: #7C2AE8;"><a href="https://www.x.com/BlanketSmith/" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Twitter</a></td><td style="padding: 0 8px; color: #7C2AE8;"><a href="https://youtube.com/@blanketsmithdotcom" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">YouTube</a></td></tr><tr><td height="8" style="font-size: 0; line-height: 0;">&nbsp;</td></tr><tr><td style="padding: 0 8px; color: #7C2AE8;"><a href="https://www.facebook.com/people/BlanketSmith/61585611386677/" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Facebook</a></td><td style="padding: 0 8px; color: #7C2AE8;"><a href="https://www.tiktok.com/@blanketsmith_" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">TikTok</a></td><td style="padding: 0 8px; color: #7C2AE8;"><a href="https://discord.com/invite/cmsAYn7d" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Discord</a></td></tr></table></td></tr></table><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center"><p style="color: #94a3b8; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0 0 16px;"><a href="https://blanketsmith.com" style="color: #7C2AE8 !important; text-decoration: underline;">Unsubscribe</a> · <a href="https://blanketsmith.com" style="color: #7C2AE8 !important; text-decoration: underline;">Privacy Policy</a> · <a href="https://blanketsmith.com" style="color: #7C2AE8 !important; text-decoration: underline;">Terms of Service</a></p><p style="color: #cbd5e1 !important; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0;"><span style="color: #cbd5e1 !important;">Made with <img src="${ASSET_BASE}favicon-heart-v2.png" alt="love" width="16" height="16" style="display: inline-block; vertical-align: middle;" /> for the community</span></p><p style="color: #cbd5e1 !important; font-size: 11px; font-family: Inter, system-ui, sans-serif; margin: 12px 0 0;"><span style="color: #cbd5e1 !important;">© ${year} BlanketSmith. All rights reserved.</span><br/><span style="color: #334155; font-size: 10px;">Ref: ${refId}</span></p></td></tr></table></td></tr></table>
+          <table width="100%" cellpadding="0" cellspacing="0" class="email-footer" style="background-color: #0f172a; background-image: linear-gradient(to bottom, #0f172a, #020617); border-top: 1px solid #334155;" bgcolor="#0f172a"><tr><td style="padding: 32px 20px 24px;"><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;"><tr><td align="center"><img src="${ASSET_BASE}vertical-logo-no-slogan-white.png" alt="BlanketSmith" width="140" style="display: block; max-width: 140px; height: auto;" /></td></tr></table><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td style="padding: 0;"><a href="https://www.instagram.com/BlanketSmith_/" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none; padding: 0 8px;">Instagram</a></td><td style="padding: 0;"><a href="https://www.x.com/BlanketSmith/" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none; padding: 0 8px;">Twitter</a></td><td style="padding: 0;"><a href="https://youtube.com/@blanketsmithdotcom" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none; padding: 0 8px;">YouTube</a></td></tr><tr><td height="8" style="font-size: 0; line-height: 0;">&nbsp;</td></tr><tr><td style="padding: 0;"><a href="https://www.facebook.com/people/BlanketSmith/61585611386677/" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none; padding: 0 8px;">Facebook</a></td><td style="padding: 0;"><a href="https://www.tiktok.com/@blanketsmith_" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none; padding: 0 8px;">TikTok</a></td><td style="padding: 0;"><a href="https://discord.com/invite/cmsAYn7d" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none; padding: 0 8px;">Discord</a></td></tr></table></td></tr></table>            <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
+              <p style="color: #7C2AE8; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0 0 16px;"><a href="https://blanketsmith.com" style="color: #7C2AE8 !important; text-decoration: underline;">Unsubscribe</a><span style="color: #94a3b8;"> · </span><a href="https://blanketsmith.com" style="color: #7C2AE8 !important; text-decoration: underline;">Privacy Policy</a><span style="color: #94a3b8;"> · </span><a href="https://blanketsmith.com" style="color: #7C2AE8 !important; text-decoration: underline;">Terms of Service</a></p>
+              <p style="color: #cbd5e1 !important; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0;"><span style="color: #cbd5e1 !important;">Made with <img src="${ASSET_BASE}favicon-heart-v2.png" alt="love" width="16" height="16" style="display: inline-block; vertical-align: middle;" /> for the community</span></p><p style="color: #cbd5e1 !important; font-size: 11px; font-family: Inter, system-ui, sans-serif; margin: 12px 0 0;"><span style="color: #cbd5e1 !important;">© ${year} BlanketSmith. All rights reserved.</span><br/><span style="color: #334155; font-size: 10px;">Ref: ${refId}</span></p></td></tr></table></td></tr></table>
         </td>
       </tr>
     </table>
@@ -451,13 +460,26 @@ export const getFeedbackTemplate = (name: string) => {
   const content = `
     <!-- Header Section -->
     ${getEmailHeadingHTML(
-    "Feedback Received",
-    `Thanks for your input, ${name}!`
+    `Forging the ${getGradientTextHTML("Future")}`,
+    `🛠️ Thanks, ${name}! 🛠️`
   )}
 
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
+      <tr>
+        <td align="left">
+          <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+            Accuracy and craftsmanship matter deeply to us. Your input is exactly how we evolve, and we want you to know that your feedback has been received and will be carefully reviewed by our team.
+          </p>
+          <p style="margin: 0 0 0; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+            Every suggestion, bug report, and feature request helps us build a better tool for the entire maker community. We're in this together. 🧶
+          </p>
+        </td>
+      </tr>
+    </table>
+
     ${getInfoBoxHTML(
-    "Your Voice Matters",
-    "We truly appreciate you taking the time to share your thoughts. Your feedback helps us shape the future of BlanketSmith."
+    "What happens next?",
+    "Our team reviews all feedback as it is received. If we need more details, we'll reach out directly. Major updates inspired by community input will be highlighted in our changelog."
   )}
 
     <div style="text-align: center; margin-top: 24px;">
