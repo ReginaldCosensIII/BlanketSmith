@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### [Unreleased]
+- **Email System Upgrade (fix/email-outlook-compatibility)**:
+    - **Outlook Compatibility**: Implemented "Hybrid" design with VML background support for Outlook Desktop.
+    - **Gmail Fixes**: Solved "Show Quoted Text" collapse by moving unique Ref ID to the top of the email body.
+    - **Visual Polish**: Unified Header/Footer backgrounds in Dark Mode (#0f172a), reinforced Button text color, and fixed Copyright visibility.
+    - **Architecture**: Created `docs/EMAIL_SYSTEM.md` documenting the tiered rendering strategy.
 - **Fixed**: "Sticky Drag" issues resolved by migrating Editor to PointerEvents.
 - **Changed**: Relaxed drag constraints ("Loose Clamping") to allow dragging selections partially off-canvas.
 - **Workflow Optimization**: Refactored Agentic workflows to support "Multi-Task Branches".

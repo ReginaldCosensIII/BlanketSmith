@@ -9,6 +9,7 @@
 - [x] **Interaction Core:** Pointer Events migration (No "Sticky Drag"), Loose Clamping.
 - [x] **Undo/Redo System:** Unified History + Floating State ("Smart Undo").
 - [x] **Mobile Touch Polish:** Native Pointer Events, Gesture Immunity, Deferred Selection.
+- [x] **Email Fidelity & Outlook Compatibility:** Hybrid VML/CSS design, Gmail Threading fix, Dark Mode hardening.
 
 ## 🚧 Current Focus (Beta Blockers)
 
