@@ -10,8 +10,8 @@ export function getEmailButtonHTML(text: string, href: string): string {
     <table width="100%" cellpadding="0" cellspacing="0">
       <tr>
         <td align="center" style="padding: 16px 0;">
-          <a href="${href}" class="email-button" style="display: inline-block; padding: 14px 32px; background-color: #374FD9; background: linear-gradient(135deg, #7C2AE8 0%, #374FD9 75%, #0EC8FC 100%) no-repeat; color: #ffffff; font-family: Inter, system-ui, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(124, 42, 232, 0.2), 0 2px 4px -1px rgba(124, 42, 232, 0.1);">
-            ${text}
+          <a href="${href}" class="email-button" style="display: inline-block; padding: 14px 32px; background-color: #374FD9; background: linear-gradient(135deg, #7C2AE8 0%, #374FD9 75%, #0EC8FC 100%) no-repeat; color: #ffffff !important; font-family: Inter, system-ui, sans-serif; font-size: 16px; font-weight: 600; text-decoration: none; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(124, 42, 232, 0.2), 0 2px 4px -1px rgba(124, 42, 232, 0.1);">
+            <span style="color: #ffffff !important">${text}</span>
           </a>
         </td>
       </tr>
@@ -67,11 +67,12 @@ export function getEmailHeaderHTML(): string {
 
 export function getEmailFooterHTML(): string {
   const year = new Date().getFullYear();
+  const refId = new Date().getTime();
   return `
-    <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1e293b" style="background-color: #1e293b;">
+    <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0f172a" style="background-color: #0f172a;">
       <tr>
         <td align="center" valign="top">
-          <table width="100%" cellpadding="0" cellspacing="0" class="email-footer" style="background-color: #1e293b; background-image: linear-gradient(to bottom, #1e293b, #0f172a); border-top: 1px solid #334155;" bgcolor="#1e293b"><tr><td style="padding: 32px 20px 24px;"><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;"><tr><td align="center"><img src="${ASSET_BASE}vertical-logo-no-slogan-white.png" alt="BlanketSmith" width="140" style="display: block; max-width: 140px; height: auto;" /></td></tr></table><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td style="padding: 0 8px;"><a href="https://www.instagram.com/BlanketSmith_/" style="color: #cbd5e1 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Instagram</a></td><td style="padding: 0 8px;"><a href="https://www.x.com/BlanketSmith/" style="color: #cbd5e1 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">X (Twitter)</a></td><td style="padding: 0 8px;"><a href="https://youtube.com/@blanketsmithdotcom" style="color: #cbd5e1 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">YouTube</a></td></tr><tr><td height="8" style="font-size: 0; line-height: 0;">&nbsp;</td></tr><tr><td style="padding: 0 8px;"><a href="https://www.facebook.com/people/BlanketSmith/61585611386677/" style="color: #cbd5e1 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Facebook</a></td><td style="padding: 0 8px;"><a href="https://www.tiktok.com/@blanketsmith_" style="color: #cbd5e1 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">TikTok</a></td><td style="padding: 0 8px;"><a href="https://discord.com/invite/cmsAYn7d" style="color: #cbd5e1 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Discord</a></td></tr></table></td></tr></table><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center"><p style="color: #94a3b8; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0 0 16px;"><a href="#" style="color: #cbd5e1 !important; text-decoration: underline;">Unsubscribe</a> · <a href="#" style="color: #cbd5e1 !important; text-decoration: underline;">Privacy Policy</a> · <a href="#" style="color: #cbd5e1 !important; text-decoration: underline;">Terms of Service</a></p><p style="color: #cbd5e1 !important; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0;">Made with <img src="${ASSET_BASE}favicon-heart-v2.png" alt="love" width="16" height="16" style="display: inline-block; vertical-align: middle;" /> for the community</p><p style="color: #cbd5e1 !important; font-size: 11px; font-family: Inter, system-ui, sans-serif; margin: 12px 0 0;">© ${year} BlanketSmith. All rights reserved.</p></td></tr></table></td></tr></table>
+          <table width="100%" cellpadding="0" cellspacing="0" class="email-footer" style="background-color: #0f172a; background-image: linear-gradient(to bottom, #0f172a, #020617); border-top: 1px solid #334155;" bgcolor="#0f172a"><tr><td style="padding: 32px 20px 24px;"><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;"><tr><td align="center"><img src="${ASSET_BASE}vertical-logo-no-slogan-white.png" alt="BlanketSmith" width="140" style="display: block; max-width: 140px; height: auto;" /></td></tr></table><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td style="padding: 0 8px;"><a href="https://www.instagram.com/BlanketSmith_/" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Instagram</a></td><td style="padding: 0 8px;"><a href="https://www.x.com/BlanketSmith/" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">X (Twitter)</a></td><td style="padding: 0 8px;"><a href="https://youtube.com/@blanketsmithdotcom" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">YouTube</a></td></tr><tr><td height="8" style="font-size: 0; line-height: 0;">&nbsp;</td></tr><tr><td style="padding: 0 8px;"><a href="https://www.facebook.com/people/BlanketSmith/61585611386677/" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Facebook</a></td><td style="padding: 0 8px;"><a href="https://www.tiktok.com/@blanketsmith_" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">TikTok</a></td><td style="padding: 0 8px;"><a href="https://discord.com/invite/cmsAYn7d" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none;">Discord</a></td></tr></table></td></tr></table><table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center"><p style="color: #94a3b8; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0 0 16px;"><a href="https://blanketsmith.com" style="color: #7C2AE8 !important; text-decoration: underline;">Unsubscribe</a> · <a href="https://blanketsmith.com" style="color: #7C2AE8 !important; text-decoration: underline;">Privacy Policy</a> · <a href="https://blanketsmith.com" style="color: #7C2AE8 !important; text-decoration: underline;">Terms of Service</a></p><p style="color: #cbd5e1 !important; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0;"><span style="color: #cbd5e1 !important;">Made with <img src="${ASSET_BASE}favicon-heart-v2.png" alt="love" width="16" height="16" style="display: inline-block; vertical-align: middle;" /> for the community</span></p><p style="color: #cbd5e1 !important; font-size: 11px; font-family: Inter, system-ui, sans-serif; margin: 12px 0 0;"><span style="color: #cbd5e1 !important;">© ${year} BlanketSmith. All rights reserved.</span><br/><span style="color: #334155; font-size: 10px;">Ref: ${refId}</span></p></td></tr></table></td></tr></table>
         </td>
       </tr>
     </table>
@@ -96,7 +97,7 @@ export function getEmailFeatureCardHTML(title: string, description: string, icon
 export function getInfoBoxHTML(title: string, description: string, iconUrl: string = `${ASSET_BASE}icons/374FD9/light-bulb.png`): string {
   // Styling Updates: Gradient border and icon background
   return `
-    <div class="info-box" style="background-color: #f1f5f9; border-radius: 12px; padding: 20px; margin-top: 24px; border-left: 4px solid #7C2AE8;">
+    <div class="info-box" style="background-color: #ffffff; border-radius: 12px; padding: 20px; margin-top: 24px; border-left: 4px solid #7C2AE8; border: 1px solid #e2e8f0;">
         <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
                 <td width="52" valign="top" style="padding-right: 16px;">
@@ -175,6 +176,16 @@ export function getCinematicShellHTML(content: string, isMobile: boolean = false
       <html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
         <head>
           <meta charset="utf-8">
+          <meta name="color-scheme" content="light dark">
+          <meta name="supported-color-schemes" content="light dark">
+          <!--[if gte mso 9]>
+          <xml>
+            <o:OfficeDocumentSettings>
+              <o:AllowPNG/>
+              <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+          </xml>
+          <![endif]-->
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <meta name="x-apple-disable-message-reformatting">
           <meta name="color-scheme" content="light dark">
@@ -218,10 +229,10 @@ export function getCinematicShellHTML(content: string, isMobile: boolean = false
                 background-color: ${bgColor} !important;
                 color: ${textColor} !important;
               }
-              /* Dark Mode Override for Info Box specifically */
               .info-box {
-                  background-color: #f1f5f9 !important; /* Force light background for info box to maintain contrast */
+                  background-color: #ffffff !important; /* Force light background for info box to maintain contrast */
                   color: #1e293b !important;
+                  border: 1px solid #e2e8f0 !important;
               }
               h1, h2, h3, h4, p, span, a {
                 color: inherit !important;
@@ -232,7 +243,7 @@ export function getCinematicShellHTML(content: string, isMobile: boolean = false
 
               /* Ensure the graph paper background persists */
               .graph-paper-bg {
-                background-color: #183067 !important;
+                background-color: #0f172a !important;
                 background-image:
                   radial-gradient(ellipse 400px 300px at 0% 0%, rgba(124, 42, 232, 0.40) 0%, transparent 70%),
                   radial-gradient(ellipse 400px 300px at 100% 100%, rgba(14, 200, 252, 0.40) 0%, transparent 70%),
@@ -251,6 +262,16 @@ export function getCinematicShellHTML(content: string, isMobile: boolean = false
           </style>
         </head>
         <body class="email-body">
+          <!-- THREADING BUSTER: Invisible Ref ID at the top to prevent Gmail from collapsing content -->
+          <div style="display:none; font-size:0; line-height:0; color:#334155; max-height:0; opacity:0; overflow:hidden;">Ref: ${new Date().getTime()}</div>
+          
+          <!-- VML Background for Outlook Desktop -->
+          <!--[if gte mso 9]>
+          <v:background xmlns:v="urn:schemas-microsoft-com:vml" fill="t">
+            <v:fill type="tile" color="#ffffff" />
+          </v:background>
+          <![endif]-->
+
           <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: ${surfaceColor}; margin: 0; padding: 0;">
             <tr>
               <td align="center">
@@ -307,7 +328,7 @@ export const getBetaTemplate = (verificationLink: string) => {
             Welcome to ${getGradientTextHTML("The Forge")}
           </h1>
           <p style="margin: 0 0 24px; font-size: 18px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;">
-            You're in.
+            🎉 You're in! 🎉
           </p>
           ${getEmailProgressRailHTML(2)}
         </td>
