@@ -416,7 +416,7 @@ export const getBetaTemplate = (verificationLink: string) => {
   const content = `
     <!-- Header Section with Centered Body Glow -->
     ${getEmailHeadingHTML(
-    `Welcome to ${getGradientTextHTML("The Forge")}`,
+    `<span style="font-size: 150%;">🍾</span> <br/> Welcome to ${getGradientTextHTML("The Forge")}`,
     "🎉 You're in! 🎉",
     getEmailProgressRailHTML(2), // Active Step 2 (Verification) - Green is Step 1
     false // Use standard spacing for Beta
@@ -772,7 +772,7 @@ export const getFirstPatternMilestoneTemplate = (userName: string = "Maker") => 
                     Congratulations, ${userName}! You've just created your very first pattern on BlanketSmith. 🧶
                 </p>
                 <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
-                    This is a huge step in your journey as a maker. Whether it's a simple test or a masterpiece in the making, you've officially started forging.
+                    This is a huge step in your journey as a maker. Whether it's a simple test or a masterpiece in the making, you've officially started forging. ⚒️
                 </p>
                  <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
                     We'd love to see what you've made. Share your creation with the community to inspire others and get feedback.
@@ -802,6 +802,150 @@ export const getFirstPatternMilestoneTemplate = (userName: string = "Maker") => 
 
   return {
     subject: "Achievement Unlocked: First Pattern Forged! 🏆",
+    html: getCinematicShellHTML(content)
+  };
+};
+
+export const getPasswordResetTemplate = (resetLink: string) => {
+  const content = `
+    ${getEmailHeadingHTML(
+    `Password ${getGradientTextHTML("Reset")}`,
+    "🔐 Secure Account Request 🔐",
+    "",
+    true
+  )}
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+        <tr>
+            <td align="left">
+                <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+                    We received a request to reset the password for your BlanketSmith account. If you didn't make this request, you can safely ignore this email.
+                </p>
+                <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+                    To choose a new password, click the button below. This link is valid for 1 hour.
+                </p>
+            </td>
+        </tr>
+    </table>
+
+    <div style="text-align: center; margin: 32px 0;">
+      ${getEmailButtonHTML("Reset Password", resetLink)}
+    </div>
+    `;
+
+  return {
+    subject: "Reset your BlanketSmith password",
+    html: getCinematicShellHTML(content)
+  };
+};
+
+export const getBetaKickoffTemplate = (name: string = "Maker") => {
+  // Cinematic Kickoff - Uses Beta Access style but with "Kickoff" header
+  const content = `
+    ${getEmailHeadingHTML(
+    `<span style="font-size: 150%;">🚀</span> <br/> Beta ${getGradientTextHTML("Kickoff")}`,
+    `The Forge is Open, ${name}!`,
+    getEmailProgressRailHTML(4), // Step 4 (The Forge) is Active/Gradient
+    false
+  )}
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+        <tr>
+            <td align="left">
+                <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+                    The wait is over! We are officially kicking off the BlanketSmith Beta, and you are among the very first to step inside. ✨
+                </p>
+                 <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+                    We've built a suite of tools designed to give you unprecedented control over your crochet and knitting patterns. From the Pixel Grid Editor to the new Pattern Generator, everything is ready for you to explore. 🧶
+                </p>
+            </td>
+        </tr>
+    </table>
+
+    ${getInfoBoxHTML(
+    "Community Resources",
+    'We\'ve prepared guides to help you get started. Choose your path below or join the Discord to ask questions live. <br/><br/> <a href="https://blanketsmith.com/docs" style="color: #7C2AE8; text-decoration: underline;">View Documentation</a>'
+  )}
+
+    <div style="text-align: center; margin: 32px 0;">
+      ${getEmailButtonHTML("Enter The Forge", "https://blanketsmith.com/login")}
+    </div>
+
+    <!-- Features Grid (Expanded to 4 items) -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 24px;">
+      <tr>
+        <td style="padding-bottom: 16px;">
+          ${getEmailFeatureCardHTML(
+    "Pattern Generator",
+    "Upload or snap photos to create instant charts. Adjust complexity and palette.",
+    `${ASSET_BASE}icons/374FD9/image-sparkle.png`
+  )}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px;">
+           ${getEmailFeatureCardHTML(
+    "Pixel Grid Editor",
+    "Precision tools: Select, Brush, Fill, Text. Full symmetry support (Vertical, Horizontal, Quadrant).",
+    `${ASSET_BASE}icons/374FD9/spanner.png`
+  )}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px;">
+           ${getEmailFeatureCardHTML(
+    "Project Management",
+    "Track your progress with the Pattern Book. Organize WIPs and PDFs.",
+    `${ASSET_BASE}icons/374FD9/dashboard.png`
+  )}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding-bottom: 16px;">
+           ${getEmailFeatureCardHTML(
+    "Community Feedback",
+    "Your voice shapes the platform. Join the discussion to request features.",
+    `${ASSET_BASE}icons/374FD9/community.png`
+  )}
+        </td>
+      </tr>
+    </table>
+    `;
+
+  return {
+    subject: "The Forge is Open! 🚀",
+    html: getCinematicShellHTML(content)
+  };
+};
+
+export const getGenericTemplate = (subject: string, title: string, body: string, ctaText?: string, ctaLink?: string) => {
+  const content = `
+    ${getEmailHeadingHTML(
+    title,
+    "", // No default subtitle for generic
+    "",
+    true
+  )}
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+        <tr>
+            <td align="left">
+                <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+                    ${body.replace(/\n/g, '<br/>')}
+                </p>
+            </td>
+        </tr>
+    </table>
+
+    ${ctaText && ctaLink ? `
+    <div style="text-align: center; margin: 32px 0;">
+      ${getEmailButtonHTML(ctaText, ctaLink)}
+    </div>
+    ` : ''}
+    `;
+
+  return {
+    subject: subject,
     html: getCinematicShellHTML(content)
   };
 };

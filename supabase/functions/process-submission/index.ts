@@ -8,7 +8,10 @@ import {
     getAdminAlertTemplate,
     getEmailVerifiedTemplate,
     getBetaAccessTemplate,
-    getFirstPatternMilestoneTemplate
+    getFirstPatternMilestoneTemplate,
+    getPasswordResetTemplate,
+    getBetaKickoffTemplate,
+    getGenericTemplate
 } from "./templates.ts";
 
 // Mock Deno types for the editor's benefit
@@ -83,6 +86,17 @@ Deno.serve(async (req: Request) => {
                     break;
                 case 'milestone':
                     testTemplate = getFirstPatternMilestoneTemplate("Test Maker");
+                    break;
+                case 'password_reset':
+                    testTemplate = getPasswordResetTemplate("https://blanketsmith.com/reset-password?token=test");
+                    break;
+                case 'beta_kickoff':
+                    testTemplate = getBetaKickoffTemplate("Test Maker");
+                    break;
+                case 'generic':
+                    const title = payload.title || "Generic Notification";
+                    const bodyContent = payload.body || "This is a generic notification from BlanketSmith.";
+                    testTemplate = getGenericTemplate("Notification from BlanketSmith", title, bodyContent, payload.ctaText, payload.ctaLink, payload.infoTitle, payload.infoBody);
                     break;
                 case 'general':
                     testTemplate = getDefaultTemplate("Test User", targetEmails[0], "This is a test message.");
