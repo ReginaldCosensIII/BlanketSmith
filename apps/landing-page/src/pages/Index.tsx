@@ -120,7 +120,7 @@ export default function Index() {
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
                   <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-midblue/10 to-brand-cyan/10 border border-brand-purple/30 flex items-center justify-center mb-5 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(92,174,255,0.4)] group-hover:border-brand-midblue/50 transition-all duration-300 ease-out">
-                    <Icon name={feature.icon} className="w-6 h-6 text-brand-midblue" />
+                    <Icon name={feature.icon} size="lg" className="text-brand-midblue" />
                   </div>
                   <h3 className="font-display text-lg font-semibold text-foreground mb-2">
                     {feature.title}
@@ -165,7 +165,7 @@ export default function Index() {
                   className="text-center p-6"
                 >
                   <div className="w-14 h-14 mx-auto rounded-full bg-brand-midblue/10 border border-brand-purple/30 flex items-center justify-center mb-5 hover:scale-110 hover:shadow-[0_0_20px_rgba(92,174,255,0.4)] hover:border-brand-midblue/50 transition-all duration-300 ease-out">
-                    <Icon name={value.icon} className="w-7 h-7 text-brand-midblue" />
+                    <Icon name={value.icon} size="md" className="text-brand-midblue" />
                   </div>
                   <h3 className="font-display text-xl font-semibold text-foreground mb-3">
                     {value.title}

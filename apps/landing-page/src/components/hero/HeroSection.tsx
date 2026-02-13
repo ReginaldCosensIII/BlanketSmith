@@ -174,7 +174,7 @@ export function HeroSection() {
             <Button variant="gradient" size="xl" asChild>
               <Link to="/beta-signup">
                 Sign Up for the Beta
-                <Icon name="arrow-right" size="lg" className="ml-1" />
+                <Icon name="arrow-right" size="sm" className="ml-1" />
               </Link>
             </Button>
           </motion.div>
