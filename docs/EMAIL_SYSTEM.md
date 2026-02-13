@@ -59,6 +59,7 @@ We use a **"Force & Override"** strategy.
 | `getEmailFooterHTML` | Social links, Unsubscribe, Copyright. | Parent `<td>` elements have inline color styles to prevent "flash of unstyled content". |
 | `getEmailButtonHTML` | CTA Button with gradient. | Text requires `<span>` wrapper with `!important` color. |
 | `getEmailProgressRailHTML`| Step tracker (Sign Up -> The Forge). | Uses border-radius (degrades to square in older clients). |
+| `getFirstPatternMilestoneTemplate`| Achievement celebration with expanded header/emojis. | Uses standard layout with custom Trophy emoji header. |
 
 ---
 
