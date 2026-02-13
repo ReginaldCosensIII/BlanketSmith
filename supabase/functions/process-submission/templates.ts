@@ -47,17 +47,24 @@ export function getSectionHeaderHTML(text: string): string {
   `;
 }
 
-export function getEmailHeadingHTML(title: string, subtitle: string, extraHTML: string = ""): string {
+export function getEmailHeadingHTML(title: string, subtitle: string, extraHTML: string = "", tightSpacing: boolean = false): string {
   // Cinematic Glow Header
   // Radial gradient: Elliptical stretch, wide and centered behind text.
+
+  // Spacing Logic:
+  // Standard (Beta): Bottom margin 24px (Subtitle), 20px (Table)
+  // Tight (Partnership/Feedback): Bottom margin 8px (Subtitle), 12px (Table)
+  const subtitleMargin = tightSpacing ? "0 0 8px" : "0 0 24px";
+  const tableMargin = tightSpacing ? "margin-bottom: 12px;" : "margin-bottom: 20px;";
+
   return `
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="${tableMargin}">
       <tr>
         <td align="center" style="padding: 24px 24px 24px; background: radial-gradient(ellipse 340px 160px at 50% 30%, rgba(124, 42, 232, 0.18) 0%, rgba(255, 255, 255, 0) 70%);">
           <h1 style="margin: 0 0 16px; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">
             ${title}
           </h1>
-          <p style="margin: 0 0 24px; font-size: 18px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;">
+          <p style="margin: ${subtitleMargin}; font-size: 17px; line-height: 1.6; color: #64748b; font-family: Inter, system-ui, sans-serif;">
             ${subtitle}
           </p>
           ${extraHTML}
@@ -99,9 +106,60 @@ export function getEmailFooterHTML(): string {
     <table width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#0f172a" style="background-color: #0f172a;">
       <tr>
         <td align="center" valign="top">
-          <table width="100%" cellpadding="0" cellspacing="0" class="email-footer" style="background-color: #0f172a; background-image: linear-gradient(to bottom, #0f172a, #020617); border-top: 1px solid #334155;" bgcolor="#0f172a"><tr><td style="padding: 32px 20px 24px;"><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;"><tr><td align="center"><img src="${ASSET_BASE}vertical-logo-no-slogan-white.png" alt="BlanketSmith" width="140" style="display: block; max-width: 140px; height: auto;" /></td></tr></table><table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;"><tr><td align="center"><table cellpadding="0" cellspacing="0"><tr><td style="padding: 0;"><a href="https://www.instagram.com/BlanketSmith_/" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none; padding: 0 8px;">Instagram</a></td><td style="padding: 0;"><a href="https://www.x.com/BlanketSmith/" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none; padding: 0 8px;">Twitter</a></td><td style="padding: 0;"><a href="https://youtube.com/@blanketsmithdotcom" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none; padding: 0 8px;">YouTube</a></td></tr><tr><td height="8" style="font-size: 0; line-height: 0;">&nbsp;</td></tr><tr><td style="padding: 0;"><a href="https://www.facebook.com/people/BlanketSmith/61585611386677/" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none; padding: 0 8px;">Facebook</a></td><td style="padding: 0;"><a href="https://www.tiktok.com/@blanketsmith_" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none; padding: 0 8px;">TikTok</a></td><td style="padding: 0;"><a href="https://discord.com/invite/cmsAYn7d" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none; padding: 0 8px;">Discord</a></td></tr></table></td></tr></table>            <table width="100%" cellpadding="0" cellspacing="0"><tr><td align="center">
-              <p style="color: #7C2AE8; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0 0 16px;"><a href="https://blanketsmith.com" style="color: #7C2AE8 !important; text-decoration: underline;">Unsubscribe</a><span style="color: #94a3b8;"> · </span><a href="https://blanketsmith.com" style="color: #7C2AE8 !important; text-decoration: underline;">Privacy Policy</a><span style="color: #94a3b8;"> · </span><a href="https://blanketsmith.com" style="color: #7C2AE8 !important; text-decoration: underline;">Terms of Service</a></p>
-              <p style="color: #cbd5e1 !important; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0;"><span style="color: #cbd5e1 !important;">Made with <img src="${ASSET_BASE}favicon-heart-v2.png" alt="love" width="16" height="16" style="display: inline-block; vertical-align: middle;" /> for the community</span></p><p style="color: #cbd5e1 !important; font-size: 11px; font-family: Inter, system-ui, sans-serif; margin: 12px 0 0;"><span style="color: #cbd5e1 !important;">© ${year} BlanketSmith. All rights reserved.</span><br/><span style="color: #334155; font-size: 10px;">Ref: ${refId}</span></p></td></tr></table></td></tr></table>
+          <table width="100%" cellpadding="0" cellspacing="0" class="email-footer" style="background-color: #0f172a; background-image: linear-gradient(to bottom, #0f172a, #020617); border-top: 1px solid #334155;" bgcolor="#0f172a">
+            <tr>
+              <td style="padding: 32px 20px 24px;">
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                  <tr>
+                    <td align="center">
+                      <img src="${ASSET_BASE}vertical-logo-no-slogan-white.png" alt="BlanketSmith" width="140" style="display: block; max-width: 140px; height: auto;" />
+                    </td>
+                  </tr>
+                </table>
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+                  <tr>
+                    <td align="center">
+                      <table cellpadding="0" cellspacing="0">
+                        <tr>
+                          <td style="padding: 0;"><a href="https://www.instagram.com/BlanketSmith_/" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none; padding: 0 8px;">Instagram</a></td>
+                          <td style="padding: 0;"><a href="https://www.x.com/BlanketSmith/" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none; padding: 0 8px;">Twitter</a></td>
+                          <td style="padding: 0;"><a href="https://youtube.com/@blanketsmithdotcom" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none; padding: 0 8px;">YouTube</a></td>
+                        </tr>
+                        <tr>
+                          <td height="8" style="font-size: 0; line-height: 0;">&nbsp;</td>
+                        </tr>
+                        <tr>
+                          <td style="padding: 0;"><a href="https://www.facebook.com/people/BlanketSmith/61585611386677/" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none; padding: 0 8px;">Facebook</a></td>
+                          <td style="padding: 0;"><a href="https://www.tiktok.com/@blanketsmith_" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none; padding: 0 8px;">TikTok</a></td>
+                          <td style="padding: 0;"><a href="https://discord.com/invite/cmsAYn7d" style="color: #7C2AE8 !important; font-size: 13px; font-family: Inter, system-ui, sans-serif; text-decoration: none; padding: 0 8px;">Discord</a></td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+                <table width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td align="center">
+                      <p style="color: #7C2AE8; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0 0 16px;">
+                        <a href="https://blanketsmith.com" style="color: #7C2AE8 !important; text-decoration: underline;">Unsubscribe</a>
+                        <span style="color: #94a3b8;"> · </span>
+                        <a href="https://blanketsmith.com" style="color: #7C2AE8 !important; text-decoration: underline;">Privacy Policy</a>
+                        <span style="color: #94a3b8;"> · </span>
+                        <a href="https://blanketsmith.com" style="color: #7C2AE8 !important; text-decoration: underline;">Terms of Service</a>
+                      </p>
+                      <p style="color: #cbd5e1 !important; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0;">
+                        <span style="color: #cbd5e1 !important;">Made with <img src="${ASSET_BASE}favicon-heart-v2.png" alt="love" width="16" height="16" style="display: inline-block; vertical-align: middle;" /> for the community</span>
+                      </p>
+                      <p style="color: #cbd5e1 !important; font-size: 11px; font-family: Inter, system-ui, sans-serif; margin: 12px 0 0;">
+                        <span style="color: #cbd5e1 !important;">© ${year} BlanketSmith. All rights reserved.</span><br/>
+                        <span style="color: #334155; font-size: 10px;">Ref: ${refId}</span>
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
     </table>
@@ -114,7 +172,7 @@ export function getEmailFeatureCardHTML(title: string, description: string, icon
       <div class="feature-card" style="background-color: #ffffff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 24px 20px; min-height: 160px; height: auto; box-sizing: border-box;">
         <!-- Added Glow Effect to Icon Container -->
         <div class="feature-icon" style="width: 40px; height: 40px; line-height: 40px; text-align: center; border-radius: 10px; background-color: #f3e8ff; background: linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%) no-repeat; margin-bottom: 12px; box-shadow: 0 0 12px rgba(124, 42, 232, 0.2), 0 0 20px rgba(14, 200, 252, 0.1); border: 1px solid rgba(124, 42, 232, 0.15);">
-          <img src="${iconUrl}" alt="${title} icon" width="28" height="28" class="feature-icon-svg" style="display: inline-block; vertical-align: middle;" />
+            <img src="${iconUrl}" alt="${title} icon" width="28" height="28" class="feature-icon-svg" style="display: inline-block; vertical-align: middle;" />
         </div>
         <h4 class="feature-title" style="margin: 0 0 8px; font-size: 15px; font-weight: 600; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">${title}</h4>
         <p class="feature-desc" style="margin: 0; font-size: 13px; line-height: 1.5; font-family: Inter, system-ui, sans-serif; color: #64748b;">${description}</p>
@@ -127,21 +185,21 @@ export function getInfoBoxHTML(title: string, description: string, iconUrl: stri
   // Styling Updates: Gradient border and icon background
   return `
     <div class="info-box" style="background-color: #ffffff; border-radius: 12px; padding: 20px; margin-top: 24px; border-left: 4px solid #7C2AE8; border: 1px solid #e2e8f0;">
-        <table width="100%" cellpadding="0" cellspacing="0">
-            <tr>
-                <td width="52" valign="top" style="padding-right: 16px;">
-                    <!-- Added Glow Effect to Icon Container -->
-                    <div class="info-icon-box" style="width: 36px; height: 36px; line-height: 36px; text-align: center; border-radius: 8px; background-color: #f3e8ff; background: linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%) no-repeat; box-shadow: 0 0 12px rgba(124, 42, 232, 0.2), 0 0 20px rgba(14, 200, 252, 0.1); border: 1px solid rgba(124, 42, 232, 0.15);">
-                        <img src="${iconUrl}" alt="${title} icon" width="24" height="24" class="info-icon-svg" style="display: inline-block; vertical-align: middle;" />
-                    </div>
-                </td>
-                <td valign="top">
-                    <!-- Title with Gradient Color if desired, kept dark for readability but could change -->
-                    <p class="info-title" style="margin: 0 0 8px; font-size: 15px; font-weight: 600; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">${title}</p>
-                    <p class="info-desc" style="margin: 0; font-size: 14px; line-height: 1.6; font-family: Inter, system-ui, sans-serif; color: #64748b;">${description}</p>
-                </td>
-            </tr>
-        </table>
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td width="52" valign="top" style="padding-right: 16px;">
+            <!-- Added Glow Effect to Icon Container -->
+            <div class="info-icon-box" style="width: 36px; height: 36px; line-height: 36px; text-align: center; border-radius: 8px; background-color: #f3e8ff; background: linear-gradient(135deg, rgba(124, 42, 232, 0.1) 0%, rgba(14, 200, 252, 0.08) 100%) no-repeat; box-shadow: 0 0 12px rgba(124, 42, 232, 0.2), 0 0 20px rgba(14, 200, 252, 0.1); border: 1px solid rgba(124, 42, 232, 0.15);">
+              <img src="${iconUrl}" alt="${title} icon" width="24" height="24" class="info-icon-svg" style="display: inline-block; vertical-align: middle;" />
+            </div>
+          </td>
+          <td valign="top">
+            <!-- Title with Gradient Color if desired, kept dark for readability but could change -->
+            <p class="info-title" style="margin: 0 0 8px; font-size: 15px; font-weight: 600; font-family: Poppins, system-ui, sans-serif; color: #1e293b;">${title}</p>
+            <p class="info-desc" style="margin: 0; font-size: 14px; line-height: 1.6; font-family: Inter, system-ui, sans-serif; color: #64748b;">${description}</p>
+          </td>
+        </tr>
+      </table>
     </div>
   `;
 }
@@ -151,7 +209,7 @@ export function getEmailProgressRailHTML(currentStep: number): string {
     { label: "Sign Up", id: 1 },
     { label: "Verification", id: 2 },
     { label: "Beta Access", id: 3 },
-    { label: "The Forge", id: 4 },
+    { label: "The Forge", id: 4 }
   ];
 
   let stepsHTML = "";
@@ -164,34 +222,34 @@ export function getEmailProgressRailHTML(currentStep: number): string {
 
     if (isActive) {
       // Updated to use brand gradient
-      circleStyle += `background-color: #374FD9; background: linear-gradient(135deg, #7C2AE8 0%, #374FD9 62%, #0EC8FC 100%) no-repeat; color: #ffffff; border: 2px solid #0EC8FC; background-clip: padding-box;`;
+      circleStyle += ` background-color: #374FD9; background: linear-gradient(135deg, #7C2AE8 0%, #374FD9 62%, #0EC8FC 100%) no-repeat; color: #ffffff; border: 2px solid #0EC8FC; background-clip: padding-box;`;
     } else if (isCompleted) {
-      circleStyle += `background-color: #10b981; color: #ffffff;`;
+      circleStyle += ` background-color: #10b981; color: #ffffff;`;
     } else {
-      circleStyle += `background-color: #e2e8f0; color: #94a3b8;`;
+      circleStyle += ` background-color: #e2e8f0; color: #94a3b8;`;
     }
 
-    const labelColor = isActive ? "#1e293b" : isCompleted ? "#059669" : "#94a3b8";
+    const labelColor = isActive ? "#1e293b" : (isCompleted ? "#059669" : "#94a3b8");
 
     stepsHTML += `
-    <td align="center" width="25%">
-      <div style="${circleStyle}">
-        ${isCompleted ? "✓" : step.id}
-      </div>
-      <div style="font-size: 11px; font-weight: 600; font-family: Inter, sans-serif; color: ${labelColor}; white-space: nowrap; letter-spacing: -0.01em;">
-        ${step.label}
-      </div>
-    </td>
-      `;
+            <td align="center" width="25%">
+                <div style="${circleStyle}">
+                    ${isCompleted ? "✓" : step.id}
+                </div>
+                <div style="font-size: 11px; font-weight: 600; font-family: Inter, sans-serif; color: ${labelColor}; white-space: nowrap; letter-spacing: -0.01em;">
+                    ${step.label}
+                </div>
+            </td>
+        `;
   });
 
   return `
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 32px; margin-bottom: 0;">
-      <tr>
-      ${stepsHTML}
-      </tr>
-    </table>
-      `;
+        <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 32px; margin-bottom: 0;">
+            <tr>
+                ${stepsHTML}
+            </tr>
+        </table>
+    `;
 }
 
 export function getCinematicShellHTML(content: string, isMobile: boolean = false): string {
@@ -202,143 +260,143 @@ export function getCinematicShellHTML(content: string, isMobile: boolean = false
 
   return `
     <!DOCTYPE html>
-      <html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
-        <head>
-          <meta charset="utf-8">
-          <meta name="color-scheme" content="light dark">
-          <meta name="supported-color-schemes" content="light dark">
-          <!--[if gte mso 9]>
-          <xml>
-            <o:OfficeDocumentSettings>
-              <o:AllowPNG/>
-              <o:PixelsPerInch>96</o:PixelsPerInch>
-            </o:OfficeDocumentSettings>
-          </xml>
-          <![endif]-->
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <meta name="x-apple-disable-message-reformatting">
-          <meta name="color-scheme" content="light dark">
-          <meta name="supported-color-schemes" content="light dark">
-          <title>BlanketSmith</title>
-          <style>
-            @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap');
+    <html lang="en" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office">
+    <head>
+      <meta charset="utf-8">
+      <meta name="color-scheme" content="light dark">
+      <meta name="supported-color-schemes" content="light dark">
+      <!--[if gte mso 9]>
+      <xml>
+        <o:OfficeDocumentSettings>
+          <o:AllowPNG/>
+          <o:PixelsPerInch>96</o:PixelsPerInch>
+        </o:OfficeDocumentSettings>
+      </xml>
+      <![endif]-->
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <meta name="x-apple-disable-message-reformatting">
+      <meta name="color-scheme" content="light dark">
+      <meta name="supported-color-schemes" content="light dark">
+      <title>BlanketSmith</title>
+      <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Poppins:wght@500;600;700&display=swap');
 
-            body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
-            table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
-            img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
-            
-            body { margin: 0; padding: 0; width: 100% !important; height: 100% !important; background-color: ${surfaceColor}; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: ${textColor}; }
+        body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
+        table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; }
+        img { -ms-interpolation-mode: bicubic; border: 0; outline: none; text-decoration: none; }
+        
+        body { margin: 0; padding: 0; width: 100% !important; height: 100% !important; background-color: ${surfaceColor}; font-family: 'Inter', system-ui, -apple-system, sans-serif; color: ${textColor}; }
 
-            /* Robust Logo Swapping via Wrappers */
-            .light-img-box { display: block !important; }
+        /* Robust Logo Swapping via Wrappers */
+        .light-img-box { display: block !important; }
 
-            /* Graph Paper Effect */
-            .graph-paper-bg {
-              background-image:
-                radial-gradient(ellipse 400px 300px at 0% 0%, rgba(124, 42, 232, 0.15) 0%, transparent 70%),
-                radial-gradient(ellipse 400px 300px at 100% 100%, rgba(14, 200, 252, 0.12) 0%, transparent 70%),
-                linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px) !important;
-              background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px !important;
-            }
+        /* Graph Paper Effect */
+        .graph-paper-bg {
+          background-image: 
+            radial-gradient(ellipse 400px 300px at 0% 0%, rgba(124, 42, 232, 0.15) 0%, transparent 70%),
+            radial-gradient(ellipse 400px 300px at 100% 100%, rgba(14, 200, 252, 0.12) 0%, transparent 70%),
+            linear-gradient(to right, rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+            linear-gradient(to bottom, rgba(148, 163, 184, 0.08) 1px, transparent 1px) !important;
+          background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px !important;
+        }
 
-            /* FORCE LIGHT MODE OVERRIDES */
-            :root {
-              color-scheme: light;
-              supported-color-schemes: light;
-            }
+        /* FORCE LIGHT MODE OVERRIDES */
+        :root {
+          color-scheme: light;
+          supported-color-schemes: light;
+        }
 
-            /* Aggressively force white background and dark text even if client is in Dark Mode */
-            @media (prefers-color-scheme: dark) {
-              body, .email-body, .email-container, .email-content {
-                background-color: ${surfaceColor} !important;
-                color: ${textColor} !important;
-              }
-              .email-container, .feature-card, .info-box {
-                background-color: ${bgColor} !important;
-                color: ${textColor} !important;
-              }
-              .info-box {
-                  background-color: #ffffff !important; /* Force light background for info box to maintain contrast */
-                  color: #1e293b !important;
-                  border: 1px solid #e2e8f0 !important;
-              }
-              h1, h2, h3, h4, p, span, a {
-                color: inherit !important;
-              }
-              /* Re-assert specific text colors that might get overridden */
-              .feature-title, .info-title { color: ${textColor} !important; }
-              .feature-desc, .info-desc, .footer-text { color: #64748b !important; }
+        /* Aggressively force white background and dark text even if client is in Dark Mode */
+        @media (prefers-color-scheme: dark) {
+          body, .email-body, .email-container, .email-content {
+            background-color: ${surfaceColor} !important;
+            color: ${textColor} !important;
+          }
+          .email-container, .feature-card, .info-box {
+            background-color: ${bgColor} !important;
+            color: ${textColor} !important;
+          }
+          .info-box {
+            background-color: #ffffff !important; /* Force light background for info box to maintain contrast */
+            color: #1e293b !important;
+            border: 1px solid #e2e8f0 !important;
+          }
+          h1, h2, h3, h4, p, span, a {
+            color: inherit !important;
+          }
+          /* Re-assert specific text colors that might get overridden */
+          .feature-title, .info-title { color: ${textColor} !important; }
+          .feature-desc, .info-desc, .footer-text { color: #64748b !important; }
 
-              /* Ensure the graph paper background persists */
-              .graph-paper-bg {
-                background-color: #0f172a !important;
-                background-image:
-                  radial-gradient(ellipse 400px 300px at 0% 0%, rgba(124, 42, 232, 0.40) 0%, transparent 70%),
-                  radial-gradient(ellipse 400px 300px at 100% 100%, rgba(14, 200, 252, 0.40) 0%, transparent 70%),
-                  linear-gradient(to right, rgba(255, 255, 255, 0.14) 1px, transparent 1px),
-                  linear-gradient(to bottom, rgba(255, 255, 255, 0.14) 1px, transparent 1px) !important;
-                background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px !important;
-              }
-            }
+          /* Ensure the graph paper background persists */
+          .graph-paper-bg {
+            background-color: #0f172a !important;
+            background-image: 
+              radial-gradient(ellipse 400px 300px at 0% 0%, rgba(124, 42, 232, 0.40) 0%, transparent 70%),
+              radial-gradient(ellipse 400px 300px at 100% 100%, rgba(14, 200, 252, 0.40) 0%, transparent 70%),
+              linear-gradient(to right, rgba(255, 255, 255, 0.14) 1px, transparent 1px),
+              linear-gradient(to bottom, rgba(255, 255, 255, 0.14) 1px, transparent 1px) !important;
+            background-size: 100% 100%, 100% 100%, 30px 30px, 30px 30px !important;
+          }
+        }
 
-            /* Mobile Optimizations */
-            @media screen and (max-width: 600px) {
-              .email-container { width: 100% !important; padding: 0 !important; background-image: linear-gradient(${bgColor}, ${bgColor}) !important; }
-              .email-content { padding: 24px 16px !important; }
-              .stack-column { display: block !important; width: 100% !important; max-width: 100% !important; direction: ltr !important; }
-            }
-          </style>
-        </head>
-        <body class="email-body">
-          <!-- THREADING BUSTER: Invisible Ref ID at the top to prevent Gmail from collapsing content -->
-          <div style="display:none; font-size:0; line-height:0; color:#334155; max-height:0; opacity:0; overflow:hidden;">Ref: ${new Date().getTime()}</div>
-          
-          <!-- VML Background for Outlook Desktop -->
-          <!--[if gte mso 9]>
-          <v:background xmlns:v="urn:schemas-microsoft-com:vml" fill="t">
-            <v:fill type="tile" color="#ffffff" />
-          </v:background>
-          <![endif]-->
+        /* Mobile Optimizations */
+        @media screen and (max-width: 600px) {
+            .email-container { width: 100% !important; padding: 0 !important; background-image: linear-gradient(${bgColor}, ${bgColor}) !important; }
+            .email-content { padding: 24px 16px !important; }
+            .stack-column { display: block !important; width: 100% !important; max-width: 100% !important; direction: ltr !important; }
+        }
+      </style>
+    </head>
+    <body class="email-body">
+      <!-- THREADING BUSTER: Invisible Ref ID at the top to prevent Gmail from collapsing content -->
+      <div style="display:none; font-size:0; line-height:0; color:#334155; max-height:0; opacity:0; overflow:hidden;">Ref: ${new Date().getTime()}</div>
 
-          <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: ${surfaceColor}; margin: 0; padding: 0;">
-            <tr>
-              <td align="center">
-                <table class="email-container" width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 600px; margin: 0 auto; background-color: ${bgColor}; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
-                  
-                  <!-- Cinematic Header -->
-                  <tr>
-                    <td>
-                      ${getEmailHeaderHTML()}
-                    </td>
-                  </tr>
+      <!-- VML Background for Outlook Desktop -->
+      <!--[if gte mso 9]>
+      <v:background xmlns:v="urn:schemas-microsoft-com:vml" fill="t">
+        <v:fill type="tile" color="#ffffff" />
+      </v:background>
+      <![endif]-->
 
-                  <!-- Main Content Area with Multicolored Ambient Glow -->
-                  <tr>
-                    <td class="email-content" style="padding: 0 32px 40px; background-color: #ffffff; background-image: radial-gradient(circle at 50% 0%, rgba(124, 42, 232, 0.06) 0%, transparent 40%); background-repeat: no-repeat;">
-                      ${content}
-                    </td>
-                  </tr>
+      <table width="100%" cellpadding="0" cellspacing="0" role="presentation" style="background-color: ${surfaceColor}; margin: 0; padding: 0;">
+        <tr>
+          <td align="center">
+            <table class="email-container" width="100%" cellpadding="0" cellspacing="0" role="presentation" style="max-width: 600px; margin: 0 auto; background-color: ${bgColor}; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);">
+              
+              <!-- Cinematic Header -->
+              <tr>
+                <td>
+                  ${getEmailHeaderHTML()}
+                </td>
+              </tr>
 
-                  <!-- Footer -->
-                  <tr>
-                    <td>
-                      ${getEmailFooterHTML()}
-                    </td>
-                  </tr>
+              <!-- Main Content Area with Multicolored Ambient Glow -->
+              <tr>
+                <td class="email-content" style="padding: 0 32px 40px; background-color: #ffffff; background-image: radial-gradient(circle at 50% 0%, rgba(124, 42, 232, 0.06) 0%, transparent 40%); background-repeat: no-repeat;">
+                  ${content}
+                </td>
+              </tr>
 
-                </table>
+              <!-- Footer -->
+              <tr>
+                <td>
+                  ${getEmailFooterHTML()}
+                </td>
+              </tr>
 
-                <!-- Spacer for bottom padding -->
-                <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
-                  <tr><td height="40" style="font-size: 0; line-height: 0;">&nbsp;</td></tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-        </body>
-      </html>
-    `;
+            </table>
+
+            <!-- Spacer for bottom padding -->
+            <table width="100%" cellpadding="0" cellspacing="0" role="presentation">
+              <tr><td height="40" style="font-size: 0; line-height: 0;">&nbsp;</td></tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
 }
 
 // TEMPLATE EXPORTS
@@ -353,7 +411,8 @@ export const getBetaTemplate = (verificationLink: string) => {
     ${getEmailHeadingHTML(
     `Welcome to ${getGradientTextHTML("The Forge")}`,
     "🎉 You're in! 🎉",
-    getEmailProgressRailHTML(2)
+    getEmailProgressRailHTML(2),
+    false // Use standard spacing for Beta
   )}
 
     <!-- Intro Text -->
@@ -416,7 +475,7 @@ export const getBetaTemplate = (verificationLink: string) => {
       </tr>
       <tr>
         <td style="padding-bottom: 16px;">
-          ${getEmailFeatureCardHTML(
+           ${getEmailFeatureCardHTML(
     "Community First",
     "Join a thriving community of makers. Share patterns, get feedback, and help shape the future of the platform.",
     `${ASSET_BASE}icons/374FD9/community.png`
@@ -436,17 +495,47 @@ export const getPartnershipTemplate = (name: string) => {
   const content = `
     <!-- Header Section -->
     ${getEmailHeadingHTML(
-    "Partnership Request Received",
-    `Thank you for reaching out, ${name}!`
+    `Forging the ${getGradientTextHTML("Alliance")}`,
+    `🤝 Thank you for reaching out, ${name}! 🤝`,
+    "",
+    true // Use tight spacing
   )}
 
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+      <tr>
+        <td align="left">
+          <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+            Thank you for reaching out about a potential partnership. We sit at the intersection of craftsmanship and modern software, and we're always excited to explore collaborations that push the boundaries of what's possible.
+          </p>
+
+           <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+             Whether it's integrating with new hardware, co-developing community features, or exploring content creation, we believe that the best tools are built in the open. We'd love to hear more about your vision and how we can align our roadmaps.
+           </p>
+          
+          <!-- Highlighted Quote (Steve Jobs) -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0;">
+            <tr>
+              <td style="border-left: 4px solid #7C2AE8; padding-left: 20px; background-color: #f8fafc; padding: 20px; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0 0 8px; font-size: 18px; font-style: italic; font-weight: 500; line-height: 1.6; color: #475569; font-family: 'Poppins', system-ui, sans-serif;">
+                  "Great things in business are never done by one person; they're done by a team of people."
+                </p>
+                <p style="margin: 0; font-size: 14px; font-weight: 600; color: #7C2AE8; font-family: Inter, system-ui, sans-serif;">
+                  — Steve Jobs
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
     ${getInfoBoxHTML(
-    "Our Team is Reviewing Your Request",
-    "We're excited to learn more about how we can collaborate. A member of our partnerships team will be in touch shortly."
+    "What happens next?",
+    "Our team has received your inquiry and will be reviewing it carefully. We typically respond within 2-3 business days, but please know that every partnership opportunity receives our full attention."
   )}
 
     <div style="text-align: center; margin-top: 24px;">
-      ${getEmailButtonHTML("Learn More About BlanketSmith", "#")}
+      ${getEmailButtonHTML("View Our Roadmap", "#")}
     </div>
   `;
 
@@ -461,18 +550,35 @@ export const getFeedbackTemplate = (name: string) => {
     <!-- Header Section -->
     ${getEmailHeadingHTML(
     `Forging the ${getGradientTextHTML("Future")}`,
-    `🛠️ Thanks, ${name}! 🛠️`
+    `🛠️ Thanks for the input, ${name} 🛠️`,
+    "",
+    true // Use tight spacing
   )}
 
-    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 32px;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
       <tr>
         <td align="left">
           <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
             Accuracy and craftsmanship matter deeply to us. Your input is exactly how we evolve, and we want you to know that your feedback has been received and will be carefully reviewed by our team.
           </p>
+
           <p style="margin: 0 0 0; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
             Every suggestion, bug report, and feature request helps us build a better tool for the entire maker community. We're in this together. 🧶
           </p>
+          
+          <!-- Highlighted Quote (Marshall McLuhan - Moved Down) -->
+          <table width="100%" cellpadding="0" cellspacing="0" style="margin: 32px 0;">
+            <tr>
+              <td style="border-left: 4px solid #7C2AE8; padding-left: 20px; background-color: #f8fafc; padding: 20px; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0 0 8px; font-size: 18px; font-style: italic; font-weight: 500; line-height: 1.6; color: #475569; font-family: 'Poppins', system-ui, sans-serif;">
+                  "We shape our tools and afterwards our tools shape us."
+                </p>
+                <p style="margin: 0; font-size: 14px; font-weight: 600; color: #7C2AE8; font-family: Inter, system-ui, sans-serif;">
+                  — Marshall McLuhan
+                </p>
+              </td>
+            </tr>
+          </table>
         </td>
       </tr>
     </table>
@@ -497,7 +603,9 @@ export const getDefaultTemplate = (name: string, email: string, message: string)
   const content = `
     ${getEmailHeadingHTML(
     "Submission Received",
-    `Hello ${name}, we have received your message.`
+    `Hello ${name}, we have received your message.`,
+    "",
+    true // Use tight spacing
   )}
     ${getInfoBoxHTML(
     "Message Details",
