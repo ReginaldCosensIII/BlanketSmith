@@ -495,7 +495,7 @@ export const getPartnershipTemplate = (name: string) => {
   const content = `
     <!-- Header Section -->
     ${getEmailHeadingHTML(
-    `Forging the ${getGradientTextHTML("Alliance")}`,
+    `Forging an ${getGradientTextHTML("Alliance")}`,
     `🤝 Thank you for reaching out, ${name}! 🤝`,
     "",
     true // Use tight spacing
@@ -602,18 +602,39 @@ export const getFeedbackTemplate = (name: string) => {
 export const getDefaultTemplate = (name: string, email: string, message: string) => {
   const content = `
     ${getEmailHeadingHTML(
-    "Submission Received",
-    `Hello ${name}, we have received your message.`,
+    `New Contact ${getGradientTextHTML("Forged")}`,
+    `👋 Thank you for reaching out, ${name}. 👋`,
     "",
     true // Use tight spacing
   )}
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+      <tr>
+        <td align="left">
+          <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+            This is an automated confirmation that your message has reached our team. Whether it's a question, a suggestion, or just a hello, we value every signal from the community.
+          </p>
+          <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+            If you're looking for support or how-to guides, be sure to check out our <a href="#" style="color: #7C2AE8; text-decoration: underline;">Resources & Documentation</a> to get the most out of BlanketSmith.
+          </p>
+          <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+            We'll get back to you as soon as we can. In the meantime, keep making. 🧶
+          </p>
+        </td>
+      </tr>
+    </table>
+
     ${getInfoBoxHTML(
     "Message Details",
     `"${message}" - Sent from ${email}`
   )}
+
+    <div style="text-align: center; margin-top: 24px;">
+      ${getEmailButtonHTML("Join the Forge", "https://discord.com/invite/cmsAYn7d")}
+    </div>
   `;
   return {
-    subject: "We received your message",
+    subject: "Message Received",
     html: getCinematicShellHTML(content)
   };
 };
