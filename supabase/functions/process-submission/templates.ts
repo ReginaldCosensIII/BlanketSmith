@@ -215,17 +215,24 @@ export function getEmailProgressRailHTML(currentStep: number): string {
   let stepsHTML = "";
 
   steps.forEach((step, index) => {
+    // Updated Logic:
+    // isActive: This STEP is the current active focus -> Gradient Ring + Filled
+    // isCompleted: This STEP is behind us -> Green Solid
+    // isPending: This STEP is ahead -> Grey
+
     const isActive = step.id === currentStep;
     const isCompleted = step.id < currentStep;
 
     let circleStyle = `width: 40px; height: 40px; border-radius: 50%; display: inline-block; vertical-align: middle; text-align: center; line-height: 40px; font-size: 16px; font-weight: 600; font-family: Inter, sans-serif; margin-bottom: 12px;`;
 
     if (isActive) {
-      // Updated to use brand gradient
+      // Brand Gradient (Active Step)
       circleStyle += ` background-color: #374FD9; background: linear-gradient(135deg, #7C2AE8 0%, #374FD9 62%, #0EC8FC 100%) no-repeat; color: #ffffff; border: 2px solid #0EC8FC; background-clip: padding-box;`;
     } else if (isCompleted) {
+      // Success Green (Completed Step)
       circleStyle += ` background-color: #10b981; color: #ffffff;`;
     } else {
+      // Grey (Pending Step)
       circleStyle += ` background-color: #e2e8f0; color: #94a3b8;`;
     }
 
@@ -411,7 +418,7 @@ export const getBetaTemplate = (verificationLink: string) => {
     ${getEmailHeadingHTML(
     `Welcome to ${getGradientTextHTML("The Forge")}`,
     "🎉 You're in! 🎉",
-    getEmailProgressRailHTML(2),
+    getEmailProgressRailHTML(2), // Active Step 2 (Verification) - Green is Step 1
     false // Use standard spacing for Beta
   )}
 
@@ -488,6 +495,92 @@ export const getBetaTemplate = (verificationLink: string) => {
   return {
     subject: "Welcome to The Forge",
     html: getCinematicShellHTML(content),
+  };
+};
+
+export const getEmailVerifiedTemplate = () => {
+  // Phase 2: Email Verified ("Waiting Room")
+  // Rail: Step 3 (Beta Access) is Active (Gradient). Steps 1 & 2 are Green.
+  const content = `
+    ${getEmailHeadingHTML(
+    `You've been ${getGradientTextHTML("Verified")}`,
+    "✔️ Thank you for verifying your email address. ✔️",
+    getEmailProgressRailHTML(3),
+    false
+  )}
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+        <tr>
+            <td align="left">
+                <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+                    Your verification is complete, and your application is now in review for final beta approval. We are thrilled to have you join us. ✨
+                </p>
+                <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+                    BlanketSmith is built by makers 🧶, for makers, and your participation is crucial as we refine the platform.
+                </p>
+            </td>
+        </tr>
+    </table>
+
+    ${getInfoBoxHTML(
+    "What happens next?",
+    "Beta access is rolled out in waves to ensure stability. You should receive your access credentials within the next 24-48 hours. The link we send will be valid for 7 days."
+  )}
+
+    <div style="text-align: center; margin-top: 32px;">
+      <p style="margin: 0 0 16px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+        While you wait, join the conversation in the community.
+      </p>
+      ${getEmailButtonHTML("Join the Forge", "https://discord.com/invite/cmsAYn7d")}
+    </div>
+    `;
+
+  return {
+    subject: "Verification Complete - You're on the list",
+    html: getCinematicShellHTML(content)
+  };
+};
+
+export const getBetaAccessTemplate = (claimLink: string) => {
+  // Phase 2: Beta Access ("Key Delivery")
+  // Rail: Step 4 (The Forge) is Active (Gradient). Steps 1, 2, 3 are Green.
+  const content = `
+    ${getEmailHeadingHTML(
+    `Access ${getGradientTextHTML("Granted")}`,
+    "🥳 Your account has been approved. 🥳",
+    getEmailProgressRailHTML(4),
+    false
+  )}
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+        <tr>
+            <td align="left">
+                <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+                  The wait is over. You have been approved for full access to the BlanketSmith beta. 🚀
+                </p>
+                 <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+                  You now have full access to our pattern generation and editing tools. This is your workspace to create, experiment, and refine. ✨ Don't hesitate to reach out if you need guidance.
+                </p>
+                <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+                  Click the button below to claim your account and set your secure password. This link is valid for 7 days.
+                </p>
+            </td>
+        </tr>
+    </table>
+
+     ${getInfoBoxHTML(
+    "What happens next?",
+    "As a Beta member, you play a vital role in our development. You may encounter bugs or rough edges—this is normal! Please use the feedback tools to report issues or share ideas. Your voice directly shapes the future of BlanketSmith."
+  )}
+
+    <div style="text-align: center; margin: 32px 0;">
+      ${getEmailButtonHTML("Enter The Forge", claimLink)}
+    </div>
+    `;
+
+  return {
+    subject: "Access Granted: Welcome to The Forge",
+    html: getCinematicShellHTML(content)
   };
 };
 
@@ -651,6 +744,64 @@ export const getAdminAlertTemplate = (category: string, email: string, payload: 
   `;
   return {
     subject: `[Admin] New Submission: ${category}`,
+    html: getCinematicShellHTML(content)
+  };
+};
+
+/**
+ * NEW: Milestone Badge Helper
+ * Renders a large circular badge with the brand gradient and an icon.
+ */
+/**
+ * NEW: Milestone Badge Helper
+ * Renders a circular badge with the brand gradient and an icon.
+ */
+export const getFirstPatternMilestoneTemplate = (userName: string = "Maker") => {
+  const content = `
+    ${getEmailHeadingHTML(
+    `<span style="font-size: 150%;">🏆</span> <br/> Your First Pattern ${getGradientTextHTML("Forged")}`,
+    "🎉 Milestone Unlocked 🎉",
+    "",
+    true
+  )}
+
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+        <tr>
+            <td align="left">
+                <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+                    Congratulations, ${userName}! You've just created your very first pattern on BlanketSmith. 🧶
+                </p>
+                <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+                    This is a huge step in your journey as a maker. Whether it's a simple test or a masterpiece in the making, you've officially started forging.
+                </p>
+                 <p style="margin: 0 0 24px; font-size: 16px; line-height: 1.6; color: #334155; font-family: Inter, system-ui, sans-serif;">
+                    We'd love to see what you've made. Share your creation with the community to inspire others and get feedback.
+                </p>
+            </td>
+        </tr>
+    </table>
+
+    <!-- Inspirational Quote (Standard Style, Moved to Bottom) -->
+    <table width="100%" cellpadding="0" cellspacing="0" style="margin: 0 0 32px;">
+        <tr>
+            <td style="border-left: 4px solid #7C2AE8; padding-left: 20px; background-color: #f8fafc; padding: 20px; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0 0 8px; font-size: 18px; font-style: italic; font-weight: 500; line-height: 1.6; color: #475569; font-family: 'Poppins', system-ui, sans-serif;">
+                    "Creativity is contagious, pass it on."
+                </p>
+                <p style="margin: 0; font-size: 14px; font-weight: 600; color: #7C2AE8; font-family: Inter, system-ui, sans-serif;">
+                    — Albert Einstein
+                </p>
+            </td>
+        </tr>
+    </table>
+
+    <div style="text-align: center; margin: 32px 0;">
+      ${getEmailButtonHTML("Share Achievement", "https://discord.com/invite/cmsAYn7d")}
+    </div>
+    `;
+
+  return {
+    subject: "Achievement Unlocked: First Pattern Forged! 🏆",
     html: getCinematicShellHTML(content)
   };
 };

@@ -1,10 +1,14 @@
+
 import nodemailer from "npm:nodemailer@6.9.16";
 import {
     getBetaTemplate,
     getPartnershipTemplate,
     getFeedbackTemplate,
     getDefaultTemplate,
-    getAdminAlertTemplate
+    getAdminAlertTemplate,
+    getEmailVerifiedTemplate,
+    getBetaAccessTemplate,
+    getFirstPatternMilestoneTemplate
 } from "./templates.ts";
 
 // Mock Deno types for the editor's benefit
@@ -50,6 +54,67 @@ Deno.serve(async (req: Request) => {
     try {
         const payload = await req.json();
 
+        // --- TEST EMAIL HANDLER ---
+        if (payload.type === 'test_email') {
+            console.log("Received Test Email Request:", payload);
+
+            const rawEmail = payload.email;
+            if (!rawEmail) {
+                throw new Error("Missing 'email' in test payload");
+            }
+            // Support single string or array of strings
+            const targetEmails = Array.isArray(rawEmail) ? rawEmail : [rawEmail];
+
+            const templateName = payload.template;
+            let testTemplate;
+
+            switch (templateName) {
+                case 'verified':
+                    testTemplate = getEmailVerifiedTemplate();
+                    break;
+                case 'access':
+                    testTemplate = getBetaAccessTemplate("https://blanketsmith.com/claim-account");
+                    break;
+                case 'partnership':
+                    testTemplate = getPartnershipTemplate("Test Partner");
+                    break;
+                case 'beta':
+                    testTemplate = getBetaTemplate("https://blanketsmith.com/verify");
+                    break;
+                case 'milestone':
+                    testTemplate = getFirstPatternMilestoneTemplate("Test Maker");
+                    break;
+                case 'general':
+                    testTemplate = getDefaultTemplate("Test User", targetEmails[0], "This is a test message.");
+                    break;
+                default:
+                    throw new Error(`Unknown test template: ${templateName}`);
+            }
+
+            console.log(`Sending Test Email (${templateName}) to:`, targetEmails);
+
+            // Send to all targets in parallel
+            const results = await Promise.all(targetEmails.map(async (email: string) => {
+                try {
+                    await sendEmail(email, `[TEST] ${testTemplate.subject}`, testTemplate.html);
+                    return { email, status: 'sent' };
+                } catch (err: any) {
+                    console.error(`Failed to send test email to ${email}:`, err);
+                    return { email, status: 'failed', error: err.message };
+                }
+            }));
+
+            return new Response(JSON.stringify({
+                message: `Test email '${templateName}' processed`,
+                results: results,
+                success: true
+            }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+                status: 200,
+            });
+        }
+
+        // --- STANDARD WEBHOOK HANDLER ---
         // Check if this is a database webhook payload (INSERT)
         if (payload.type === 'INSERT' && payload.table === 'contact_submissions') {
             const record = payload.record;
