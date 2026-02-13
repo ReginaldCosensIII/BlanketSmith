@@ -5,25 +5,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Store, Users, Palette, CheckCircle2, ArrowRight, Home } from "lucide-react";
+import { Icon } from "@/components/ui/SharedComponents";
 import { useToast } from "@/hooks/use-toast";
 
 const partnerTypes = [
   {
     id: "creator",
-    icon: Users,
+    icon: 'users',
     title: "Content Creator",
     description: "YouTubers, bloggers, social media influencers",
   },
   {
     id: "designer",
-    icon: Palette,
+    icon: 'palette',
     title: "Pattern Designer",
     description: "Independent designers and pattern publishers",
   },
   {
     id: "business",
-    icon: Store,
+    icon: 'store',
     title: "Business / Brand",
     description: "Yarn shops, craft brands, and retailers",
   },
@@ -121,7 +121,7 @@ export default function Partnerships() {
                 transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.1 }}
                 className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-brand-purple via-brand-midblue to-brand-cyan flex items-center justify-center"
               >
-                <CheckCircle2 className="w-8 h-8 text-white" />
+                <Icon name="check-circle" className="w-8 h-8 text-white" />
               </motion.div>
               <h1 className="font-display text-3xl font-bold text-foreground mb-4">
                 Thank you for reaching out!
@@ -134,7 +134,7 @@ export default function Partnerships() {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Button variant="gradient" size="lg" asChild>
                   <a href="/">
-                    <Home className="w-4 h-4" />
+                    <Icon name="home" className="w-4 h-4" />
                     Back to Home
                   </a>
                 </Button>
@@ -192,7 +192,7 @@ export default function Partnerships() {
                     ? "bg-gradient-to-br from-brand-purple via-brand-midblue to-brand-cyan"
                     : "bg-gradient-to-br from-brand-midblue/10 to-brand-cyan/10 border border-brand-purple/30 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(92,174,255,0.4)] group-hover:border-brand-midblue/50"
                     }`}>
-                    <type.icon className={`w-5 h-5 ${selectedType === type.id ? "text-white" : "text-brand-midblue"}`} />
+                    <Icon name={type.icon} className={`w-5 h-5 ${selectedType === type.id ? "text-white" : "text-brand-midblue"}`} />
                   </div>
                   <h3 className="font-medium text-foreground mb-1">{type.title}</h3>
                   <p className="text-xs text-muted-foreground">{type.description}</p>
@@ -306,7 +306,7 @@ export default function Partnerships() {
                   ) : (
                     <>
                       Submit Partnership Inquiry
-                      <ArrowRight className="w-4 h-4" />
+                      <Icon name="arrow-right" className="w-4 h-4" />
                     </>
                   )}
                 </Button>

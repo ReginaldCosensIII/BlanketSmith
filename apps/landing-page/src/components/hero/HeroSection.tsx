@@ -1,10 +1,14 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, Variants, Easing } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { Icon } from "@/components/ui/SharedComponents";
 import { Button } from "@/components/ui/button";
 import { useAnimation } from "@/contexts/AnimationContext";
-import logoBadge from "@/assets/logo-badge.svg";
+const logoBadge = "/branding/logos/bs-badge-master.svg";
+// import heroScreenshot from "@/assets/hero-screenshot.png";
+// import mobileScreenshot from "@/assets/mobile-ui-screenshot.png";
+const heroScreenshot = "/branding/images/ui-mockup-landing-hero.png";
+const mobileScreenshot = "/branding/images/ui-mockup-landing-mobile.png";
 
 export function HeroSection() {
   const [badgeLoaded, setBadgeLoaded] = useState(false);
@@ -29,12 +33,12 @@ export function HeroSection() {
   const easeOut: Easing = [0.16, 1, 0.3, 1];
 
   const itemVariants: Variants = {
-    hidden: { 
-      opacity: 0, 
+    hidden: {
+      opacity: 0,
       y: 30,
     },
-    visible: { 
-      opacity: 1, 
+    visible: {
+      opacity: 1,
       y: 0,
       transition: {
         duration: 0.5,
@@ -53,7 +57,7 @@ export function HeroSection() {
         {/* Cyan accent orbs in opposite corners */}
         <div className="hidden md:block absolute top-0 left-0 w-[450px] h-[450px] lg:w-[550px] lg:h-[550px] 3xl:w-[700px] 3xl:h-[700px] blur-3xl rounded-full accent-orb transform -translate-x-[24%] -translate-y-[26%] 3xl:-translate-x-[18%] 3xl:-translate-y-[18%]" />
         <div className="hidden md:block absolute bottom-0 right-0 w-[380px] h-[380px] lg:w-[450px] lg:h-[450px] 3xl:w-[580px] 3xl:h-[580px] blur-3xl rounded-full accent-orb transform translate-x-[32%] translate-y-[30%] 3xl:translate-x-[22%] 3xl:translate-y-[20%]" />
-        
+
         {/* Graph paper texture with grid */}
         <div
           className="absolute inset-0 opacity-[0.025] md:opacity-[0.03] lg:opacity-[0.05] mix-blend-multiply"
@@ -97,15 +101,15 @@ export function HeroSection() {
       </div>
 
       {/* Preload the badge image (hidden) to track loading */}
-      <img 
-        src={logoBadge} 
-        alt="" 
+      <img
+        src={logoBadge}
+        alt=""
         className="sr-only"
         onLoad={() => setBadgeLoaded(true)}
       />
 
       {/* Beta Badge - positioned closer to header to avoid collision with floating logo */}
-      <motion.div 
+      <motion.div
         className="text-center -mt-2 md:-mt-4"
         initial={{ opacity: 0, y: 30 }}
         animate={canAnimate ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
@@ -122,7 +126,7 @@ export function HeroSection() {
 
       {/* Main Hero Content */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 mt-6 md:mt-8">
-        <motion.div 
+        <motion.div
           className="max-w-4xl mx-auto text-center"
           variants={containerVariants}
           initial="hidden"
@@ -130,16 +134,16 @@ export function HeroSection() {
         >
           {/* Badge Logo */}
           <motion.div className="mb-6" variants={itemVariants}>
-            <img 
-              src={logoBadge} 
-              alt="BlanketSmith" 
+            <img
+              src={logoBadge}
+              alt="BlanketSmith"
               className="h-36 sm:h-40 lg:h-44 w-auto mx-auto animate-float"
             />
           </motion.div>
 
           {/* Brand Name */}
-          <motion.h1 
-            className="text-4xl sm:text-5xl lg:text-6xl font-black text-foreground mb-4" 
+          <motion.h1
+            className="text-4xl sm:text-5xl lg:text-6xl font-black text-foreground mb-4"
             style={{ fontFamily: "'Poppins', sans-serif" }}
             variants={itemVariants}
           >
@@ -147,7 +151,7 @@ export function HeroSection() {
           </motion.h1>
 
           {/* Tagline */}
-          <motion.h2 
+          <motion.h2
             className="font-display text-xl sm:text-2xl lg:text-3xl font-bold text-foreground leading-tight mb-5"
             variants={itemVariants}
           >
@@ -156,12 +160,12 @@ export function HeroSection() {
           </motion.h2>
 
           {/* Subheadline */}
-          <motion.p 
+          <motion.p
             className="font-sans text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-6"
             variants={itemVariants}
           >
-            BlanketSmith transforms your ideas into ready-to-use blanket patterns instantly. 
-            Designed for crocheters and knitters who value precision, creativity, and a 
+            BlanketSmith transforms your ideas into ready-to-use blanket patterns instantly.
+            Designed for crocheters and knitters who value precision, creativity, and a
             streamlined workflow.
           </motion.p>
 
@@ -170,7 +174,7 @@ export function HeroSection() {
             <Button variant="gradient" size="xl" asChild>
               <Link to="/beta-signup">
                 Sign Up for the Beta
-                <ArrowRight className="w-5 h-5" />
+                <Icon name="arrow-right" size="lg" className="ml-1" />
               </Link>
             </Button>
           </motion.div>

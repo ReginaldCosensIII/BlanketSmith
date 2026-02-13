@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { ContextMenuItem } from '../../types';
 
 export type IconSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | 'toolbar' | 'menu' | number;

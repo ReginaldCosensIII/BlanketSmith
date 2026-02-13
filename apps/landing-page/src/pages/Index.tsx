@@ -4,48 +4,39 @@ import { Layout } from "@/components/layout/Layout";
 import { ToolMockup } from "@/components/ToolMockup";
 import { FeatureTourMockup } from "@/components/FeatureTourMockup";
 import { HeroSection } from "@/components/hero/HeroSection";
-import communityCrafting from "@/assets/community-crafting.jpg";
+// import communityCrafting from "@/assets/community-crafting.jpg";
+const communityCrafting = "/branding/images/image-landing-community.jpg";
 
-import {
-  Sparkles, 
-  Zap, 
-  Users, 
-  Palette, 
-  Download, 
-  Shield,
-  ArrowRight,
-  Heart,
-  Lightbulb
-} from "lucide-react";
+import { Icon } from "@/components/ui/SharedComponents";
 
 const features = [
   {
-    icon: Sparkles,
+    icon: 'sparkles',
     title: "Instant Pattern Generation",
     description: "Transform your creative vision into structured, ready-to-use blanket patterns in seconds.",
   },
   {
-    icon: Palette,
+    icon: 'palette',
     title: "Visual Pattern Designer",
     description: "See your design come to life with our intuitive visual editor. No guesswork required.",
   },
   {
-    icon: Download,
+    icon: 'download',
     title: "Export & Share",
     description: "Download patterns in multiple formats, ready to print or share with fellow makers.",
   },
   {
-    icon: Zap,
+    icon: 'zap',
     title: "Works Everywhere",
     description: "Browser-based and responsive. Create patterns on any device, anywhere.",
   },
   {
-    icon: Users,
+    icon: 'users',
     title: "Community-Driven",
     description: "Built with input from real crocheters and knitters. Your feedback shapes our roadmap.",
   },
   {
-    icon: Shield,
+    icon: 'shield',
     title: "Your Patterns, Your Data",
     description: "Privacy-first approach. Your creative work stays yours.",
   },
@@ -53,17 +44,17 @@ const features = [
 
 const platformValues = [
   {
-    icon: Heart,
+    icon: 'heart',
     title: "Community-First",
     description: "Every decision is made with makers in mind. Your voice shapes our product.",
   },
   {
-    icon: Lightbulb,
+    icon: 'lightbulb',
     title: "Creativity-Enabled",
     description: "We remove barriers so you can focus on what matters—your creative vision.",
   },
   {
-    icon: Users,
+    icon: 'users',
     title: "Inclusive Design",
     description: "Built for every skill level, from first-time crocheters to seasoned pattern designers.",
   },
@@ -83,18 +74,18 @@ export default function Index() {
               What is BlanketSmith?
             </h2>
             <p className="font-sans text-muted-foreground text-lg leading-relaxed mb-6">
-              BlanketSmith is a browser-based pattern generation tool built specifically for 
-              crocheters and knitters. Whether you're designing your first granny square or 
-              perfecting an intricate colorwork blanket, our tool transforms your creative 
+              BlanketSmith is a browser-based pattern generation tool built specifically for
+              crocheters and knitters. Whether you're designing your first granny square or
+              perfecting an intricate colorwork blanket, our tool transforms your creative
               vision into precise, ready-to-follow patterns.
             </p>
             <p className="font-sans text-muted-foreground text-lg leading-relaxed">
-              No more hand-drawing grids or wrestling with spreadsheets. BlanketSmith brings 
-              pattern creation into the modern era—with an intuitive interface, instant 
+              No more hand-drawing grids or wrestling with spreadsheets. BlanketSmith brings
+              pattern creation into the modern era—with an intuitive interface, instant
               previews, and export options that work for your workflow.
             </p>
           </div>
-          
+
           {/* Tool Mockup */}
           <div className="mt-12 md:mt-16">
             <ToolMockup />
@@ -110,7 +101,7 @@ export default function Index() {
               Feature Highlights
             </h2>
             <p className="font-sans text-muted-foreground max-w-2xl mx-auto">
-              Every feature is designed with input from crocheters and knitters. 
+              Every feature is designed with input from crocheters and knitters.
               No fluff—just the tools you need to bring your patterns to life.
             </p>
           </div>
@@ -122,22 +113,22 @@ export default function Index() {
 
           <div className="mt-12 md:mt-16">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
-            {features.map((feature, index) => (
-              <div
-                key={feature.title}
-                className="group p-6 lg:p-8 rounded-2xl bg-card border border-border hover:border-primary/30 hover:shadow-soft transition-all duration-300"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-midblue/10 to-brand-cyan/10 border border-brand-purple/30 flex items-center justify-center mb-5 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(92,174,255,0.4)] group-hover:border-brand-midblue/50 transition-all duration-300 ease-out">
-                  <feature.icon className="w-6 h-6 text-brand-midblue" strokeWidth={1.5} />
+              {features.map((feature, index) => (
+                <div
+                  key={feature.title}
+                  className="group p-6 lg:p-8 rounded-2xl bg-card border border-border hover:border-primary/30 hover:shadow-soft transition-all duration-300"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-brand-midblue/10 to-brand-cyan/10 border border-brand-purple/30 flex items-center justify-center mb-5 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(92,174,255,0.4)] group-hover:border-brand-midblue/50 transition-all duration-300 ease-out">
+                    <Icon name={feature.icon} className="w-6 h-6 text-brand-midblue" />
+                  </div>
+                  <h3 className="font-display text-lg font-semibold text-foreground mb-2">
+                    {feature.title}
+                  </h3>
+                  <p className="font-sans text-muted-foreground text-sm leading-relaxed">
+                    {feature.description}
+                  </p>
                 </div>
-                <h3 className="font-display text-lg font-semibold text-foreground mb-2">
-                  {feature.title}
-                </h3>
-                <p className="font-sans text-muted-foreground text-sm leading-relaxed">
-                  {feature.description}
-                </p>
-              </div>
               ))}
             </div>
           </div>
@@ -153,28 +144,28 @@ export default function Index() {
                 About BlanketSmith
               </h2>
               <p className="font-sans text-muted-foreground max-w-2xl mx-auto text-lg">
-                We're building more than a tool—we're nurturing a community of makers 
+                We're building more than a tool—we're nurturing a community of makers
                 who believe creativity should be accessible to everyone.
               </p>
             </div>
-              
+
             {/* Community Image */}
             <div className="mt-12 md:mt-16 max-w-3xl mx-auto rounded-2xl overflow-hidden shadow-soft border border-border">
-                <img 
-                  src={communityCrafting} 
-                  alt="Makers collaborating on colorful blanket and quilting projects" 
-                  className="w-full h-auto"
-                />
+              <img
+                src={communityCrafting}
+                alt="Makers collaborating on colorful blanket and quilting projects"
+                className="w-full h-auto"
+              />
             </div>
 
             <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
               {platformValues.map((value, index) => (
-                <div 
+                <div
                   key={value.title}
                   className="text-center p-6"
                 >
                   <div className="w-14 h-14 mx-auto rounded-full bg-brand-midblue/10 border border-brand-purple/30 flex items-center justify-center mb-5 hover:scale-110 hover:shadow-[0_0_20px_rgba(92,174,255,0.4)] hover:border-brand-midblue/50 transition-all duration-300 ease-out">
-                    <value.icon className="w-7 h-7 text-brand-midblue" strokeWidth={1.5} />
+                    <Icon name={value.icon} className="w-7 h-7 text-brand-midblue" />
                   </div>
                   <h3 className="font-display text-xl font-semibold text-foreground mb-3">
                     {value.title}
@@ -188,13 +179,13 @@ export default function Index() {
 
             <div className="mt-12 md:mt-16 text-center">
               <p className="font-sans text-muted-foreground mb-6">
-                BlanketSmith is currently in beta. We're actively developing new features 
+                BlanketSmith is currently in beta. We're actively developing new features
                 and listening to feedback from makers like you.
               </p>
               <Button variant="gradient" size="lg" asChild>
                 <Link to="/partnerships">
                   Partner With Us
-                  <ArrowRight className="w-4 h-4" />
+                  <Icon name="arrow-right" className="w-4 h-4" />
                 </Link>
               </Button>
             </div>
@@ -211,17 +202,17 @@ export default function Index() {
               Ready to Transform Your Pattern Workflow?
             </h2>
             <p className="font-sans text-primary-foreground/80 text-lg mb-8">
-              Join the makers already testing BlanketSmith. 
+              Join the makers already testing BlanketSmith.
               Sign up today and be part of the future of pattern creation.
             </p>
-            <Button 
-              size="xl" 
+            <Button
+              size="xl"
               className="bg-background text-foreground hover:bg-background/90 hover:scale-[1.02] active:scale-[0.98] shadow-lg font-sans"
               asChild
             >
               <Link to="/beta-signup">
                 Sign Up for the Beta
-                <ArrowRight className="w-5 h-5" />
+                <Icon name="arrow-right" className="w-5 h-5" />
               </Link>
             </Button>
           </div>

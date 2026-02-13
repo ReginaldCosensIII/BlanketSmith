@@ -5,7 +5,7 @@
 
 // Verified PNG Assets (Public Path)
 // Verified PNG Assets (Public Path)
-const UNIVERSAL_LOGO = "https://blanket-smith-landing-page.vercel.app/email-assets/horizontal-logo-white.png";
+const UNIVERSAL_LOGO = "https://blanket-smith-landing-page.vercel.app/branding/logos/bs-logo-horizontal-white.png";
 
 interface EmailHeaderProps {
     // No props needed for single mode
@@ -38,7 +38,7 @@ export function EmailHeader({ }: EmailHeaderProps = {}) {
                     <td align="center" style={{ padding: "40px 20px 40px" }}>
                         {/* Logo */}
                         <img
-                            src={UNIVERSAL_LOGO}
+                            src="${ASSET_BASE}branding/logos/bs-logo-horizontal-white.png"
                             alt="BlanketSmith"
                             width="180"
                             style={{

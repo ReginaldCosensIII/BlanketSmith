@@ -1,7 +1,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const ASSET_BASE = "https://blanket-smith-landing-page.vercel.app/email-assets/";
+const ASSET_BASE = "https://blanket-smith-landing-page.vercel.app/";
 
 // --- Helper Components ---
 
@@ -85,7 +85,7 @@ export function getEmailHeaderHTML(): string {
               <td align="center" style="padding: 40px 20px 40px;">
                 <!-- Universal White Logo -->
                 <img 
-                  src="${ASSET_BASE}horizontal-logo-white.png" 
+                  src="${ASSET_BASE}branding/logos/bs-logo-horizontal-white.png" 
                   alt="BlanketSmith" 
                   width="180" 
                   style="display: block; max-width: 180px; height: auto;" 
@@ -112,7 +112,7 @@ export function getEmailFooterHTML(): string {
                 <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
                   <tr>
                     <td align="center">
-                      <img src="${ASSET_BASE}vertical-logo-no-slogan-white.png" alt="BlanketSmith" width="140" style="display: block; max-width: 140px; height: auto;" />
+                      <img src="${ASSET_BASE}branding/logos/bs-logo-vertical-white.png" alt="BlanketSmith" width="140" style="display: block; max-width: 140px; height: auto;" />
                     </td>
                   </tr>
                 </table>
@@ -148,7 +148,7 @@ export function getEmailFooterHTML(): string {
                         <a href="https://blanketsmith.com" style="color: #7C2AE8 !important; text-decoration: underline;">Terms of Service</a>
                       </p>
                       <p style="color: #cbd5e1 !important; font-size: 12px; font-family: Inter, system-ui, sans-serif; margin: 0;">
-                        <span style="color: #cbd5e1 !important;">Made with <img src="${ASSET_BASE}favicon-heart-v2.png" alt="love" width="16" height="16" style="display: inline-block; vertical-align: middle;" /> for the community</span>
+                        <span style="color: #cbd5e1 !important;">Made with <img src="${ASSET_BASE}branding/logos/bs-logo-heart.png" alt="love" width="16" height="16" style="display: inline-block; vertical-align: middle;" /> for the community</span>
                       </p>
                       <p style="color: #cbd5e1 !important; font-size: 11px; font-family: Inter, system-ui, sans-serif; margin: 12px 0 0;">
                         <span style="color: #cbd5e1 !important;">© ${year} BlanketSmith. All rights reserved.</span><br/>
@@ -181,7 +181,7 @@ export function getEmailFeatureCardHTML(title: string, description: string, icon
   `;
 }
 
-export function getInfoBoxHTML(title: string, description: string, iconUrl: string = `${ASSET_BASE}icons/374FD9/light-bulb.png`): string {
+export function getInfoBoxHTML(title: string, description: string, iconUrl: string = `${ASSET_BASE}branding/icons/email/icon-info-light-bulb.png`): string {
   // Styling Updates: Gradient border and icon background
   return `
     <div class="info-box" style="background-color: #ffffff; border-radius: 12px; padding: 20px; margin-top: 24px; border-left: 4px solid #7C2AE8; border: 1px solid #e2e8f0;">
@@ -458,7 +458,7 @@ export const getBetaTemplate = (verificationLink: string) => {
           ${getEmailFeatureCardHTML(
     "Generate Patterns",
     "Upload an image or snap a photo on mobile to instantly generate a custom pattern based on your unique settings.",
-    `${ASSET_BASE}icons/374FD9/image-sparkle.png`
+    `${ASSET_BASE}branding/icons/email/icon-feature-image-sparkle.png`
   )}
         </td>
       </tr>
@@ -467,7 +467,7 @@ export const getBetaTemplate = (verificationLink: string) => {
           ${getEmailFeatureCardHTML(
     "Modern Interface",
     "Experience a beautiful, intuitive design built specifically for the modern maker, with dark mode and touch controls.",
-    `${ASSET_BASE}icons/374FD9/dashboard.png`
+    `${ASSET_BASE}branding/icons/email/icon-feature-dashboard.png`
   )}
         </td>
       </tr>
@@ -476,7 +476,7 @@ export const getBetaTemplate = (verificationLink: string) => {
           ${getEmailFeatureCardHTML(
     "Precision Tools",
     "Fine-tune every stitch with professional-grade editing tools designed to give you complete control over your work.",
-    `${ASSET_BASE}icons/374FD9/spanner.png`
+    `${ASSET_BASE}branding/icons/email/icon-feature-spanner.png`
   )}
         </td>
       </tr>
@@ -485,7 +485,7 @@ export const getBetaTemplate = (verificationLink: string) => {
            ${getEmailFeatureCardHTML(
     "Community First",
     "Join a thriving community of makers. Share patterns, get feedback, and help shape the future of the platform.",
-    `${ASSET_BASE}icons/374FD9/community.png`
+    `${ASSET_BASE}branding/icons/email/icon-feature-community.png`
   )}
         </td>
       </tr>

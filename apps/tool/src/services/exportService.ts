@@ -1,4 +1,4 @@
-﻿
+
 // @ts-nocheck
 import { PixelGridData, PatternColor, CellData, ExportType, BrandingOptions, ChartVisualOptions, ExportOptions } from '../types';
 import { DEFAULT_STITCH_LIBRARY, StitchDefinition } from '../data/stitches';
@@ -288,7 +288,7 @@ const drawInstructionsSection = (
                 ensureSpace(blockHeight + 2);
 
                 // Bullet/Number
-                const prefix = block.type === 'list-ol' ? `${index + 1}.` : '•';
+                const prefix = block.type === 'list-ol' ? `${index + 1}.` : '�';
                 doc.text(prefix, margin, y + 10);
 
                 // Text

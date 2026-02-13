@@ -5,25 +5,25 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Mail, MessageSquare, HelpCircle, CheckCircle2, ArrowRight, Home } from "lucide-react";
+import { Icon } from "@/components/ui/SharedComponents";
 import { useToast } from "@/hooks/use-toast";
 
 const contactReasons = [
   {
     id: "general",
-    icon: MessageSquare,
+    icon: 'message-square',
     title: "General Inquiry",
     description: "Questions about BlanketSmith",
   },
   {
     id: "support",
-    icon: HelpCircle,
+    icon: 'help-circle',
     title: "Support",
     description: "Help with your account or the app",
   },
   {
     id: "other",
-    icon: Mail,
+    icon: 'mail',
     title: "Other",
     description: "Anything else on your mind",
   },
@@ -117,7 +117,7 @@ export default function Contact() {
                 transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.1 }}
                 className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-brand-purple via-brand-midblue to-brand-cyan flex items-center justify-center"
               >
-                <CheckCircle2 className="w-8 h-8 text-white" />
+                <Icon name="check-circle" className="w-8 h-8 text-white" />
               </motion.div>
               <h1 className="font-display text-3xl font-bold text-foreground mb-4">
                 Message received!
@@ -129,7 +129,7 @@ export default function Contact() {
               <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Button variant="gradient" size="lg" asChild>
                   <a href="/">
-                    <Home className="w-4 h-4" />
+                    <Icon name="home" className="w-4 h-4" />
                     Back to Home
                   </a>
                 </Button>
@@ -186,7 +186,7 @@ export default function Contact() {
                     ? "bg-gradient-to-br from-brand-purple via-brand-midblue to-brand-cyan"
                     : "bg-gradient-to-br from-brand-midblue/10 to-brand-cyan/10 border border-brand-purple/30 group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(92,174,255,0.4)] group-hover:border-brand-midblue/50"
                     }`}>
-                    <reason.icon className={`w-5 h-5 ${selectedReason === reason.id ? "text-white" : "text-brand-midblue"}`} />
+                    <Icon name={reason.icon} className={`w-5 h-5 ${selectedReason === reason.id ? "text-white" : "text-brand-midblue"}`} />
                   </div>
                   <h3 className="font-medium text-foreground mb-1">{reason.title}</h3>
                   <p className="text-xs text-muted-foreground">{reason.description}</p>
@@ -262,7 +262,7 @@ export default function Contact() {
                   ) : (
                     <>
                       Send Message
-                      <ArrowRight className="w-4 h-4" />
+                      <Icon name="arrow-right" className="w-4 h-4" />
                     </>
                   )}
                 </Button>

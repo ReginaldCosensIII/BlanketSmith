@@ -4,9 +4,10 @@
 
 // ========================================
 // Verified PNG Assets (Public Path)
-const LIGHT_LOGO = "https://blanket-smith-landing-page.vercel.app/email-assets/vertical-logo-no-slogan-white.png";
-const HEART_ICON = "https://blanket-smith-landing-page.vercel.app/email-assets/favicon-heart-v2.png";
-import faviconBadge from "@/assets/favicon-badge.svg";
+// Verified PNG Assets (Public Path)
+const LIGHT_LOGO = "https://blanket-smith-landing-page.vercel.app/branding/logos/bs-logo-vertical-white.png";
+const HEART_ICON = "https://blanket-smith-landing-page.vercel.app/branding/logos/bs-logo-heart.png";
+import faviconBadge from "/branding/logos/bs-logo-badge.svg";
 
 interface EmailFooterProps {
     // No props needed
@@ -34,181 +35,181 @@ export function EmailFooter({ }: EmailFooterProps = {}) {
     const borderColor = "#334155"; // Slate 700
 
     return (
-        width = "100%"
-            cellPadding = "0"
-    cellSpacing = "0"
-    style = {{
-        background: "linear-gradient(to bottom, #1e293b, #0f172a)",
-            backgroundColor: bgColor, // Fallback
+        <table
+            width="100%"
+            cellPadding="0"
+            cellSpacing="0"
+            style={{
+                background: "linear-gradient(to bottom, #1e293b, #0f172a)",
+                backgroundColor: bgColor, // Fallback
                 borderTop: `1px solid ${borderColor}`
-    }
-}
+            }}
         >
-    <tbody>
-        <tr>
-            <td style={{ padding: "32px 20px 24px" }}>
-                {/* Logo centered */}
-                <table width="100%" cellPadding="0" cellSpacing="0" style={{ marginBottom: "24px" }}>
-                    <tbody>
-                        <tr>
-                            <td align="center">
-                                <img
-                                    src={LIGHT_LOGO}
-                                    alt="BlanketSmith"
-                                    width="160"
-                                    style={{
-                                        display: "block",
-                                        maxWidth: "160px",
-                                        height: "auto",
-                                    }}
-                                />
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <tbody>
+                <tr>
+                    <td style={{ padding: "32px 20px 24px" }}>
+                        {/* Logo centered */}
+                        <table width="100%" cellPadding="0" cellSpacing="0" style={{ marginBottom: "24px" }}>
+                            <tbody>
+                                <tr>
+                                    <td align="center">
+                                        <img
+                                            src={LIGHT_LOGO}
+                                            alt="BlanketSmith"
+                                            width="160"
+                                            style={{
+                                                display: "block",
+                                                maxWidth: "160px",
+                                                height: "auto",
+                                            }}
+                                        />
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
 
-                {/* Social Links Row 1 - Centered */}
-                <table width="100%" cellPadding="0" cellSpacing="0" style={{ marginBottom: "8px" }}>
-                    <tbody>
-                        <tr>
-                            <td align="center">
-                                <table cellPadding="0" cellSpacing="0">
-                                    <tbody>
-                                        <tr>
-                                            {socialLinks.row1.map((link) => (
-                                                <td key={link.label} style={{ padding: "0 12px" }}>
-                                                    <a
-                                                        href={link.href}
-                                                        style={{
-                                                            color: linkColor,
-                                                            fontSize: "13px",
-                                                            fontFamily: "Inter, system-ui, sans-serif",
-                                                            textDecoration: "none",
-                                                        }}
-                                                    >
-                                                        {link.label}
-                                                    </a>
-                                                </td>
-                                            ))}
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                        {/* Social Links Row 1 - Centered */}
+                        <table width="100%" cellPadding="0" cellSpacing="0" style={{ marginBottom: "8px" }}>
+                            <tbody>
+                                <tr>
+                                    <td align="center">
+                                        <table cellPadding="0" cellSpacing="0">
+                                            <tbody>
+                                                <tr>
+                                                    {socialLinks.row1.map((link) => (
+                                                        <td key={link.label} style={{ padding: "0 12px" }}>
+                                                            <a
+                                                                href={link.href}
+                                                                style={{
+                                                                    color: linkColor,
+                                                                    fontSize: "13px",
+                                                                    fontFamily: "Inter, system-ui, sans-serif",
+                                                                    textDecoration: "none",
+                                                                }}
+                                                            >
+                                                                {link.label}
+                                                            </a>
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
 
-                {/* Social Links Row 2 - Centered */}
-                <table width="100%" cellPadding="0" cellSpacing="0" style={{ marginBottom: "24px" }}>
-                    <tbody>
-                        <tr>
-                            <td align="center">
-                                <table cellPadding="0" cellSpacing="0">
-                                    <tbody>
-                                        <tr>
-                                            {socialLinks.row2.map((link) => (
-                                                <td key={link.label} style={{ padding: "0 12px" }}>
-                                                    <a
-                                                        href={link.href}
-                                                        style={{
-                                                            color: linkColor,
-                                                            fontSize: "13px",
-                                                            fontFamily: "Inter, system-ui, sans-serif",
-                                                            textDecoration: "none",
-                                                        }}
-                                                    >
-                                                        {link.label}
-                                                    </a>
-                                                </td>
-                                            ))}
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                        {/* Social Links Row 2 - Centered */}
+                        <table width="100%" cellPadding="0" cellSpacing="0" style={{ marginBottom: "24px" }}>
+                            <tbody>
+                                <tr>
+                                    <td align="center">
+                                        <table cellPadding="0" cellSpacing="0">
+                                            <tbody>
+                                                <tr>
+                                                    {socialLinks.row2.map((link) => (
+                                                        <td key={link.label} style={{ padding: "0 12px" }}>
+                                                            <a
+                                                                href={link.href}
+                                                                style={{
+                                                                    color: linkColor,
+                                                                    fontSize: "13px",
+                                                                    fontFamily: "Inter, system-ui, sans-serif",
+                                                                    textDecoration: "none",
+                                                                }}
+                                                            >
+                                                                {link.label}
+                                                            </a>
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
 
-                {/* Legal Links - Centered */}
-                <table width="100%" cellPadding="0" cellSpacing="0">
-                    <tbody>
-                        <tr>
-                            <td align="center">
-                                <p
-                                    style={{
-                                        color: textColor,
-                                        fontSize: "12px",
-                                        fontFamily: "Inter, system-ui, sans-serif",
-                                        margin: "0 0 16px",
-                                    }}
-                                >
-                                    <a href="#" style={{ color: textColor, textDecoration: "underline" }}>
-                                        Unsubscribe
-                                    </a>
-                                    {" · "}
-                                    <a href="#" style={{ color: textColor, textDecoration: "underline" }}>
-                                        Privacy Policy
-                                    </a>
-                                    {" · "}
-                                    <a href="#" style={{ color: textColor, textDecoration: "underline" }}>
-                                        Terms of Service
-                                    </a>
-                                </p>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                        {/* Legal Links - Centered */}
+                        <table width="100%" cellPadding="0" cellSpacing="0">
+                            <tbody>
+                                <tr>
+                                    <td align="center">
+                                        <p
+                                            style={{
+                                                color: textColor,
+                                                fontSize: "12px",
+                                                fontFamily: "Inter, system-ui, sans-serif",
+                                                margin: "0 0 16px",
+                                            }}
+                                        >
+                                            <a href="#" style={{ color: textColor, textDecoration: "underline" }}>
+                                                Unsubscribe
+                                            </a>
+                                            {" · "}
+                                            <a href="#" style={{ color: textColor, textDecoration: "underline" }}>
+                                                Privacy Policy
+                                            </a>
+                                            {" · "}
+                                            <a href="#" style={{ color: textColor, textDecoration: "underline" }}>
+                                                Terms of Service
+                                            </a>
+                                        </p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
 
-                {/* Community Credit - Centered */}
-                <table width="100%" cellPadding="0" cellSpacing="0">
-                    <tbody>
-                        <tr>
-                            <td align="center">
-                                <p
-                                    style={{
-                                        color: textColor,
-                                        fontSize: "12px",
-                                        fontFamily: "Inter, system-ui, sans-serif",
-                                        margin: "0",
-                                    }}
-                                >
-                                    Made with{" "}
-                                    <img
-                                        src={faviconBadge}
-                                        alt="love"
-                                        width="16"
-                                        height="16"
-                                        style={{ display: "inline-block", verticalAlign: "middle" }}
-                                    />{" "}
-                                    for the community
-                                </p>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                        {/* Community Credit - Centered */}
+                        <table width="100%" cellPadding="0" cellSpacing="0">
+                            <tbody>
+                                <tr>
+                                    <td align="center">
+                                        <p
+                                            style={{
+                                                color: textColor,
+                                                fontSize: "12px",
+                                                fontFamily: "Inter, system-ui, sans-serif",
+                                                margin: "0",
+                                            }}
+                                        >
+                                            Made with{" "}
+                                            <img
+                                                src={faviconBadge}
+                                                alt="love"
+                                                width="16"
+                                                height="16"
+                                                style={{ display: "inline-block", verticalAlign: "middle" }}
+                                            />{" "}
+                                            for the community
+                                        </p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
 
-                {/* Copyright - Centered */}
-                <table width="100%" cellPadding="0" cellSpacing="0">
-                    <tbody>
-                        <tr>
-                            <td align="center">
-                                <p
-                                    style={{
-                                        color: textColor,
-                                        fontSize: "11px",
-                                        fontFamily: "Inter, system-ui, sans-serif",
-                                        margin: "12px 0 0",
-                                    }}
-                                >
-                                    © {new Date().getFullYear()} BlanketSmith. All rights reserved.
-                                </p>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </td>
-        </tr>
-    </tbody>
+                        {/* Copyright - Centered */}
+                        <table width="100%" cellPadding="0" cellSpacing="0">
+                            <tbody>
+                                <tr>
+                                    <td align="center">
+                                        <p
+                                            style={{
+                                                color: textColor,
+                                                fontSize: "11px",
+                                                fontFamily: "Inter, system-ui, sans-serif",
+                                                margin: "12px 0 0",
+                                            }}
+                                        >
+                                            © {new Date().getFullYear()} BlanketSmith. All rights reserved.
+                                        </p>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </td>
+                </tr>
+            </tbody>
         </table >
     );
 }
