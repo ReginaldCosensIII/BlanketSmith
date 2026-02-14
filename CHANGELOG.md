@@ -24,6 +24,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - **Outlook Compatibility**: Added `mso-hide: all` to prevent dark mode artifacts in Outlook.
     - **Backend Sync**: Updated `process-submission` Edge Function templates to match React component logic.
     - **Footer Heart**: Applied CSS filter (`brightness(0) invert(1)`) to the "Made with love" icon for dark mode visibility.
+- **Icon System Refactor (refactor/landing-page-icons)**:
+    - **Visual Standardization**: Unified success icon sizing (48px) and styling (white on brand gradient) across all forms (Contact, Beta, Feedback, Partnership).
+    - **Asset Consolidation**: Audited and consolidated icon assets, removing unused placeholders and ensuring consistent semantic naming in `SharedComponents.tsx`.
+    - **Instagram Fix**: Resolved rendering issue with Instagram icon's flash point.
+    - **Footer Tune**: Adjusted social icon sizing for better visual balance.
 - **Secondary Email Refinements (feat/secondary-email-refinements)**:
     - **Milestone Email**: Implemented "First Pattern Forged" celebration email with expanded "Trophy" header and inspirational quote.
     - **Unified Templates**: Refactored Feedback, Partnership, and Default emails to use shared `getEmailHeadingHTML` for consistent "Cinematic" branding.
