@@ -1,23 +1,7 @@
 import { Link } from "react-router-dom";
-import logoHorizontal from "@/assets/logo-horizontal.svg";
-import faviconBadge from "@/assets/favicon-badge.svg";
-import { Twitter, Instagram, Youtube, Facebook } from "lucide-react";
-
-// Custom TikTok icon since lucide doesn't have one
-const TikTok = ({ className, strokeWidth }: { className?: string; strokeWidth?: number }) => (
-  <svg 
-    xmlns="http://www.w3.org/2000/svg" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth={strokeWidth || 2} 
-    strokeLinecap="round" 
-    strokeLinejoin="round"
-    className={className}
-  >
-    <path d="M9 12a4 4 0 1 0 4 4V4a5 5 0 0 0 5 5" />
-  </svg>
-);
+const logoHorizontal = "/branding/logos/bs-logo-horizontal-ink.svg";
+const faviconBadge = "/branding/logos/bs-logo-badge.svg";
+import { Icon } from "@/components/ui/SharedComponents";
 
 const footerLinks = {
   product: [
@@ -35,11 +19,11 @@ const footerLinks = {
 };
 
 const socialLinks = [
-  { icon: Facebook, href: "https://facebook.com/blanketsmith", label: "Facebook" },
-  { icon: Twitter, href: "https://twitter.com/blanketsmith", label: "Twitter" },
-  { icon: Instagram, href: "https://instagram.com/blanketsmith", label: "Instagram" },
-  { icon: Youtube, href: "https://youtube.com/@blanketsmith", label: "YouTube" },
-  { icon: TikTok, href: "https://tiktok.com/@blanketsmith", label: "TikTok" },
+  { icon: 'facebook', href: "https://facebook.com/blanketsmith", label: "Facebook" },
+  { icon: 'twitter', href: "https://twitter.com/blanketsmith", label: "Twitter" },
+  { icon: 'instagram', href: "https://instagram.com/blanketsmith", label: "Instagram" },
+  { icon: 'youtube', href: "https://youtube.com/@blanketsmith", label: "YouTube" },
+  { icon: 'tiktok', href: "https://tiktok.com/@blanketsmith", label: "TikTok" },
 ];
 
 export function Footer() {
@@ -52,18 +36,18 @@ export function Footer() {
           {/* Brand Column */}
           <div className="lg:col-span-2">
             <Link to="/" className="inline-block">
-              <img 
-                src={logoHorizontal} 
-                alt="BlanketSmith" 
+              <img
+                src={logoHorizontal}
+                alt="BlanketSmith"
                 className="h-[3.85rem] lg:h-[5.5rem] w-auto mb-4"
               />
             </Link>
             <p className="font-sans text-muted-foreground max-w-md text-sm leading-relaxed">
-              A modern tool for modern makers. Transform your ideas into ready-to-use 
-              blanket patterns instantly. Built for crocheters and knitters who value 
+              A modern tool for modern makers. Transform your ideas into ready-to-use
+              blanket patterns instantly. Built for crocheters and knitters who value
               precision and creativity.
             </p>
-            
+
             {/* Social Links */}
             <div className="flex items-center gap-4 mt-6">
               {socialLinks.map((social) => (
@@ -75,7 +59,7 @@ export function Footer() {
                   className="w-10 h-10 rounded-full bg-brand-midblue/10 border border-brand-purple/30 flex items-center justify-center text-brand-midblue hover:scale-110 hover:shadow-[0_0_20px_rgba(92,174,255,0.4)] hover:border-brand-midblue/50 transition-all duration-300 ease-out"
                   aria-label={social.label}
                 >
-                  <social.icon className="w-5 h-5" strokeWidth={1.5} />
+                  <Icon name={social.icon} size="sm" />
                 </a>
               ))}
             </div>

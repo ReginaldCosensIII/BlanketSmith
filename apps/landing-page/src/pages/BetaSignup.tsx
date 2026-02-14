@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { CheckCircle2, ArrowRight, Sparkles } from "lucide-react";
+import { Icon } from "@/components/ui/SharedComponents";
 import { useToast } from "@/hooks/use-toast";
-import betaCommunityImage from "@/assets/beta-community.jpg";
+const betaCommunityImage = "/branding/images/beta-community.jpg";
 
 const betaPerks = [
   "Full access to all beta features",
@@ -135,7 +135,7 @@ export default function BetaSignup() {
                 <ul className="space-y-4 mb-8">
                   {betaPerks.map((perk) => (
                     <li key={perk} className="flex items-start gap-3">
-                      <CheckCircle2 className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
+                      <Icon name="check-circle" className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
                       <span className="text-foreground">{perk}</span>
                     </li>
                   ))}
@@ -144,7 +144,7 @@ export default function BetaSignup() {
                 <div className="p-6 rounded-2xl bg-secondary/50 border border-border group transition-all duration-300 ease-out hover:border-brand-purple/50">
                   <div className="flex items-start gap-4">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-purple via-brand-midblue to-brand-cyan flex items-center justify-center flex-shrink-0 transition-transform duration-300 ease-out group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(139,92,246,0.4)]">
-                      <Sparkles className="w-5 h-5 text-white" />
+                      <Icon name="beta-expectations" className="w-5 h-5 text-white" />
                     </div>
                     <div>
                       <p className="font-medium text-foreground mb-1">What to expect</p>
@@ -168,7 +168,7 @@ export default function BetaSignup() {
                       transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.1 }}
                       className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-brand-purple via-brand-midblue to-brand-cyan flex items-center justify-center"
                     >
-                      <CheckCircle2 className="w-8 h-8 text-white" />
+                      <Icon name="check-circle" size={48} className="text-white" />
                     </motion.div>
                     <h2 className="font-display text-2xl font-bold text-foreground mb-4">
                       You're on the list!
@@ -287,7 +287,7 @@ export default function BetaSignup() {
                         ) : (
                           <>
                             Join the Beta
-                            <ArrowRight className="w-4 h-4" />
+                            <Icon name="arrow-right" className="w-4 h-4" />
                           </>
                         )}
                       </Button>

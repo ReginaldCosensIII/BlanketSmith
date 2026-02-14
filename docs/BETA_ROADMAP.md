@@ -19,8 +19,9 @@
 
 ### 1. Visual Enhancements (Homepage)
 - [ ] **Mockup Overlay:** Add depth and animation to the browser/mobile mockup section.
-- [ ] **Interactive Tour:** Implement guided tour of features on the homepage.
-- [ ] **Mobile Responsiveness:** Refine mobile mockup presentation.
+- [ ] **Interactive Tour**: Implement guided tour of features on the homepage.
+- [x] **Icon & Asset Polish**: Consolidated assets, standardized icon sizes, and refined visual consistency across the landing page.
+- [ ] **Mobile Responsiveness**: Refine mobile mockup presentation.
 
 ### 2. SEO & Analytics (Launch Prep)
 - [ ] **Google Analytics:** Setup tracking and conversion goals.

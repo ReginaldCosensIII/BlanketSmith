@@ -1,10 +1,19 @@
+
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { Menu, X } from "lucide-react";
+import { Icon } from "@/components/ui/SharedComponents";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useAnimation } from "@/contexts/AnimationContext";
-import logoHorizontal from "@/assets/logo-horizontal.svg";
+// import logoHorizontal from "@/assets/logo-horizontal.svg";
+const logo = "/branding/logos/bs-logo-horizontal-ink.svg";
+// Standardized name in apps/tool: "branding-logo-horizontal-lockup-no-slogan.svg"
+// This is landing page Header. User map said: "branding-logo-horizontal-white.png" for Email Header.
+// Landing page uses SVG usually?
+// Let's check if "horizontal-logo-no-slogan-white.png" exists or if we should use the one from tool public?
+// The landing page public now has branding/logos.
+// I will check the list of files in apps/landing-page/public/branding/logos/ to use a valid one.
+
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -42,9 +51,9 @@ export function Header() {
         <div className="flex items-center justify-between h-16 lg:h-20">
           {/* Logo */}
           <Link to="/" className="flex items-center">
-            <img 
-              src={logoHorizontal} 
-              alt="BlanketSmith" 
+            <img
+              src={logo}
+              alt="BlanketSmith"
               className="h-[3.85rem] lg:h-[5.5rem] w-auto"
               onLoad={() => setLogoLoaded(true)}
             />
@@ -56,11 +65,10 @@ export function Header() {
               <Link
                 key={link.href}
                 to={link.href}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ease-out ${
-                  location.pathname === link.href
-                    ? "text-brand-midblue bg-brand-midblue/10 border border-brand-purple/30 shadow-[0_0_15px_rgba(92,174,255,0.3)]"
-                    : "text-muted-foreground border border-transparent hover:text-brand-midblue hover:bg-brand-midblue/10 hover:border-brand-purple/30 hover:shadow-[0_0_15px_rgba(92,174,255,0.25)]"
-                }`}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ease-out ${location.pathname === link.href
+                  ? "text-brand-midblue bg-brand-midblue/10 border border-brand-purple/30 shadow-[0_0_15px_rgba(92,174,255,0.3)]"
+                  : "text-muted-foreground border border-transparent hover:text-brand-midblue hover:bg-brand-midblue/10 hover:border-brand-purple/30 hover:shadow-[0_0_15px_rgba(92,174,255,0.25)]"
+                  } `}
               >
                 {link.label}
               </Link>
@@ -81,9 +89,9 @@ export function Header() {
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
           >
             {mobileMenuOpen ? (
-              <X className="w-6 h-6 text-foreground" />
+              <Icon name="x" className="w-6 h-6 text-foreground" />
             ) : (
-              <Menu className="w-6 h-6 text-foreground" />
+              <Icon name="menu" className="w-6 h-6 text-foreground" />
             )}
           </button>
         </div>
@@ -97,11 +105,10 @@ export function Header() {
                   key={link.href}
                   to={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`px-4 py-3 rounded-lg text-base font-medium transition-all duration-300 ease-out ${
-                    location.pathname === link.href
-                      ? "text-brand-midblue bg-brand-midblue/10 border border-brand-purple/30 shadow-[0_0_15px_rgba(92,174,255,0.3)]"
-                      : "text-muted-foreground border border-transparent hover:text-brand-midblue hover:bg-brand-midblue/10 hover:border-brand-purple/30 hover:shadow-[0_0_15px_rgba(92,174,255,0.25)]"
-                  }`}
+                  className={`px-4 py-3 rounded-lg text-base font-medium transition-all duration-300 ease-out ${location.pathname === link.href
+                    ? "text-brand-midblue bg-brand-midblue/10 border border-brand-purple/30 shadow-[0_0_15px_rgba(92,174,255,0.3)]"
+                    : "text-muted-foreground border border-transparent hover:text-brand-midblue hover:bg-brand-midblue/10 hover:border-brand-purple/30 hover:shadow-[0_0_15px_rgba(92,174,255,0.25)]"
+                    } `}
                 >
                   {link.label}
                 </Link>
