@@ -59,7 +59,7 @@ export function Footer() {
                   className="w-10 h-10 rounded-full bg-brand-midblue/10 border border-brand-purple/30 flex items-center justify-center text-brand-midblue hover:scale-110 hover:shadow-[0_0_20px_rgba(92,174,255,0.4)] hover:border-brand-midblue/50 transition-all duration-300 ease-out"
                   aria-label={social.label}
                 >
-                  <Icon name={social.icon} size="md" />
+                  <Icon name={social.icon} size="sm" />
                 </a>
               ))}
             </div>

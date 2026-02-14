@@ -168,7 +168,7 @@ export default function BetaSignup() {
                       transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.1 }}
                       className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-brand-purple via-brand-midblue to-brand-cyan flex items-center justify-center"
                     >
-                      <Icon name="check-circle" className="w-8 h-8 text-white" />
+                      <Icon name="check-circle" size={48} className="text-white" />
                     </motion.div>
                     <h2 className="font-display text-2xl font-bold text-foreground mb-4">
                       You're on the list!

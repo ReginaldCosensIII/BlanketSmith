@@ -26,9 +26,9 @@ const features = [
     description: "Download patterns in multiple formats, ready to print or share with fellow makers.",
   },
   {
-    icon: 'zap',
+    icon: "globe",
     title: "Works Everywhere",
-    description: "Browser-based and responsive. Create patterns on any device, anywhere.",
+    description: "Design on your tablet, phone, or laptop. Your patterns sync automatically across all your devices.",
   },
   {
     icon: 'users',
@@ -44,17 +44,17 @@ const features = [
 
 const platformValues = [
   {
-    icon: 'heart',
+    icon: 'about-community',
     title: "Community-First",
     description: "Every decision is made with makers in mind. Your voice shapes our product.",
   },
   {
-    icon: 'lightbulb',
+    icon: 'about-creativity',
     title: "Creativity-Enabled",
     description: "We remove barriers so you can focus on what matters—your creative vision.",
   },
   {
-    icon: 'users',
+    icon: 'about-inclusive',
     title: "Inclusive Design",
     description: "Built for every skill level, from first-time crocheters to seasoned pattern designers.",
   },
@@ -165,7 +165,7 @@ export default function Index() {
                   className="text-center p-6"
                 >
                   <div className="w-14 h-14 mx-auto rounded-full bg-brand-midblue/10 border border-brand-purple/30 flex items-center justify-center mb-5 hover:scale-110 hover:shadow-[0_0_20px_rgba(92,174,255,0.4)] hover:border-brand-midblue/50 transition-all duration-300 ease-out">
-                    <Icon name={value.icon} size="md" className="text-brand-midblue" />
+                    <Icon name={value.icon} size="lg" className="text-brand-midblue" />
                   </div>
                   <h3 className="font-display text-xl font-semibold text-foreground mb-3">
                     {value.title}
