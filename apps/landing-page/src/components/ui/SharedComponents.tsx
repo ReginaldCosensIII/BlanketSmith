@@ -57,8 +57,10 @@ const ICON_SIZES: Record<string, number> = {
 // --- PLACEHOLDER ---
 const PLACEHOLDER_PATH = ["M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z", "M12 6c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6-2.69-6-6-6z"];
 
-// --- BOXICON PATHS ---
-const ZAP_ICON_PATH = ["M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z M13 7l-5 6h3v4l5-6h-3V7z"];
+// --- BOXICON PATHS --- 
+
+const GLOBE_ICON_PATH = ["M12 2C6.49 2 2 6.49 2 12s4.49 10 10 10 10-4.49 10-10S17.51 2 12 2m5.66 4.35c-.72.17-1.45.3-2.19.4-.18-.83-.42-1.59-.7-2.25a8.05 8.05 0 0 1 2.89 1.85M12 20c-.31 0-.97-1-1.45-2.94.96-.05 1.93-.05 2.9 0C12.97 19 12.31 20 12 20m-1.81-4.93c-.08-.63-.14-1.32-.17-2.07h3.96c-.03.75-.09 1.44-.17 2.07-1.2-.08-2.42-.08-3.62 0M12 4c.31 0 .97 1 1.45 2.94-.96.05-1.93.05-2.9 0C11.03 5 11.69 4 12 4m0 5c.61 0 1.21-.03 1.81-.06.08.63.14 1.32.17 2.06h-3.96c.03-.75.09-1.43.17-2.06.6.04 1.2.06 1.81.06m-3.98 2H4.07c.13-1.05.47-2.04.97-2.92 1.03.28 2.09.51 3.16.66-.09.74-.15 1.5-.18 2.27Zm0 2c.03.77.09 1.53.18 2.27-1.08.15-2.13.38-3.16.65-.5-.88-.84-1.87-.97-2.93h3.95Zm7.96 0h3.95a8 8 0 0 1-.97 2.93c-1.03-.28-2.09-.5-3.16-.65.09-.74.15-1.51.18-2.27Zm0-2c-.03-.76-.09-1.53-.18-2.27 1.08-.15 2.13-.38 3.16-.66.5.88.83 1.87.97 2.92h-3.95ZM9.24 4.5c-.28.66-.52 1.43-.7 2.25-.74-.1-1.47-.24-2.19-.4.81-.81 1.8-1.44 2.89-1.85M6.35 17.65c.72-.17 1.45-.3 2.19-.4.18.83.42 1.59.7 2.25a8.05 8.05 0 0 1-2.89-1.85m8.42 1.85c.28-.66.52-1.43.7-2.25.74.1 1.47.24 2.19.4-.81.81-1.8 1.44-2.89 1.85"];
+const ZAP_ICON_PATH = ["M19 9h-5V3a1 1 0 0 0-.69-.95c-.41-.13-.86.01-1.12.36l-8 11a1 1 0 0 0-.08 1.04A1 1 0 0 0 5 15h5v6a1 1 0 0 0 1 1c.31 0 .62-.15.81-.41l8-11a1 1 0 0 0 .08-1.04A1 1 0 0 0 19 9m-7 8.92V14c0-.55-.45-1-1-1H6.96L12 6.08V10c0 .55.45 1 1 1h4.04z"];
 const LAYOUT_ICON_PATH = ["M21 5c0-1.103-.897-2-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2V5zM5 19V5h7v14H5zm14 0h-5v-6h5v6zm0-8h-5V5h5v6z"];
 const SETTINGS_ICON_PATH = ["M12 15c-1.654 0-3-1.346-3-3s1.346-3 3-3 3 1.346 3 3-1.346 3-3 3zm11.105-2.89l-2.028-.337A8.014 8.014 0 0 0 21 11.001l-.012-.772 2.039-.339c.394-.065.65-.436.574-.823l-.64-3.275c-.078-.4-.46-.641-.855-.575l-2.008.334a7.926 7.926 0 0 0-1.22-1.218l.334-2.009c.066-.394-.175-.777-.575-.855l-3.274-.64a.81.81 0 0 0-.823.574l-.339 2.039a8.04 8.04 0 0 0-.771-.012l-.772.012-.339-2.039a.81.81 0 0 0-.823-.574l-3.274.64c-.395.066-.65.437-.575.855l.334 2.009c-.435.367-.843.775-1.22 1.218l-2.008-.334a.812.812 0 0 0-.855.575l-.64 3.275c-.076.387.18.758.574.823l2.039.339A8.04 8.04 0 0 0 3 11.001l.012.772-2.039.339c-.394.065-.65.436-.574.823l.64 3.275c.078.4.46.641.855.575l2.008-.334c.367.435.775.843 1.218 1.218l-.334 2.009c-.066.394.175.777.575.855l3.274.64c.395-.066.65-.437.823-.574l.339-2.039c.254.008.511.012.771.012l.772-.012.339 2.039c.066.394.437.65.823.574l3.274-.64c.395-.066.65-.437.575-.855l-.334-2.009a7.926 7.926 0 0 0 1.22-1.218l2.008.334c.395.066.777-.175.855-.575l.64-3.275a.812.812 0 0 0-.574-.823z"];
 const USERS_ICON_PATH = ["M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2zm0 18c-4.411 0-8-3.589-8-8s3.589-8 8-8 8 3.589 8 8-3.589 8-8 8z M16.5 13h-9a.5.5 0 0 0-.5.5V14c0 1.654 1.346 3 3 3h3c1.654 0 3-1.346 3-3v-.5a.5.5 0 0 0-.5-.5z M12 12c1.378 0 2.5-1.122 2.5-2.5S13.378 7 12 7s-2.5 1.122-2.5 2.5S10.622 12 12 12z"];
@@ -84,7 +86,37 @@ const STORE_ICON_PATH = ["M19.148 2.971A2.008 2.008 0 0 0 17.434 2H6.566c-.698 0
 const PANEL_LEFT_ICON_PATH = ["M20 3H4c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h16c1.103 0 2-.897 2-2V5c0-1.103-.897-2-2-2zM4 19V7h6v12H4zm8 0V7h8V5l.002 14H12z M6 10h2v2H6zm0 4h2v2H6z"];
 const GRIP_VERTICAL_ICON_PATH = ["M7 10h4v4H7zm0-6h4v4H7zm0 12h4v4H7zm6-6h4v4h-4zm0-6h4v4h-4zm0 12h4v4h-4z"];
 const MORE_HORIZONTAL_ICON_PATH = ["M12 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 0c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zM6 10c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z"];
-const DOT_ICON_PATH = ["M12 2C6.486 2 2 6.486 2 12s4.486 10 10 10 10-4.486 10-10S17.514 2 12 2z"];
+// --- RESTORED / MISSING PATHS ---
+const CHEVRON_DOWN_ICON_PATH = ["M16.59 8.59L12 13.17 7.41 8.59 6 10l6 6 6-6z"];
+const CHEVRON_RIGHT_ICON_PATH = ["M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"];
+const CHEVRON_LEFT_ICON_PATH = ["M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"];
+const SEARCH_ICON_PATH = ["M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"];
+
+// --- PLACEHOLDERS FOR MANUAL ENTRY ---
+const HOME_ICON_PATH = PLACEHOLDER_PATH; // TODO: Add 'home' path
+const ARROW_LEFT_ICON_PATH = PLACEHOLDER_PATH; // TODO: Add 'arrow-left' path
+const CHEVRON_UP_ICON_PATH = PLACEHOLDER_PATH; // TODO: Add 'chevron-up' path
+const CIRCLE_ICON_PATH = PLACEHOLDER_PATH; // TODO: Add 'circle' path
+const LOADER_2_ICON_PATH = PLACEHOLDER_PATH; // TODO: Add 'loader-2' path
+
+// Feedback
+const BUG_ICON_PATH = PLACEHOLDER_PATH; // TODO: Add 'bug' path
+const LIGHTBULB_ICON_PATH = PLACEHOLDER_PATH; // TODO: Add 'lightbulb' path
+const FEEDBACK_GENERAL_ICON_PATH = PLACEHOLDER_PATH; // TODO: Add 'feedback-general' path
+
+// Contact
+const CONTACT_GENERAL_ICON_PATH = PLACEHOLDER_PATH; // TODO: Add 'contact-general' path
+const CONTACT_SUPPORT_ICON_PATH = PLACEHOLDER_PATH; // TODO: Add 'contact-support' path
+const CONTACT_OTHER_ICON_PATH = PLACEHOLDER_PATH; // TODO: Add 'contact-other' path
+
+// Partnerships
+const PARTNER_CREATOR_ICON_PATH = PLACEHOLDER_PATH; // TODO: Add 'partner-creator' path
+const PARTNER_DESIGNER_ICON_PATH = PLACEHOLDER_PATH; // TODO: Add 'partner-designer' path
+const PARTNER_BUSINESS_ICON_PATH = PLACEHOLDER_PATH; // TODO: Add 'partner-business' path
+
+// Beta Signup
+const BETA_EXPECTATIONS_ICON_PATH = PLACEHOLDER_PATH; // TODO: Add 'beta-expectations' path
+
 
 // --- ICON MAP ---
 const ICON_MAP: Record<string, IconDef> = {
@@ -98,6 +130,7 @@ const ICON_MAP: Record<string, IconDef> = {
     'check-circle': { paths: CHECK_CIRCLE_ICON_PATH },
     'sparkles': { paths: SPARKLES_ICON_PATH },
     'arrow-right': { paths: ARROW_RIGHT_ICON_PATH },
+    'arrow-left': { paths: ARROW_LEFT_ICON_PATH },
     'play': { paths: PLAY_ICON_PATH },
     'menu': { paths: MENU_ICON_PATH },
     'x': { paths: X_ICON_PATH },
@@ -111,6 +144,27 @@ const ICON_MAP: Record<string, IconDef> = {
     'grip-vertical': { paths: GRIP_VERTICAL_ICON_PATH },
     'more-horizontal': { paths: MORE_HORIZONTAL_ICON_PATH },
     'dot': { paths: DOT_ICON_PATH },
+    'home': { paths: HOME_ICON_PATH },
+    'chevron-up': { paths: CHEVRON_UP_ICON_PATH },
+    'chevron-down': { paths: CHEVRON_DOWN_ICON_PATH },
+    'chevron-left': { paths: CHEVRON_LEFT_ICON_PATH },
+    'chevron-right': { paths: CHEVRON_RIGHT_ICON_PATH },
+    'search': { paths: SEARCH_ICON_PATH },
+    'circle': { paths: CIRCLE_ICON_PATH },
+    'loader-2': { paths: LOADER_2_ICON_PATH },
+    'bug': { paths: BUG_ICON_PATH },
+    'lightbulb': { paths: LIGHTBULB_ICON_PATH },
+    'feedback-general': { paths: FEEDBACK_GENERAL_ICON_PATH }, // Distinct from generic 'message-square'
+    'message-square': { paths: FEEDBACK_GENERAL_ICON_PATH }, // Fallback alias
+    'contact-general': { paths: CONTACT_GENERAL_ICON_PATH },
+    'contact-support': { paths: CONTACT_SUPPORT_ICON_PATH },
+    'contact-other': { paths: CONTACT_OTHER_ICON_PATH },
+    'help-circle': { paths: CONTACT_SUPPORT_ICON_PATH }, // Fallback alias
+    'mail': { paths: CONTACT_OTHER_ICON_PATH }, // Fallback alias
+    'partner-creator': { paths: PARTNER_CREATOR_ICON_PATH },
+    'partner-designer': { paths: PARTNER_DESIGNER_ICON_PATH },
+    'partner-business': { paths: PARTNER_BUSINESS_ICON_PATH },
+    'beta-expectations': { paths: BETA_EXPECTATIONS_ICON_PATH },
 };
 
 export const Icon: React.FC<IconProps> = ({

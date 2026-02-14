@@ -23,7 +23,7 @@ const feedbackTypes = [
   },
   {
     id: "general",
-    icon: 'message-square',
+    icon: 'feedback-general',
     title: "General Feedback",
     description: "Share your thoughts and experience",
   },

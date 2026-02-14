@@ -11,19 +11,19 @@ import { useToast } from "@/hooks/use-toast";
 const contactReasons = [
   {
     id: "general",
-    icon: 'message-square',
+    icon: 'contact-general',
     title: "General Inquiry",
     description: "Questions about BlanketSmith",
   },
   {
     id: "support",
-    icon: 'help-circle',
+    icon: 'contact-support',
     title: "Support",
     description: "Help with your account or the app",
   },
   {
     id: "other",
-    icon: 'mail',
+    icon: 'contact-other',
     title: "Other",
     description: "Anything else on your mind",
   },

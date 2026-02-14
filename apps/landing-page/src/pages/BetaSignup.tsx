@@ -144,7 +144,7 @@ export default function BetaSignup() {
                 <div className="p-6 rounded-2xl bg-secondary/50 border border-border group transition-all duration-300 ease-out hover:border-brand-purple/50">
                   <div className="flex items-start gap-4">
                     <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-brand-purple via-brand-midblue to-brand-cyan flex items-center justify-center flex-shrink-0 transition-transform duration-300 ease-out group-hover:scale-110 group-hover:shadow-[0_0_20px_rgba(139,92,246,0.4)]">
-                      <Icon name="sparkles" className="w-5 h-5 text-white" />
+                      <Icon name="beta-expectations" className="w-5 h-5 text-white" />
                     </div>
                     <div>
                       <p className="font-medium text-foreground mb-1">What to expect</p>

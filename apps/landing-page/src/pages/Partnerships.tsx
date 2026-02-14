@@ -11,19 +11,19 @@ import { useToast } from "@/hooks/use-toast";
 const partnerTypes = [
   {
     id: "creator",
-    icon: 'users',
+    icon: 'partner-creator',
     title: "Content Creator",
     description: "YouTubers, bloggers, social media influencers",
   },
   {
     id: "designer",
-    icon: 'palette',
+    icon: 'partner-designer',
     title: "Pattern Designer",
     description: "Independent designers and pattern publishers",
   },
   {
     id: "business",
-    icon: 'store',
+    icon: 'partner-business',
     title: "Business / Brand",
     description: "Yarn shops, craft brands, and retailers",
   },
