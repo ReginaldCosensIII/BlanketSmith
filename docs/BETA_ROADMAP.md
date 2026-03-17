@@ -22,6 +22,20 @@
 - [ ] **Interactive Tour**: Implement guided tour of features on the homepage.
 - [x] **Icon & Asset Polish**: Consolidated assets, standardized icon sizes, and refined visual consistency across the landing page.
 - [ ] **Mobile Responsiveness**: Refine mobile mockup presentation.
+- [ ] **Scroll Animations**: Fix scroll-locked animation behavior on desktop and unify with mobile behavior.
+- [ ] **Hero Section**: Force full viewport height (100dvh) and responsive vertical scaling.
+
+## 🗺️ Phase 1.5: Storytelling & Resources (New Focus)
+**Goal**: Build trust and engagement through interactive content and transparency.
+
+### 1. Interactive Components
+- [ ] **Interactive Tour**: Build guided walkthrough of the tool features.
+- [ ] **Roadmap Story**: Create an interactive, on-brand roadmap component to tell the 1-year vision.
+- [ ] **Feature Overlays**: Add depth, context, and "wow" factor to existing feature cards.
+
+### 2. Content & Docs
+- [ ] **Blog/Resources Page**: Scaffold page with 1-2 initial posts and YouTube embed support.
+- [ ] **Docs Link**: Connect "Help" implementation to documentation.
 
 ### 2. SEO & Analytics (Launch Prep)
 - [ ] **Google Analytics:** Setup tracking and conversion goals.
