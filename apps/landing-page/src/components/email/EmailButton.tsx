@@ -1,3 +1,7 @@
+// ========================================
+// COMPONENT: Email Button (Cinematic)
+// ========================================
+
 interface EmailButtonProps {
     href: string;
     children: React.ReactNode;
