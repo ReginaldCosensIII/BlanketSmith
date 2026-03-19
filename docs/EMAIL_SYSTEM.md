@@ -44,9 +44,23 @@ We use a **"Force & Override"** strategy.
     -   **Backgrounds**: Using specific hex codes (e.g., `#0f172a`) on `bgcolor` attributes of wrapper tables.
 
 ### D. Asset Management
--   **Hosting**: Assets are served from `public/email-assets/` via the Vercel production URL.
--   **Versioning**: We use cache-busting filenames or folder structures where possible (currently flat).
--   **Logos**: We use "Vertical" and "Horizontal" lockups. White variations are used on dark backgrounds.
+-   **Hosting**: Assets are served from `apps/landing-page/public/branding/` via the Vercel production URL.
+-   **Base URL**: `https://blanket-smith-landing-page.vercel.app/` (defined as `ASSET_BASE` in `templates.ts`)
+-   **Asset Structure**:
+    ```
+    public/branding/
+    ├── logos/
+    │   ├── bs-logo-horizontal-white.png   (email header)
+    │   ├── bs-logo-vertical-white.png     (email footer)
+    │   └── bs-logo-heart.png              (footer heart icon)
+    └── icons/email/
+        ├── icon-info-light-bulb.png
+        ├── icon-feature-image-sparkle.png
+        ├── icon-feature-dashboard.png
+        ├── icon-feature-spanner.png
+        └── icon-feature-community.png
+    ```
+-   **Vercel Routing**: `apps/landing-page/vercel.json` excludes `branding/` from the SPA rewrite rule so Vercel serves image files directly.
 
 ---
 
@@ -55,7 +69,7 @@ We use a **"Force & Override"** strategy.
 | Component | Description | Outlook Quirk |
 | :--- | :--- | :--- |
 | `getCinematicShellHTML` | Main wrapper with `<head>`, fonts, and resets. | Contains the VML bloat and CSS reset. |
-| `getEmailHeaderHTML` | standard header with Logo. | Uses `bgcolor` on `<td>` to match footer in Dark Mode. |
+| `getEmailHeaderHTML` | Standard header with Logo. | Uses `bgcolor` on `<td>` to match footer in Dark Mode. |
 | `getEmailFooterHTML` | Social links, Unsubscribe, Copyright. | Parent `<td>` elements have inline color styles to prevent "flash of unstyled content". |
 | `getEmailButtonHTML` | CTA Button with gradient. | Text requires `<span>` wrapper with `!important` color. |
 | `getEmailProgressRailHTML`| Step tracker (Sign Up -> The Forge). | Uses border-radius (degrades to square in older clients). |
@@ -66,10 +80,82 @@ We use a **"Force & Override"** strategy.
 
 ---
 
-## 4. Testing & Verification
+## 4. Database Webhook
+
+The email system is triggered by a **Supabase Database Webhook** named `trigger_welcome_email`.
+
+| Setting | Value |
+| :--- | :--- |
+| **Table** | `public.contact_submissions` |
+| **Event** | `INSERT` |
+| **Type** | Supabase Edge Function |
+| **Function** | `process-submission` |
+| **Timeout** | `5000ms` |
+
+> **Important**: A SQL migration to recreate this webhook exists at:
+> `supabase/migrations/20260319000000_recreate_trigger_welcome_email_webhook.sql`
+
+---
+
+## 5. Testing & Verification
 
 **Manual Checklist:**
 1.  **Gmail (Web)**: Check for "Show Quoted Text" collapse.
 2.  **Gmail (Mobile)**: Check Dark Mode color inversion (Info Box should remain readable).
 3.  **Outlook (Desktop)**: Check Header/Footer background alignment (should be seamless Slate 900).
 4.  **Outlook (Light Mode)**: Check Button text (must be White, not Black).
+
+---
+
+## 6. Incident Recovery Runbook
+
+> **Use this guide if emails stop sending after a Supabase project pause/restore or any infrastructure event.**
+
+### Symptoms
+- Contact/beta signup forms show "success" but no email is received
+- Supabase Edge Function logs (`process-submission`) show **no entries** after a form submission
+- Images in emails show broken image icons
+
+### Diagnosis Checklist
+
+| # | Check | How |
+|---|---|---|
+| 1 | **Is the Supabase project active?** | Dashboard → Project should show "Active", not "Paused" |
+| 2 | **Is the Edge Function being triggered?** | Dashboard → Edge Functions → `process-submission` → Logs. Submit a form. Do logs appear? |
+| 3 | **Is the Edge Function itself broken?** | Dashboard → Edge Functions → `process-submission` → Test/Invoke with a test payload (see below) |
+| 4 | **Is the webhook active?** | Dashboard → Database → Webhooks → `trigger_welcome_email` |
+| 5 | **Are assets loading in emails?** | Check raw email source (`Show Original` in Gmail) and look at `<img src>` URLs |
+
+### Test Payload (Step 3)
+Invoke the Edge Function directly with:
+```json
+{
+  "type": "test_email",
+  "email": "your@email.com",
+  "template": "beta"
+}
+```
+If this sends successfully → the function works, the **webhook** is the problem (go to Step 4).
+
+### Fix: Webhook Not Firing
+The Supabase project restoration **disables the database webhook**. To fix:
+1. Go to **Database → Webhooks** in the Supabase dashboard
+2. **Delete** the `trigger_welcome_email` webhook
+3. **Re-create** it with the settings in Section 4 above
+4. Submit a test form — email should arrive within seconds
+
+### Fix: Edge Function Not Deployed / Wrong Code
+If the function is triggered (logs appear) but emails fail or images are broken:
+```powershell
+# Deploy local code to Supabase (from project root)
+& "$env:TEMP\supabase.exe" functions deploy process-submission --project-ref wpcrfwefpgatappgkfff
+```
+> **Note**: Deploying from the Supabase Dashboard editor deploys whatever code is saved there (which may be outdated). Always deploy from the local CLI to ensure the repo code is live.
+
+### Fix: Images Not Loading in Emails
+The image URLs in emails are generated by `ASSET_BASE` in `templates.ts`. If they appear wrong in the raw email source:
+
+1. Verify `ASSET_BASE` in `supabase/functions/process-submission/templates.ts` has a **trailing slash**: `"https://blanket-smith-landing-page.vercel.app/"`
+2. Verify `apps/landing-page/vercel.json` excludes `branding/` from the SPA rewrite rule
+3. Verify the image files exist in `apps/landing-page/public/branding/`
+4. Redeploy the Edge Function via CLI (see above)

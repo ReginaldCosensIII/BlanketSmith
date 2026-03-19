@@ -38,7 +38,7 @@ export function EmailHeader({ }: EmailHeaderProps = {}) {
                     <td align="center" style={{ padding: "40px 20px 40px" }}>
                         {/* Logo */}
                         <img
-                            src="${ASSET_BASE}branding/logos/bs-logo-horizontal-white.png"
+                            src={UNIVERSAL_LOGO}
                             alt="BlanketSmith"
                             width="180"
                             style={{

@@ -1,7 +1,6 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-
 const ASSET_BASE = "https://blanket-smith-landing-page.vercel.app/";
+
 
 // --- Helper Components ---
 
