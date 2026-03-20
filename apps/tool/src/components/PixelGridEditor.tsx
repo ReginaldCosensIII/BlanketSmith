@@ -43,6 +43,8 @@ interface PixelGridEditorProps {
     onContextMenu: (x: number, y: number) => void;
     isZoomLocked: boolean;
     onToggleZoomLock: () => void;
+    // [GAUGE-001] Y-axis aspect ratio multiplier (stitches/rows). Default 1 (square cells).
+    aspectRatio?: number;
 }
 
 const RULER_SIZE = 2;
@@ -107,7 +109,8 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
     onLiftSelection,
     onContextMenu,
     isZoomLocked,
-    onToggleZoomLock
+    onToggleZoomLock,
+    aspectRatio = 1,
 }) => {
     const { width, height, grid } = data;
     const containerRef = useRef<HTMLDivElement>(null);
@@ -221,7 +224,8 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 // OR 0 (if SVG >= Container)
 
                 const svgWidth = width * currentAppliedZoom;
-                const svgHeight = height * currentAppliedZoom;
+                // [GAUGE-001] Include aspect ratio in visual SVG height for correct scroll alignment
+                const svgHeight = height * currentAppliedZoom * aspectRatio;
 
                 const containerWidth = containRect.width;
                 const containerHeight = containRect.height;
@@ -309,7 +313,8 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                     const svgTotalHeight = height + RULER_SIZE * 2;
 
                     const fitW = (rect.width - 40) / svgTotalWidth;
-                    const fitH = (rect.height - 40) / svgTotalHeight;
+                    // [GAUGE-001] Account for aspect ratio so grid fits container when stretched
+                    const fitH = (rect.height - 40) / (svgTotalHeight * aspectRatio);
 
                     let newZoom = Math.min(fitW, fitH);
                     newZoom = Math.max(MIN_ZOOM, Math.min(newZoom, MAX_ZOOM));
@@ -1426,8 +1431,9 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
                 <svg
                     ref={svgRef}
                     width={svgTotalWidth * zoom}
-                    height={svgTotalHeight * zoom}
+                    height={svgTotalHeight * zoom * aspectRatio}
                     viewBox={`0 0 ${svgTotalWidth} ${svgTotalHeight}`}
+                    preserveAspectRatio={aspectRatio !== 1 ? 'none' : undefined}
                     shapeRendering="crispEdges"
                     data-role="canvas-interaction"
                 >
