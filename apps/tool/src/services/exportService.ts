@@ -288,7 +288,7 @@ const drawInstructionsSection = (
                 ensureSpace(blockHeight + 2);
 
                 // Bullet/Number
-                const prefix = block.type === 'list-ol' ? `${index + 1}.` : '•';
+                const prefix = block.type === 'list-ol' ? `${index + 1}.` : 'ï¿½';
                 doc.text(prefix, margin, y + 10);
 
                 // Text
@@ -406,6 +406,7 @@ export const exportPixelGridToPDF = (
             startY: number // Used only if !startOnFreshPage (e.g. mixed page 1)
         ): AtlasRegion[] => {
             const regions: AtlasRegion[] = [];
+            const cellHeight = cellSize * exportAspectRatio;
 
             // P2.3 / Beta Stability Logic Reflection
             // If startOnFreshPage is TRUE, then Page 1 is a Full Page (height-wise).
@@ -425,8 +426,8 @@ export const exportPixelGridToPDF = (
             // If we can't fit anything, return empty (safeguard)
             if (cellsPerW <= 0) return regions;
 
-            const cellsPerH_P1 = Math.floor(page1H / cellSize);
-            const cellsPerH_Full = Math.floor(fullPageH / cellSize);
+            const cellsPerH_P1 = Math.floor(page1H / cellHeight);
+            const cellsPerH_Full = Math.floor(fullPageH / cellHeight);
 
             let currentY = 0;
             let pageIndex = 0;
@@ -518,7 +519,7 @@ export const exportPixelGridToPDF = (
                     if (targetPages % r === 0) {
                         const c = targetPages / r;
                         const tileW = targetGridW / c;
-                        const tileH = targetGridH / r;
+                        const tileH = (targetGridH * exportAspectRatio) / r;
                         const size = Math.min(availW / tileW, availH / tileH);
 
                         if (size > bestSize) {
@@ -568,7 +569,7 @@ export const exportPixelGridToPDF = (
             // 2. Auto Mode (Original Logic)
 
             // Try Single Page Fit
-            let testSize = Math.floor(Math.min(availW / targetGridW, availH / targetGridH));
+            let testSize = Math.floor(Math.min(availW / targetGridW, availH / (targetGridH * exportAspectRatio)));
             const minSingle = PDF_CONFIG.minSinglePageCellSize || 12;
 
             if (testSize >= minSingle) {
@@ -587,7 +588,7 @@ export const exportPixelGridToPDF = (
             }
 
             // Atlas Fallback
-            let atlasSize = Math.max(PDF_CONFIG.minCellSize, Math.min(availW / targetGridW, availH / targetGridH));
+            let atlasSize = Math.max(PDF_CONFIG.minCellSize, Math.min(availW / targetGridW, availH / (targetGridH * exportAspectRatio)));
             atlasSize = Math.max(atlasSize, PDF_CONFIG.minCellSize); // Ensure >= 18
 
             const regions = calculateAtlasRegions(
@@ -1041,7 +1042,8 @@ export const exportPixelGridToPDF = (
                     const cell = gridData.grid[index];
 
                     const cx = drawX + x * cellSize;
-                    const cy = drawY + y * cellSize;
+                    const cy = drawY + y * (cellSize * exportAspectRatio);
+                    const cellHeight = cellSize * exportAspectRatio;
 
                     // Background Logic
                     doc.setFillColor(255, 255, 255);
@@ -1050,14 +1052,14 @@ export const exportPixelGridToPDF = (
 
                     if (mode === 'stitch') {
                         // Stitch Mode: Always white/pale background
-                        doc.rect(cx, cy, cellSize, cellSize, 'FD');
+                        doc.rect(cx, cy, cellSize, cellHeight, 'FD');
                     } else {
                         // Color / Hybrid Mode
                         if (hasColor && c && chartVisual.showCellBackgrounds !== false) {
                             doc.setFillColor(c.hex);
-                            doc.rect(cx, cy, cellSize, cellSize, 'FD');
+                            doc.rect(cx, cy, cellSize, cellHeight, 'FD');
                         } else {
-                            doc.rect(cx, cy, cellSize, cellSize, 'S');
+                            doc.rect(cx, cy, cellSize, cellHeight, 'S');
                         }
                     }
 
@@ -1112,7 +1114,7 @@ export const exportPixelGridToPDF = (
                             doc.text(
                                 cellText,
                                 cx + cellSize / 2,
-                                cy + cellSize / 2,
+                                cy + cellHeight / 2,
                                 { align: 'center', baseline: 'middle' }
                             );
                         }
