@@ -272,7 +272,7 @@ function MobileToolMockup() {
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ["start end", "end start"]
+    offset: ["start end", "end end"]
   });
 
   const springConfig = { stiffness: 100, damping: 20, mass: 0.5 };
@@ -308,8 +308,9 @@ function MobileToolMockup() {
   const bottomYText      = useSpring(bottomYRaw, springConfig);
 
   return (
-    <div ref={containerRef} className="relative min-h-[140vh] pb-24">
-      <div className="sticky top-[10vh] flex flex-col items-center">
+    <div ref={containerRef} className="relative w-full h-[220vh] sm:h-[230vh] pb-24">
+      {/* Natively anchor the sticky lock near the top of the monitor. Provides robust unpin threshold geometry without mathematical clipping. */}
+      <div className="sticky top-12 sm:top-16 flex flex-col items-center justify-start pb-20 w-full overflow-hidden">
         <div className="max-w-5xl mx-auto w-full px-4 relative z-0">
           <div className="w-full mx-auto" style={{ perspective: "1500px" }}>
             <motion.div
