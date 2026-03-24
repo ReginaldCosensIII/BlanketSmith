@@ -165,13 +165,15 @@ export function ToolMockup() {
         </motion.div>
       </div>
 
-      {/* ── 2. The Lens Track ── */}
-      {/* 250vh = 100vh lens height + exactly 150vh of target tracking distance to match V7 perfectly. */}
-      {/* Once the parent completes 250vh, the lens flawlessly unlocks with ZERO pixel collision gap. */}
-      <div ref={runwayRef} className="relative w-full h-[250vh] -mt-[100px] sm:-mt-[150px] md:-mt-[200px] pointer-events-none">
+      {/* ── 2. The Native Tracking Runway ── */}
+      {/* Dynamic tracking heights per view breakpoints to maintain identical scroll feel. */}
+      {/* Unlocking occurs uniformly and flawlessly because the sticky child is structurally sized dynamically. */}
+      <div ref={runwayRef} className="relative w-full h-[180vh] md:h-[220vh] lg:h-[250vh] -mt-[100px] sm:-mt-[150px] md:-mt-[200px] pointer-events-none">
         
-        {/* ── THE 100VH CAMERA LENS ── */}
-        <div className="sticky top-0 w-full h-screen z-30 flex flex-col items-center justify-center overflow-hidden">
+        {/* ── STICKY FOCUS BLOCK ── */}
+        {/* We abandon 'justify-center' / 'top-1/2' mathematically centering because it geometrically guarantees non-uniform whitespace below it on varying devices. */}
+        {/* Instead, we stick it relative to the top organically! The pb-20 gives it uniform sequence padding structurally. */}
+        <div className="sticky top-12 sm:top-16 md:top-24 w-full z-30 flex flex-col items-center justify-start pb-20 md:pb-28">
 
             <div className="relative w-full max-w-[1200px] flex justify-center items-center">
               
