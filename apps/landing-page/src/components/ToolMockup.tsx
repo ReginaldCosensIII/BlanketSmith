@@ -48,7 +48,7 @@ const GLASS_CARD = "group bg-white/40 dark:bg-slate-900/40 backdrop-blur-md bord
 
 const ICON_WRAPPER = "w-10 h-10 md:w-12 md:h-12 rounded-[10px] md:rounded-xl bg-gradient-to-br from-brand-midblue/10 to-brand-cyan/10 border border-brand-purple/20 flex justify-center items-center shrink-0 group-hover:scale-110 group-hover:shadow-[0_0_15px_rgba(92,174,255,0.2)] transition-all duration-300";
 
-export function ToolMockup() {
+function DesktopToolMockup() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const runwayRef = useRef<HTMLDivElement>(null);
 
@@ -264,5 +264,122 @@ export function ToolMockup() {
         </div>
       </div>
     </div>
+  );
+}
+
+function MobileToolMockup() {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start end", "end start"]
+  });
+
+  const springConfig = { stiffness: 100, damping: 20, mass: 0.5 };
+
+  const browserRotateX = useTransform(scrollYProgress, [0, 0.35], [30, 0]);
+  const browserRotateY = useTransform(scrollYProgress, [0, 0.35], [-15, 0]);
+  const browserScale = useTransform(scrollYProgress, [0, 0.35], [0.85, 1]);
+  const browserOpacity = useTransform(scrollYProgress, [0, 0.15], [0, 1]);
+  const browserY = useTransform(scrollYProgress, [0, 0.35], [60, 0]);
+
+  const browserShadowOpacity = useTransform(scrollYProgress, [0.15, 0.35], [0.2, 1]);
+  const browserShadowScale = useTransform(scrollYProgress, [0, 0.35], [0.88, 0.95]);
+  const browserShadowRotate = useTransform(scrollYProgress, [0, 0.35], [-2, 0]);
+
+  const mobileOpacity = useTransform(scrollYProgress, [0.4, 0.5], [0, 1]);
+  const mobileYRaw = useTransform(scrollYProgress, [0.4, 0.7], [100, 0]);
+  const mobileScaleRaw = useTransform(scrollYProgress, [0.4, 0.7], [0.85, 1]);
+  const mobileRotateXRaw = useTransform(scrollYProgress, [0.4, 0.7], [12, 0]);
+
+  const mobileY = useSpring(mobileYRaw, springConfig);
+  const mobileScale = useSpring(mobileScaleRaw, springConfig);
+  const mobileRotateX = useSpring(mobileRotateXRaw, springConfig);
+
+  const mobileZRaw = useTransform(scrollYProgress, [0.55, 0.75], [0, 50]);
+  const mobileZ = useSpring(mobileZRaw, springConfig);
+  const mobileShadowIntensity = useTransform(scrollYProgress, [0.5, 0.8], [0.2, 1]);
+  const mobileShadowScale = useTransform(scrollYProgress, [0.4, 0.8], [0.85, 0.92]);
+  const mobileShadowRotate = useTransform(scrollYProgress, [0.4, 0.8], [3, 0]);
+
+  const bottomOpacityRaw = useTransform(scrollYProgress, [0.75, 0.95], [0, 1]);
+  const bottomOpacity    = useSpring(bottomOpacityRaw, springConfig);
+  const bottomYRaw       = useTransform(scrollYProgress, [0.75, 0.95], [20, 0]);
+  const bottomYText      = useSpring(bottomYRaw, springConfig);
+
+  return (
+    <div ref={containerRef} className="relative min-h-[140vh] pb-24">
+      <div className="sticky top-[10vh] flex flex-col items-center">
+        <div className="max-w-5xl mx-auto w-full px-4 relative z-0">
+          <div className="w-full mx-auto" style={{ perspective: "1500px" }}>
+            <motion.div
+              style={{ rotateX: browserRotateX, rotateY: browserRotateY, scale: browserScale, opacity: browserOpacity, y: browserY, transformStyle: "preserve-3d" }}
+            >
+              <motion.div
+                style={{ opacity: browserShadowOpacity, scale: browserShadowScale, rotateZ: browserShadowRotate }}
+                className="absolute inset-0 -z-10 rounded-xl bg-slate-900/10 dark:bg-black/40 blur-2xl translate-y-8"
+              />
+
+              <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 relative shadow-2xl">
+                <div className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-2 py-1.5 sm:px-3 sm:py-2 flex items-center gap-2 relative z-10">
+                  <div className="flex items-center gap-1 sm:gap-1.5">
+                    <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-red-400/80" />
+                    <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-yellow-400/80" />
+                    <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-green-400/80" />
+                  </div>
+                  <div className="flex-1 max-w-md mx-auto">
+                    <div className="bg-white/60 dark:bg-black/60 rounded px-2 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs text-slate-500 text-center border border-slate-200/50 dark:border-slate-700/50">
+                      app.blanketsmith.com
+                    </div>
+                  </div>
+                  <div className="w-6 sm:w-10" />
+                </div>
+
+                <div className="relative bg-white dark:bg-slate-950">
+                  <img src={betaUIScreenshot} alt="BlanketSmith Pattern Tool Interface" className="w-full h-auto block" />
+                  <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white/80 dark:from-slate-950/80 to-transparent pointer-events-none" />
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+
+        <motion.div
+          className="w-[120px] sm:w-[150px] mx-auto relative z-20 -mt-16 sm:-mt-24"
+          style={{ opacity: mobileOpacity, y: mobileY, scale: mobileScale, rotateX: mobileRotateX, z: mobileZ, transformStyle: "preserve-3d", perspective: "1200px" }}
+        >
+          <motion.div
+            className="absolute inset-0 -z-10 rounded-[2rem] bg-indigo-900/20 dark:bg-black/40 blur-2xl"
+            style={{ opacity: mobileShadowIntensity, scale: mobileShadowScale, rotateZ: mobileShadowRotate, y: 20 }}
+          />
+          <MobileMockup />
+        </motion.div>
+
+        <motion.div 
+          className="mt-8 text-center max-w-xl mx-auto px-4 relative z-40 pointer-events-auto"
+          style={{ opacity: bottomOpacity, y: bottomYText }}
+        >
+          <h3 className="font-display text-[24px] sm:text-[26px] font-bold tracking-tight text-foreground mb-3">
+            Design anywhere, on any device.
+          </h3>
+          <p className="font-sans text-[14px] sm:text-[15px] text-muted-foreground">
+            Your patterns stay perfectly in sync—start on desktop, <br className="hidden sm:block" />refine on mobile.
+          </p>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
+
+export function ToolMockup() {
+  return (
+    <>
+      <div className="block lg:hidden">
+        <MobileToolMockup />
+      </div>
+      <div className="hidden lg:block">
+        <DesktopToolMockup />
+      </div>
+    </>
   );
 }
