@@ -126,11 +126,18 @@ const PARTNER_BUSINESS_ICON_PATH = ["M19.1 2.8c-.38-.5-.97-.8-1.6-.8h-11c-.63 0-
 // Beta Signup
 const BETA_EXPECTATIONS_ICON_PATH = LIGHTBULB_ICON_PATH;
 
-
 // About BlanketSmith
 const ABOUT_COMMUNITY_ICON_PATH = ["M11.29 20.66c.2.2.45.29.71.29s.51-.1.71-.29l7.5-7.5c2.35-2.35 2.35-6.05 0-8.41-2.3-2.28-5.85-2.35-8.21-.2-2.36-2.15-5.91-2.09-8.21.2-2.35 2.36-2.35 6.06 0 8.41zM5.21 6.16C6 5.38 7 4.99 8.01 4.99s2.01.39 2.79 1.17l.5.5c.39.39 1.02.39 1.41 0l.5-.5c1.56-1.56 4.02-1.56 5.59 0 1.56 1.57 1.56 4.02 0 5.58l-6.79 6.79-6.79-6.79a3.91 3.91 0 0 1 0-5.58Z"];
 const ABOUT_CREATIVITY_ICON_PATH = LIGHTBULB_ICON_PATH;
 const ABOUT_INCLUSIVE_ICON_PATH = ["M10 13H8c-2.76 0-5 2.24-5 5v1c0 .55.45 1 1 1h10c.55 0 1-.45 1-1v-1c0-2.76-2.24-5-5-5m-5 5c0-1.65 1.35-3 3-3h2c1.65 0 3 1.35 3 3zm7.73-11.49c-.08-.22-.19-.42-.3-.62v-.01c-.69-1.14-1.93-1.89-3.42-1.89-2.28 0-4 1.72-4 4s1.72 4 4 4c1.49 0 2.73-.74 3.42-1.89v-.01c.12-.2.22-.4.3-.62.02-.06.03-.12.05-.18.06-.17.11-.34.15-.52.05-.25.07-.51.07-.78s-.03-.53-.07-.78c-.03-.18-.09-.35-.15-.52-.02-.06-.03-.12-.05-.18M9 10c-1.18 0-2-.82-2-2s.82-2 2-2 2 .82 2 2-.82 2-2 2m6 0q-.165 0-.33-.03c-.22.66-.56 1.27-.98 1.81.41.13.84.22 1.31.22 2.28 0 4-1.72 4-4s-1.72-4-4-4c-.47 0-.9.09-1.31.22.43.53.76 1.14.98 1.81.11-.01.21-.03.33-.03 1.18 0 2 .82 2 2s-.82 2-2 2m1 3h-1.11c.6.58 1.08 1.27 1.44 2.03C17.83 15.2 19 16.46 19 18h-2v1c0 .35-.07.69-.18 1H20c.55 0 1-.45 1-1v-1c0-2.76-2.24-5-5-5"];
+
+// --- HUB-AND-SPOKE FEATURE ICONS (Placeholders — user to swap SVG paths) ---
+const FEATURE_PRECISION_ICON_PATH = LAYOUT_ICON_PATH;      
+const FEATURE_COLOR_ICON_PATH = PALETTE_ICON_PATH;          
+const FEATURE_LAYERS_ICON_PATH = PANEL_LEFT_ICON_PATH;      
+const FEATURE_PREVIEW_ICON_PATH = IMG_SPARKLES_ICON_PATH;   
+const FEATURE_EXPORT_ICON_PATH = DOWNLOAD_ICON_PATH;        
+const FEATURE_REPEAT_ICON_PATH = ZAP_ICON_PATH;             
 
 // --- ICON MAP ---
 const ICON_MAP: Record<string, IconDef> = {
@@ -184,6 +191,13 @@ const ICON_MAP: Record<string, IconDef> = {
     'about-community': { paths: ABOUT_COMMUNITY_ICON_PATH },
     'about-creativity': { paths: ABOUT_CREATIVITY_ICON_PATH },
     'about-inclusive': { paths: ABOUT_INCLUSIVE_ICON_PATH },
+    // Hub-and-Spoke Feature Icons
+    'feature-precision': { paths: FEATURE_PRECISION_ICON_PATH },
+    'feature-color': { paths: FEATURE_COLOR_ICON_PATH },
+    'feature-layers': { paths: FEATURE_LAYERS_ICON_PATH },
+    'feature-preview': { paths: FEATURE_PREVIEW_ICON_PATH },
+    'feature-export': { paths: FEATURE_EXPORT_ICON_PATH },
+    'feature-repeat': { paths: FEATURE_REPEAT_ICON_PATH },
 };
 
 export const Icon: React.FC<IconProps> = ({

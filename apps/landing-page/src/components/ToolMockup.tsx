@@ -77,39 +77,42 @@ export function ToolMockup() {
   // 0.00 -> 0.15: The Mobile mockups emerges from 0% opacity to 100% while locked in center.
   // 0.15 -> 0.35: Cards fade in!
   // 0.35 -> 0.50: Bottom Text fades in!
+  // Track has height 250vh. The scrolling distance "start start" to "end end" is (250vh - 100vh viewport) = exactly 150vh of physical tracking.
   const { scrollYProgress: runwayProgress } = useScroll({
     target: runwayRef,
-    offset: ["start center", "end center"],
+    offset: ["start start", "end end"],
   });
 
-  // Since runwayProgress = 0 before the lock begins, opacity is guaranteed to be 0
-  // while the user is first viewing the Desktop Mockup.
-  const mobileOpacity    = useTransform(runwayProgress, [0.0, 0.15], [0, 1]);
-  const mobileYRaw       = useTransform(runwayProgress, [0.0, 0.15], [60, 0]);
-  const mobileScaleRaw   = useTransform(runwayProgress, [0.0, 0.15], [0.9, 1]);
-  const mobileRotateXRaw = useTransform(runwayProgress, [0.0, 0.15], [10, 0]);
+  // Timeline mathematically perfectly mapped over 150vh physical tracking distance
+  // [0.00 → 0.30] = 45vh scroll (Mobile emerges)
+  // [0.30 → 0.70] = 60vh scroll (Cards sweep in)
+  // [0.70 → 1.00] = 45vh scroll (Text emerges, concluding perfectly with the unlocking)
+  const mobileOpacity    = useTransform(runwayProgress, [0.00, 0.30], [0, 1]);
+  const mobileYRaw       = useTransform(runwayProgress, [0.00, 0.30], [60, 0]);
+  const mobileScaleRaw   = useTransform(runwayProgress, [0.00, 0.30], [0.9, 1]);
+  const mobileRotateXRaw = useTransform(runwayProgress, [0.00, 0.30], [10, 0]);
   const mobileY          = useSpring(mobileYRaw,       springConfig);
   const mobileScale      = useSpring(mobileScaleRaw,   springConfig);
   const mobileRotateX    = useSpring(mobileRotateXRaw, springConfig);
 
-  const mobileZRaw           = useTransform(runwayProgress, [0.05, 0.15], [0, 50]);
+  const mobileZRaw           = useTransform(runwayProgress, [0.10, 0.30], [0, 50]);
   const mobileZ              = useSpring(mobileZRaw, springConfig);
-  const mobileShadowIntensity = useTransform(runwayProgress, [0.05, 0.15], [0.2, 1]);
-  const mobileShadowScale     = useTransform(runwayProgress, [0.0, 0.15], [0.85, 0.92]);
-  const mobileShadowRotate    = useTransform(runwayProgress, [0.0, 0.15], [3, 0]);
+  const mobileShadowIntensity = useTransform(runwayProgress, [0.10, 0.30], [0.2, 1]);
+  const mobileShadowScale     = useTransform(runwayProgress, [0.00, 0.30], [0.85, 0.92]);
+  const mobileShadowRotate    = useTransform(runwayProgress, [0.00, 0.30], [3, 0]);
 
-  const cardOpacityRaw = useTransform(runwayProgress, [0.15, 0.35], [0, 1]);
+  const cardOpacityRaw = useTransform(runwayProgress, [0.30, 0.70], [0, 1]);
   const cardOpacity    = useSpring(cardOpacityRaw, springConfig);
   
-  const leftXRaw = useTransform(runwayProgress, [0.15, 0.35], [-40, 0]);
+  const leftXRaw = useTransform(runwayProgress, [0.30, 0.70], [-40, 0]);
   const leftX    = useSpring(leftXRaw, springConfig);
   
-  const rightXRaw = useTransform(runwayProgress, [0.15, 0.35], [40, 0]);
+  const rightXRaw = useTransform(runwayProgress, [0.30, 0.70], [40, 0]);
   const rightX    = useSpring(rightXRaw, springConfig);
 
-  const bottomOpacityRaw = useTransform(runwayProgress, [0.35, 0.50], [0, 1]);
+  const bottomOpacityRaw = useTransform(runwayProgress, [0.70, 0.98], [0, 1]);
   const bottomOpacity    = useSpring(bottomOpacityRaw, springConfig);
-  const bottomYRaw       = useTransform(runwayProgress, [0.35, 0.50], [20, 0]);
+  const bottomYRaw       = useTransform(runwayProgress, [0.70, 0.98], [20, 0]);
   const bottomYText      = useSpring(bottomYRaw, springConfig);
 
   return (
@@ -162,14 +165,13 @@ export function ToolMockup() {
         </motion.div>
       </div>
 
-      {/* ── 2. The Native Mobile Runway ── */}
-      {/* Tucked under Desktop to recreate the original overlap. Height creates standard scroll track. */}
-      {/* 300vh gives plenty of time for Desktop to retreat before cards fly in. */}
-      <div ref={runwayRef} className="relative w-full h-[300vh] -mt-[100px] sm:-mt-[150px] md:-mt-[200px] pointer-events-none">
+      {/* ── 2. The Lens Track ── */}
+      {/* 250vh = 100vh lens height + exactly 150vh of target tracking distance to match V7 perfectly. */}
+      {/* Once the parent completes 250vh, the lens flawlessly unlocks with ZERO pixel collision gap. */}
+      <div ref={runwayRef} className="relative w-full h-[250vh] -mt-[100px] sm:-mt-[150px] md:-mt-[200px] pointer-events-none">
         
-        {/* ── STICKY FOCUS LOCK ── */}
-        {/* This perfectly centers the Mobile container. Guaranteed 0% clipping on ANY monitor. */}
-        <div className="sticky top-1/2 -translate-y-1/2 w-full z-30 flex flex-col items-center justify-center">
+        {/* ── THE 100VH CAMERA LENS ── */}
+        <div className="sticky top-0 w-full h-screen z-30 flex flex-col items-center justify-center overflow-hidden">
 
             <div className="relative w-full max-w-[1200px] flex justify-center items-center">
               
