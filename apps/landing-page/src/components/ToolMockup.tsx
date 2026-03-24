@@ -44,7 +44,7 @@ const RIGHT_FEATURES = [
 const ALL_FEATURES = [...LEFT_FEATURES, ...RIGHT_FEATURES];
 
 // Screenshot-matched Hybrid Glass Card
-const GLASS_CARD = "group bg-white/20 dark:bg-slate-900/20 backdrop-blur-md border border-white/50 dark:border-slate-700/50 rounded-2xl p-3 md:p-4 flex items-center gap-3 md:gap-4 hover:border-brand-midblue/40 hover:shadow-[0_0_20px_rgba(92,174,255,0.15)] transition-all duration-300 w-[240px] xl:w-[280px] pointer-events-auto shadow-sm";
+const GLASS_CARD = "group bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border border-slate-300 dark:border-slate-600 rounded-2xl p-3 md:p-4 flex items-center gap-3 md:gap-4 hover:border-brand-midblue/60 hover:shadow-[0_0_20px_rgba(92,174,255,0.25)] transition-all duration-300 w-[240px] xl:w-[280px] pointer-events-auto shadow-sm";
 
 const ICON_WRAPPER = "w-10 h-10 md:w-12 md:h-12 rounded-[10px] md:rounded-xl bg-gradient-to-br from-brand-midblue/10 to-brand-cyan/10 border border-brand-purple/20 flex justify-center items-center shrink-0 group-hover:scale-110 group-hover:shadow-[0_0_15px_rgba(92,174,255,0.2)] transition-all duration-300";
 
@@ -101,18 +101,18 @@ export function ToolMockup() {
   const mobileShadowScale     = useTransform(runwayProgress, [0.00, 0.30], [0.85, 0.92]);
   const mobileShadowRotate    = useTransform(runwayProgress, [0.00, 0.30], [3, 0]);
 
-  const cardOpacityRaw = useTransform(runwayProgress, [0.30, 0.70], [0, 1]);
+  const cardOpacityRaw = useTransform(runwayProgress, [0.45, 0.75], [0, 1]);
   const cardOpacity    = useSpring(cardOpacityRaw, springConfig);
   
-  const leftXRaw = useTransform(runwayProgress, [0.30, 0.70], [-40, 0]);
+  const leftXRaw = useTransform(runwayProgress, [0.45, 0.75], [-40, 0]);
   const leftX    = useSpring(leftXRaw, springConfig);
   
-  const rightXRaw = useTransform(runwayProgress, [0.30, 0.70], [40, 0]);
+  const rightXRaw = useTransform(runwayProgress, [0.45, 0.75], [40, 0]);
   const rightX    = useSpring(rightXRaw, springConfig);
 
-  const bottomOpacityRaw = useTransform(runwayProgress, [0.70, 0.98], [0, 1]);
+  const bottomOpacityRaw = useTransform(runwayProgress, [0.75, 0.98], [0, 1]);
   const bottomOpacity    = useSpring(bottomOpacityRaw, springConfig);
-  const bottomYRaw       = useTransform(runwayProgress, [0.70, 0.98], [20, 0]);
+  const bottomYRaw       = useTransform(runwayProgress, [0.75, 0.98], [20, 0]);
   const bottomYText      = useSpring(bottomYRaw, springConfig);
 
   return (
@@ -183,7 +183,7 @@ export function ToolMockup() {
                 style={{ 
                   opacity: cardOpacity, 
                   x: leftX,
-                  right: "calc(50% + 110px)" 
+                  right: "calc(50% + 150px)" 
                 }}
               >
                 {LEFT_FEATURES.map((f) => (
@@ -231,7 +231,7 @@ export function ToolMockup() {
                 style={{ 
                   opacity: cardOpacity, 
                   x: rightX,
-                  left: "calc(50% + 110px)"
+                  left: "calc(50% + 150px)"
                 }}
               >
                 {RIGHT_FEATURES.map((f) => (
