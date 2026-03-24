@@ -140,18 +140,18 @@ export function ToolMockup() {
             className="absolute inset-0 -z-10 rounded-xl bg-slate-900/10 dark:bg-black/40 blur-2xl translate-y-8"
           />
           <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 relative shadow-2xl">
-            <div className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-3 py-2 md:px-4 md:py-3 flex items-center gap-2 md:gap-3 relative z-10">
-              <div className="flex items-center gap-1.5 md:gap-2">
-                <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-red-400/80" />
-                <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-yellow-400/80" />
-                <div className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full bg-green-400/80" />
+            <div className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-3 flex items-center gap-2 md:gap-3 relative z-10">
+              <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2">
+                <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-red-400/80" />
+                <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-yellow-400/80" />
+                <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-green-400/80" />
               </div>
               <div className="flex-1 max-w-md mx-auto">
-                <div className="bg-white/60 dark:bg-black/60 rounded px-3 py-1 md:py-1.5 text-xs md:text-sm text-slate-500 text-center border border-slate-200/50 dark:border-slate-700/50">
+                <div className="bg-white/60 dark:bg-black/60 rounded px-2 py-0.5 sm:px-3 sm:py-1 md:py-1.5 text-[10px] sm:text-xs md:text-sm text-slate-500 text-center border border-slate-200/50 dark:border-slate-700/50">
                   app.blanketsmith.com
                 </div>
               </div>
-              <div className="w-10 md:w-14" />
+              <div className="w-6 sm:w-10 md:w-14" />
             </div>
             <div className="relative bg-white dark:bg-slate-950">
               <img
@@ -249,25 +249,6 @@ export function ToolMockup() {
 
             </div>
 
-            {/* ── Mobile Stacked List (< lg) ── */}
-            <motion.div 
-              className="flex lg:hidden flex-col gap-4 w-full max-w-sm px-4 mt-8 relative z-40 pointer-events-auto"
-              style={{ opacity: cardOpacity, y: bottomYText }}
-            >
-              {ALL_FEATURES.map((f) => (
-                <div key={f.title} className={GLASS_CARD + " mx-auto w-full"}>
-                  <div className={ICON_WRAPPER}>
-                    <Icon name={f.icon} size="sm" className="text-brand-midblue md:w-5 md:h-5" />
-                  </div>
-                  <div className="flex-1 text-left">
-                    <h4 className="font-display font-bold text-slate-800 dark:text-slate-200 text-[15px] leading-tight m-0">{f.title}</h4>
-                    <p className="font-sans text-[13px] text-slate-500 dark:text-slate-400 mt-1 leading-snug m-0">{f.desc}</p>
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-
-            {/* ── Clean Bottom Text (Unboxed) ── */}
             <motion.div 
               className="mt-8 md:mt-12 text-center max-w-xl mx-auto px-4 relative z-40 pointer-events-auto h-[100px]"
               style={{ opacity: bottomOpacity, y: bottomYText }}
