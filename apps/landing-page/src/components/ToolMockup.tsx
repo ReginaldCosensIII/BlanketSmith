@@ -308,9 +308,10 @@ function MobileToolMockup() {
   const bottomYText      = useSpring(bottomYRaw, springConfig);
 
   return (
-    <div ref={containerRef} className="relative w-full h-[220vh] sm:h-[230vh] pb-24">
+    <div ref={containerRef} className="relative w-full h-[220vh] sm:h-[230vh] -mt-8 sm:-mt-12">
       {/* Natively anchor the sticky lock near the top of the monitor. Provides robust unpin threshold geometry without mathematical clipping. */}
-      <div className="sticky top-12 sm:top-16 flex flex-col items-center justify-start pb-20 w-full overflow-hidden">
+      {/* The pb-24 here guarantees a uniform visual padding exactly mimicking the required site-wide footer gap gracefully. */}
+      <div className="sticky top-6 sm:top-10 flex flex-col items-center justify-start w-full overflow-hidden pb-24">
         <div className="max-w-5xl mx-auto w-full px-4 relative z-0">
           <div className="w-full mx-auto" style={{ perspective: "1500px" }}>
             <motion.div
