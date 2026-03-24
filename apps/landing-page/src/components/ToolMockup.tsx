@@ -323,18 +323,18 @@ function MobileToolMockup() {
               />
 
               <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 relative shadow-2xl">
-                <div className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-2 py-1.5 sm:px-3 sm:py-2 flex items-center gap-2 relative z-10">
-                  <div className="flex items-center gap-1 sm:gap-1.5">
-                    <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-red-400/80" />
-                    <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-yellow-400/80" />
-                    <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full bg-green-400/80" />
+                <div className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-1.5 py-1 sm:px-3 sm:py-2 flex items-center gap-1 sm:gap-2 relative z-10">
+                  <div className="flex items-center gap-0.5 sm:gap-1.5">
+                    <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full bg-red-400/80" />
+                    <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full bg-yellow-400/80" />
+                    <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full bg-green-400/80" />
                   </div>
                   <div className="flex-1 max-w-md mx-auto">
-                    <div className="bg-white/60 dark:bg-black/60 rounded px-2 py-0.5 sm:px-3 sm:py-1 text-[10px] sm:text-xs text-slate-500 text-center border border-slate-200/50 dark:border-slate-700/50">
+                    <div className="bg-white/60 dark:bg-black/60 rounded px-1.5 py-0.5 sm:px-3 sm:py-1 text-[8px] sm:text-xs text-slate-500 text-center border border-slate-200/50 dark:border-slate-700/50">
                       app.blanketsmith.com
                     </div>
                   </div>
-                  <div className="w-6 sm:w-10" />
+                  <div className="w-4 sm:w-10" />
                 </div>
 
                 <div className="relative bg-white dark:bg-slate-950">
