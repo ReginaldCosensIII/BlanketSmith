@@ -48,7 +48,7 @@ export function HeroSection() {
   };
 
   return (
-    <section className="relative overflow-hidden pt-8 pb-16 md:pt-12 md:pb-20">
+    <section className="relative overflow-hidden w-full min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-5rem)] flex flex-col justify-center pt-8 pb-16 md:pt-12 md:pb-20">
       {/* Background Effects */}
       <div className="absolute inset-0 -z-10">
         {/* Decorative blur orbs - symmetrical gradient orbs */}
@@ -108,13 +108,15 @@ export function HeroSection() {
         onLoad={() => setBadgeLoaded(true)}
       />
 
-      {/* Beta Badge - positioned closer to header to avoid collision with floating logo */}
-      <motion.div
-        className="text-center -mt-2 md:-mt-4"
-        initial={{ opacity: 0, y: 30 }}
-        animate={canAnimate ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-      >
+      {/* Central Content Wrapper - ensures cohesive vertical stacking within flex parent */}
+      <div className="relative z-10 flex flex-col w-full">
+        {/* Beta Badge - positioned closer to header to avoid collision with floating logo */}
+        <motion.div
+          className="text-center -mt-2 md:-mt-4"
+          initial={{ opacity: 0, y: 30 }}
+          animate={canAnimate ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        >
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-midblue/10 border border-brand-purple/30 cursor-pointer transition-all duration-300 ease-out hover:scale-110 hover:shadow-[0_0_20px_rgba(92,174,255,0.4)] hover:border-brand-midblue/50">
           <span className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-midblue opacity-75"></span>
@@ -179,6 +181,7 @@ export function HeroSection() {
             </Button>
           </motion.div>
         </motion.div>
+      </div>
       </div>
     </section>
   );
