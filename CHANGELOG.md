@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### [Unreleased]
+- **Landing Page Scroll Sequence & Hero Refinements**:
+    - **Parallax Reading Freeze (`feat/landing-scroll-freeze`)**: Explicitly extended programmatic physics tracks (e.g., `h-[280vh]` bounds) and re-calculated scrolling keyframes (`[0.65, 0.85]`). Enforced a hard "freeze frame" natively across the final 15% scrolling threshold to drastically improve reading UX before unpinning.
+    - **Hero Viewport Maximization (`feat/landing-ui-refinements`)**: Remapped `HeroSection.tsx` from arbitrary absolute padding dependencies into algorithmically reactive Viewport Height (`vh`) percentages centered by dynamic `flex` bounds.
+    - **Wide-Screen Laptop Clipping Fixed**: Eradicated 16:9 laptop CTA clipping issues entirely by purging redundant vertical padding and enforcing strict mathematical percentages via `18vh` caps on primary SVG image assets entirely.
+    - **Mobile Scroll Sequence**: Restored explicit, streamlined single-tier parallax scrolling isolated purely for mobile resolutions within `ToolMockup.tsx`. Transplanted miniature 'browser chrome' UI dimensions from interactive features to prevent top-heaviness natively.
+    - **Sequential Whitespace Alignment**: Normalized the unpin boundary metrics inside `MobileMockup`, restoring uniform 1:1 gap alignments seamlessly with the footer natively using local `pb-` bounds inside the sticky lock.
 - **Email System Upgrade (fix/email-outlook-compatibility)**:
     - **Outlook Compatibility**: Implemented "Hybrid" design with VML background support for Outlook Desktop.
     - **Gmail Fixes**: Solved "Show Quoted Text" collapse by moving unique Ref ID to the top of the email body.

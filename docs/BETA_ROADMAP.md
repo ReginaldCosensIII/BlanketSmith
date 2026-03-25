@@ -21,9 +21,9 @@
 - [ ] **Mockup Overlay:** Add depth and animation to the browser/mobile mockup section.
 - [ ] **Interactive Tour**: Implement guided tour of features on the homepage.
 - [x] **Icon & Asset Polish**: Consolidated assets, standardized icon sizes, and refined visual consistency across the landing page.
-- [ ] **Mobile Responsiveness**: Refine mobile mockup presentation.
-- [ ] **Scroll Animations**: Fix scroll-locked animation behavior on desktop and unify with mobile behavior.
-- [ ] **Hero Section**: Force full viewport height (100dvh) and responsive vertical scaling.
+- [x] **Mobile Responsiveness**: Refine mobile mockup presentation.
+- [x] **Scroll Animations**: Fix scroll-locked animation behavior on desktop and unify with mobile behavior.
+- [x] **Hero Section**: Force full viewport height (100dvh) and responsive vertical scaling.
 
 ## 🗺️ Phase 1.5: Storytelling & Resources (New Focus)
 **Goal**: Build trust and engagement through interactive content and transparency.
