@@ -67,7 +67,7 @@ export default function Index() {
       <HeroSection />
 
       {/* What is BlanketSmith? Section */}
-      <section className="py-20 md:py-28 bg-secondary/30">
+      <section className="pt-20 md:pt-28 pb-0 bg-secondary/30">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
             <h2 className="font-display text-3xl sm:text-4xl font-bold text-foreground mb-6">

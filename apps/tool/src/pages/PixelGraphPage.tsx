@@ -283,7 +283,11 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
         stitchesPerUnit: 4,
         rowsPerUnit: 4,
         yarnPerStitch: 1,
-        hookSize: ''
+        hookSize: '',
+        // [GAUGE-001] Visual toggle: warp editor grid to true stitch proportions
+        applyGaugeToEditor: false,
+        // [GAUGE-001] PDF toggle: warp printed outputs to true stitch proportions
+        applyGaugeToPDF: false,
     });
 
     const [mirrorConfirm, setMirrorConfirm] = useState<{ isOpen: boolean, direction: MirrorDirection | null }>({ isOpen: false, direction: null });
@@ -1548,14 +1552,29 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
     const requestMirror = (direction: MirrorDirection) => { setMirrorConfirm({ isOpen: true, direction }); };
     const confirmMirrorCanvas = useCallback(() => { const direction = mirrorConfirm.direction; if (!direction) return; const currentProjectState = projectStateRef.current; const projectToMirror = currentProjectState.project; if (!projectToMirror || projectToMirror.type !== 'pixel') { setMirrorConfirm({ isOpen: false, direction: null }); return; } const projectData = projectToMirror.data as PixelGridData; const { width, height, grid: originalGrid } = projectData; const newGrid = [...originalGrid]; switch (direction) { case 'left-to-right': for (let y = 0; y < height; y++) { for (let x = 0; x < Math.ceil(width / 2); x++) { const sourceIndex = y * width + x; const destIndex = y * width + (width - 1 - x); newGrid[destIndex] = originalGrid[sourceIndex]; } } break; case 'right-to-left': for (let y = 0; y < height; y++) { for (let x = 0; x < Math.ceil(width / 2); x++) { const sourceIndex = y * width + (width - 1 - x); const destIndex = y * width + x; newGrid[destIndex] = originalGrid[sourceIndex]; } } break; case 'top-to-bottom': for (let y = 0; y < Math.ceil(height / 2); y++) { for (let x = 0; x < width; x++) { const sourceIndex = y * width + x; const destIndex = (height - 1 - y) * width + x; newGrid[destIndex] = originalGrid[sourceIndex]; } } break; case 'bottom-to-top': for (let y = 0; y < Math.ceil(height / 2); y++) { for (let x = 0; x < width; x++) { const sourceIndex = (height - 1 - y) * width + x; const destIndex = y * width + x; newGrid[destIndex] = originalGrid[sourceIndex]; } } break; } updateGrid(newGrid); setMirrorConfirm({ isOpen: false, direction: null }); }, [mirrorConfirm.direction, updateGrid]);
 
-    const openSettingsModal = () => { setSettingsForm({ projectName: project?.name || '', unit: project?.settings?.unit || 'in', stitchesPerUnit: project?.settings?.stitchesPerUnit || 4, rowsPerUnit: project?.settings?.rowsPerUnit || 4, hookSize: project?.settings?.hookSize || '', yarnPerStitch: project?.settings?.yarnPerStitch || 1 }); setIsSettingsModalOpen(true); };
+    const openSettingsModal = () => { setSettingsForm({ projectName: project?.name || '', unit: project?.settings?.unit || 'in', stitchesPerUnit: project?.settings?.stitchesPerUnit || 4, rowsPerUnit: project?.settings?.rowsPerUnit || 4, hookSize: project?.settings?.hookSize || '', yarnPerStitch: project?.settings?.yarnPerStitch || 1, applyGaugeToEditor: project?.settings?.visuals?.applyGaugeToEditor ?? false, applyGaugeToPDF: project?.settings?.visuals?.applyGaugeToPDF ?? false }); setIsSettingsModalOpen(true); };
     const saveSettings = () => {
         dispatch({ type: 'UPDATE_PROJECT_NAME', payload: settingsForm.projectName });
-        const { projectName, ...settingsPayload } = settingsForm;
-        dispatch({ type: 'UPDATE_PROJECT_SETTINGS', payload: settingsPayload });
+        const { projectName, applyGaugeToEditor, applyGaugeToPDF, ...settingsPayload } = settingsForm;
+        dispatch({ type: 'UPDATE_PROJECT_SETTINGS', payload: {
+            ...settingsPayload,
+            // [GAUGE-001] Persist visual toggle under project.settings.visuals
+            visuals: {
+                applyGaugeToEditor: settingsForm.applyGaugeToEditor,
+                applyGaugeToPDF: settingsForm.applyGaugeToPDF,
+            },
+        } });
         setIsSettingsModalOpen(false);
     };
     const physicalSizeString = useMemo(() => { if (!projectData || !project?.settings) return null; const sts = Number(project.settings.stitchesPerUnit); const rows = Number(project.settings.rowsPerUnit); const unit = project.settings.unit || 'in'; if (!sts || !rows) return null; const pWidth = (projectData.width / sts).toFixed(1); const pHeight = (projectData.height / rows).toFixed(1); return `${pWidth} x ${pHeight} ${unit}`; }, [projectData, project?.settings]);
+
+    // [GAUGE-001] Derive the Y-axis aspect ratio for the editor grid. Falls back to 1 (square cells).
+    const gaugeStitches = Number(project?.settings?.stitchesPerUnit ?? 0);
+    const gaugeRows = Number(project?.settings?.rowsPerUnit ?? 0);
+    const applyGaugeToEditor = project?.settings?.visuals?.applyGaugeToEditor ?? false;
+    const editorAspectRatio = (applyGaugeToEditor && gaugeStitches > 0 && gaugeRows > 0)
+        ? gaugeStitches / gaugeRows
+        : 1;
 
 
 
@@ -2152,6 +2171,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                     onContextMenu={handleOpenContextMenu}
                     isZoomLocked={isZoomLocked}
                     onToggleZoomLock={onToggleZoomLock}
+                    aspectRatio={editorAspectRatio}
                 />
 
                 {activeTool === 'select' && (
@@ -2596,6 +2616,34 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                             <input type="checkbox" checked={isLeftHanded} onChange={onToggleLeftHanded} />
                             <span className="text-sm text-gray-700">Left-Handed Mode</span>
                         </label>
+                        {/* [GAUGE-001] Show True Proportions toggles */}
+                        {gaugeStitches > 0 && gaugeRows > 0 && (
+                            <>
+                                <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={settingsForm.applyGaugeToEditor}
+                                        onChange={(e) => setSettingsForm({ ...settingsForm, applyGaugeToEditor: e.target.checked })}
+                                    />
+                                    <span className="text-sm text-gray-700">
+                                        Show true proportions in Editor
+                                        <span className="ml-1 text-xs text-gray-400">
+                                            ({(gaugeStitches / gaugeRows).toFixed(2)}× height)
+                                        </span>
+                                    </span>
+                                </label>
+                                <label className="flex items-center gap-2 mt-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={settingsForm.applyGaugeToPDF}
+                                        onChange={(e) => setSettingsForm({ ...settingsForm, applyGaugeToPDF: e.target.checked })}
+                                    />
+                                    <span className="text-sm text-gray-700">
+                                        Print true proportions in PDF exports
+                                    </span>
+                                </label>
+                            </>
+                        )}
                     </div>
 
                     <div className="flex justify-end pt-4 border-t">

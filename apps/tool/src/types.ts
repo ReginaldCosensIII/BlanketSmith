@@ -40,6 +40,20 @@ export interface CellData {
   stitchId?: string | null; // Stitch type identifier
 }
 
+// [GAUGE-001] Physical swatch measurements used to calculate aspect ratio
+export interface GaugeSettings {
+  stitches: number;        // e.g., 20
+  rows: number;            // e.g., 15
+  measurementUnit: string; // e.g., "inches", "cm"
+  unitValue: number;       // e.g., 4 (for a 4x4 swatch)
+}
+
+// [GAUGE-001] User-controlled display toggles for proportion warping
+export interface VisualSettings {
+  applyGaugeToEditor: boolean; // Warp the on-screen grid
+  applyGaugeToPDF: boolean;    // Warp the printed PDF chart (Phase 2)
+}
+
 export interface Symmetry {
   vertical: boolean;
   horizontal: boolean;

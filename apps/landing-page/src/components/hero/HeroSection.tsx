@@ -48,7 +48,7 @@ export function HeroSection() {
   };
 
   return (
-    <section className="relative overflow-hidden pt-8 pb-16 md:pt-12 md:pb-20">
+    <section className="relative overflow-hidden w-full min-h-[calc(100vh-4rem)] md:min-h-[calc(100vh-5rem)] flex flex-col justify-center py-6 md:py-8 lg:py-10">
       {/* Background Effects */}
       <div className="absolute inset-0 -z-10">
         {/* Decorative blur orbs - symmetrical gradient orbs */}
@@ -108,13 +108,15 @@ export function HeroSection() {
         onLoad={() => setBadgeLoaded(true)}
       />
 
-      {/* Beta Badge - positioned closer to header to avoid collision with floating logo */}
-      <motion.div
-        className="text-center -mt-2 md:-mt-4"
-        initial={{ opacity: 0, y: 30 }}
-        animate={canAnimate ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-      >
+      {/* Central Content Wrapper - ensures cohesive vertical stacking within flex parent */}
+      <div className="relative z-10 flex flex-col w-full">
+        {/* Beta Badge - positioned closer to header to avoid collision with floating logo */}
+        <motion.div
+          className="text-center -mt-2 md:-mt-4"
+          initial={{ opacity: 0, y: 30 }}
+          animate={canAnimate ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+          transition={{ duration: 0.5, ease: "easeOut" }}
+        >
         <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-midblue/10 border border-brand-purple/30 cursor-pointer transition-all duration-300 ease-out hover:scale-110 hover:shadow-[0_0_20px_rgba(92,174,255,0.4)] hover:border-brand-midblue/50">
           <span className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-midblue opacity-75"></span>
@@ -125,7 +127,7 @@ export function HeroSection() {
       </motion.div>
 
       {/* Main Hero Content */}
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 mt-6 md:mt-8">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 mt-6 md:mt-[3vh] lg:mt-[5vh] relative z-10">
         <motion.div
           className="max-w-4xl mx-auto text-center"
           variants={containerVariants}
@@ -133,17 +135,17 @@ export function HeroSection() {
           animate={canAnimate ? "visible" : "hidden"}
         >
           {/* Badge Logo */}
-          <motion.div className="mb-6" variants={itemVariants}>
+          <motion.div className="mb-6 md:mb-[3vh] lg:mb-[4vh]" variants={itemVariants}>
             <img
               src={logoBadge}
               alt="BlanketSmith"
-              className="h-36 sm:h-40 lg:h-44 w-auto mx-auto animate-float"
+              className="h-28 sm:h-32 md:h-36 lg:h-[18vh] min-h-[110px] max-h-[160px] w-auto mx-auto animate-float"
             />
           </motion.div>
 
           {/* Brand Name */}
           <motion.h1
-            className="text-4xl sm:text-5xl lg:text-6xl font-black text-foreground mb-4"
+            className="text-4xl sm:text-5xl lg:text-6xl font-black text-foreground mb-4 md:mb-[2vh] lg:mb-[3vh]"
             style={{ fontFamily: "'Poppins', sans-serif" }}
             variants={itemVariants}
           >
@@ -152,16 +154,16 @@ export function HeroSection() {
 
           {/* Tagline */}
           <motion.h2
-            className="font-display text-xl sm:text-2xl lg:text-3xl font-bold text-foreground leading-tight mb-5"
+            className="font-display text-xl sm:text-2xl lg:text-3xl font-bold text-foreground leading-tight mb-5 md:mb-[3vh] lg:mb-[4vh]"
             variants={itemVariants}
           >
             A Modern Tool for{" "}
             <span className="gradient-text">Modern Makers</span>
           </motion.h2>
 
-          {/* Subheadline */}
+          {/* Subheadline - Widened and scaled for Tablet Readability */}
           <motion.p
-            className="font-sans text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto mb-6"
+            className="font-sans text-base sm:text-lg md:text-xl md:leading-relaxed text-muted-foreground max-w-2xl md:max-w-3xl mx-auto mb-6 md:mb-[5vh] lg:mb-[7vh]"
             variants={itemVariants}
           >
             BlanketSmith transforms your ideas into ready-to-use blanket patterns instantly.
@@ -170,7 +172,7 @@ export function HeroSection() {
           </motion.p>
 
           {/* CTA */}
-          <motion.div variants={itemVariants}>
+          <motion.div className="mt-2 md:mt-[4vh] lg:mt-[6vh]" variants={itemVariants}>
             <Button variant="gradient" size="xl" asChild>
               <Link to="/beta-signup">
                 Sign Up for the Beta
@@ -179,6 +181,7 @@ export function HeroSection() {
             </Button>
           </motion.div>
         </motion.div>
+      </div>
       </div>
     </section>
   );
