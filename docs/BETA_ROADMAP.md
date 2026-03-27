@@ -18,12 +18,12 @@
 **Goal:** Create a high-impact, marketing-ready landing page to drive beta signups.
 
 ### 1. Visual Enhancements (Homepage)
-- [ ] **Mockup Overlay:** Add depth and animation to the browser/mobile mockup section.
+- [x] **Mockup Overlay:** Add depth and animation to the browser/mobile mockup section.
 - [ ] **Interactive Tour**: Implement guided tour of features on the homepage.
 - [x] **Icon & Asset Polish**: Consolidated assets, standardized icon sizes, and refined visual consistency across the landing page.
-- [ ] **Mobile Responsiveness**: Refine mobile mockup presentation.
-- [ ] **Scroll Animations**: Fix scroll-locked animation behavior on desktop and unify with mobile behavior.
-- [ ] **Hero Section**: Force full viewport height (100dvh) and responsive vertical scaling.
+- [x] **Mobile Responsiveness**: Refine mobile mockup presentation.
+- [x] **Scroll Animations**: Fix scroll-locked animation behavior on desktop and unify with mobile behavior.
+- [x] **Hero Section**: Force full viewport height (100dvh) and responsive vertical scaling.
 
 ## 🗺️ Phase 1.5: Storytelling & Resources (New Focus)
 **Goal**: Build trust and engagement through interactive content and transparency.
@@ -44,30 +44,33 @@
 
 ---
 
-## 🔐 Phase 2: Infrastructure & Authentication
-**Goal:** Build the secure foundation for user accounts and feature gating.
+## 🔐 Phase 2: Infrastructure & Authentication (Current Focus)
+**Goal:** Build the secure foundation for user accounts, data syncing, and feature gating.
 
-### 1. User System
-- [ ] **Sign Up Flow:** Connect Beta Welcome email verification to account creation.
-- [ ] **Password Set:** Implement secure password creation flow.
-- [ ] **Login System:** Integrate Supabase Auth with the main tool.
+### 1. The Dual Auth Funnel
+- [ ] **Beta-to-Account Pipeline:** Connect Beta Welcome email verification to the account creation flow.
+- [ ] **In-Tool Authentication:** Implement Supabase Auth (Sign Up / Log In) modals directly within the tool UI.
+- [ ] **Password Set:** Implement secure password creation and reset flows.
 
-### 2. Feature Gating
+### 2. Local-to-Cloud Data Bridge
+- [ ] **Local-First Persistence:** Ensure guest users can save projects to `localStorage`.
+- [ ] **Cloud Migration:** Automatically push local blanket data to Supabase upon successful account creation/login.
 - [ ] **Access Control:** Restrict high-value features (Export, Pattern Gen) to logged-in users.
-- [ ] **Data Persistence:** Ensure user projects are saved to their authenticated account.
-- [ ] **Database Strategy:** Evaluate Supabase vs Postgres migration path.
 
 ---
 
 ## 🧶 Phase 3: Application Core (Beta Blockers)
 **Goal:** Complete the essential features required for a viable product.
 
-### 1. Instructions Engine v3 (High Priority)
+### 1. Gauge & Proportions (Currently Parked)
+- [ ] **Stitch Aspect Ratio:** Finalize non-square pixel rendering and fix the PDF export distortion. *(Note: Currently parked on branches `feat/gauge-aspect-ratio` and `feat/gauge-aspect-ratio-pdf` to prioritize showcase features).*
+
+### 2. Instructions Engine v3 (High Priority)
 - [ ] **Row-by-Row Generation:** Convert grid data to "Row 1: 5 SC Blue, 3 SC Red" text.
 - [ ] **RLE Optimization:** Compress repeating stitches (Run-Length Encoding).
 - [ ] **Export Formats:** PDF Export (Text + Chart) and Clipboard Copy.
 
-### 2. Yarn Palette & Data (High Priority)
+### 3. Yarn Palette & Data (High Priority)
 - [ ] **Brand Database:** Ingest standard palettes (Red Heart, Stylecraft, etc.).
 - [ ] **Palette UI:** Improve color picker to support Brand -> Color selection.
 

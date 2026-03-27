@@ -83,36 +83,38 @@ function DesktopToolMockup() {
     offset: ["start start", "end end"],
   });
 
-  // Timeline mathematically perfectly mapped over 150vh physical tracking distance
-  // [0.00 → 0.30] = 45vh scroll (Mobile emerges)
-  // [0.30 → 0.70] = 60vh scroll (Cards sweep in)
-  // [0.70 → 1.00] = 45vh scroll (Text emerges, concluding perfectly with the unlocking)
-  const mobileOpacity    = useTransform(runwayProgress, [0.00, 0.30], [0, 1]);
-  const mobileYRaw       = useTransform(runwayProgress, [0.00, 0.30], [60, 0]);
-  const mobileScaleRaw   = useTransform(runwayProgress, [0.00, 0.30], [0.9, 1]);
-  const mobileRotateXRaw = useTransform(runwayProgress, [0.00, 0.30], [10, 0]);
+  // Compress the entire animation mapped timeline linearly.
+  // 0.0 -> 0.75 represents the active original animation sequence dynamically.
+  // 0.75 -> 1.0 represents pure mathematically frozen tracking space down the runway (~40vh).
+  const clampedProgress = useTransform(runwayProgress, [0, 0.75], [0, 1]);
+
+  // Timeline mathematically perfectly mapped over the clamped progression
+  const mobileOpacity    = useTransform(clampedProgress, [0.00, 0.30], [0, 1]);
+  const mobileYRaw       = useTransform(clampedProgress, [0.00, 0.30], [60, 0]);
+  const mobileScaleRaw   = useTransform(clampedProgress, [0.00, 0.30], [0.9, 1]);
+  const mobileRotateXRaw = useTransform(clampedProgress, [0.00, 0.30], [10, 0]);
   const mobileY          = useSpring(mobileYRaw,       springConfig);
   const mobileScale      = useSpring(mobileScaleRaw,   springConfig);
   const mobileRotateX    = useSpring(mobileRotateXRaw, springConfig);
 
-  const mobileZRaw           = useTransform(runwayProgress, [0.10, 0.30], [0, 50]);
+  const mobileZRaw           = useTransform(clampedProgress, [0.10, 0.30], [0, 50]);
   const mobileZ              = useSpring(mobileZRaw, springConfig);
-  const mobileShadowIntensity = useTransform(runwayProgress, [0.10, 0.30], [0.2, 1]);
-  const mobileShadowScale     = useTransform(runwayProgress, [0.00, 0.30], [0.85, 0.92]);
-  const mobileShadowRotate    = useTransform(runwayProgress, [0.00, 0.30], [3, 0]);
+  const mobileShadowIntensity = useTransform(clampedProgress, [0.10, 0.30], [0.2, 1]);
+  const mobileShadowScale     = useTransform(clampedProgress, [0.00, 0.30], [0.85, 0.92]);
+  const mobileShadowRotate    = useTransform(clampedProgress, [0.00, 0.30], [3, 0]);
 
-  const cardOpacityRaw = useTransform(runwayProgress, [0.45, 0.75], [0, 1]);
+  const cardOpacityRaw = useTransform(clampedProgress, [0.45, 0.75], [0, 1]);
   const cardOpacity    = useSpring(cardOpacityRaw, springConfig);
   
-  const leftXRaw = useTransform(runwayProgress, [0.45, 0.75], [-40, 0]);
+  const leftXRaw = useTransform(clampedProgress, [0.45, 0.75], [-40, 0]);
   const leftX    = useSpring(leftXRaw, springConfig);
   
-  const rightXRaw = useTransform(runwayProgress, [0.45, 0.75], [40, 0]);
+  const rightXRaw = useTransform(clampedProgress, [0.45, 0.75], [40, 0]);
   const rightX    = useSpring(rightXRaw, springConfig);
 
-  const bottomOpacityRaw = useTransform(runwayProgress, [0.75, 0.98], [0, 1]);
+  const bottomOpacityRaw = useTransform(clampedProgress, [0.75, 0.98], [0, 1]);
   const bottomOpacity    = useSpring(bottomOpacityRaw, springConfig);
-  const bottomYRaw       = useTransform(runwayProgress, [0.75, 0.98], [20, 0]);
+  const bottomYRaw       = useTransform(clampedProgress, [0.75, 0.98], [20, 0]);
   const bottomYText      = useSpring(bottomYRaw, springConfig);
 
   return (
@@ -140,20 +142,20 @@ function DesktopToolMockup() {
             className="absolute inset-0 -z-10 rounded-xl bg-slate-900/10 dark:bg-black/40 blur-2xl translate-y-8"
           />
           <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 relative shadow-2xl">
-            <div className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-3 flex items-center gap-2 md:gap-3 relative z-10">
-              <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2">
-                <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-red-400/80" />
-                <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-yellow-400/80" />
-                <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-green-400/80" />
+            <div className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-1.5 py-1 sm:px-3 sm:py-2 md:px-4 md:py-3 flex items-center gap-1 sm:gap-2 md:gap-3 relative z-10">
+              <div className="flex items-center gap-[2px] sm:gap-1.5 md:gap-2">
+                <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-red-400/80" />
+                <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-yellow-400/80" />
+                <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-green-400/80" />
               </div>
               <div className="flex-1 max-w-md mx-auto">
-                <div className="bg-white/60 dark:bg-black/60 rounded px-2 py-0.5 sm:px-3 sm:py-1 md:py-1.5 text-[10px] sm:text-xs md:text-sm text-slate-500 text-center border border-slate-200/50 dark:border-slate-700/50">
+                <div className="bg-white/60 dark:bg-black/60 rounded px-2 py-[2px] sm:px-3 sm:py-1 md:py-1.5 text-[7px] sm:text-xs md:text-sm text-slate-500 text-center border border-slate-200/50 dark:border-slate-700/50">
                   app.blanketsmith.com
                 </div>
               </div>
-              <div className="w-6 sm:w-10 md:w-14" />
+              <div className="w-4 sm:w-10 md:w-14" />
             </div>
-            <div className="relative bg-white dark:bg-slate-950">
+            <div className="relative bg-white dark:bg-slate-950 -mt-[1px] md:-mt-[2px] z-0">
               <img
                 src={betaUIScreenshot}
                 alt="BlanketSmith Pattern Tool Interface"
@@ -168,7 +170,7 @@ function DesktopToolMockup() {
       {/* ── 2. The Native Tracking Runway ── */}
       {/* Dynamic tracking heights per view breakpoints to maintain identical scroll feel. */}
       {/* Unlocking occurs uniformly and flawlessly because the sticky child is structurally sized dynamically. */}
-      <div ref={runwayRef} className="relative w-full h-[180vh] md:h-[220vh] lg:h-[250vh] -mt-[100px] sm:-mt-[150px] md:-mt-[200px] pointer-events-none">
+      <div ref={runwayRef} className="relative w-full h-[280vh] md:h-[320vh] lg:h-[350vh] -mt-[100px] sm:-mt-[150px] md:-mt-[200px] pointer-events-none">
         
         {/* ── STICKY FOCUS BLOCK ── */}
         {/* We abandon 'justify-center' / 'top-1/2' mathematically centering because it geometrically guarantees non-uniform whitespace below it on varying devices. */}
@@ -250,10 +252,10 @@ function DesktopToolMockup() {
             </div>
 
             <motion.div 
-              className="mt-8 md:mt-12 text-center max-w-xl mx-auto px-4 relative z-40 pointer-events-auto h-[100px]"
+              className="mt-6 md:mt-8 [@media(min-height:1000px)]:mt-16 [@media(min-height:1200px)]:mt-32 text-center max-w-xl mx-auto px-4 relative z-40 pointer-events-auto h-[100px]"
               style={{ opacity: bottomOpacity, y: bottomYText }}
             >
-              <h3 className="font-display text-[26px] md:text-3xl font-bold tracking-tight text-foreground mb-3">
+              <h3 className="font-display text-[26px] md:text-3xl font-bold tracking-tight text-foreground mb-1 md:mb-2">
                 Design anywhere, on any device.
               </h3>
               <p className="font-sans text-[15px] md:text-lg text-muted-foreground">
@@ -277,42 +279,44 @@ function MobileToolMockup() {
 
   const springConfig = { stiffness: 100, damping: 20, mass: 0.5 };
 
-  const browserRotateX = useTransform(scrollYProgress, [0, 0.35], [30, 0]);
-  const browserRotateY = useTransform(scrollYProgress, [0, 0.35], [-15, 0]);
-  const browserScale = useTransform(scrollYProgress, [0, 0.35], [0.85, 1]);
-  const browserOpacity = useTransform(scrollYProgress, [0, 0.15], [0, 1]);
-  const browserY = useTransform(scrollYProgress, [0, 0.35], [60, 0]);
+  const clampedProgress = useTransform(scrollYProgress, [0, 0.80], [0, 1]);
 
-  const browserShadowOpacity = useTransform(scrollYProgress, [0.15, 0.35], [0.2, 1]);
-  const browserShadowScale = useTransform(scrollYProgress, [0, 0.35], [0.88, 0.95]);
-  const browserShadowRotate = useTransform(scrollYProgress, [0, 0.35], [-2, 0]);
+  const browserRotateX = useTransform(clampedProgress, [0, 0.35], [30, 0]);
+  const browserRotateY = useTransform(clampedProgress, [0, 0.35], [-15, 0]);
+  const browserScale = useTransform(clampedProgress, [0, 0.35], [0.85, 1]);
+  const browserOpacity = useTransform(clampedProgress, [0, 0.15], [0, 1]);
+  const browserY = useTransform(clampedProgress, [0, 0.35], [60, 0]);
 
-  const mobileOpacity = useTransform(scrollYProgress, [0.4, 0.5], [0, 1]);
-  const mobileYRaw = useTransform(scrollYProgress, [0.4, 0.7], [100, 0]);
-  const mobileScaleRaw = useTransform(scrollYProgress, [0.4, 0.7], [0.85, 1]);
-  const mobileRotateXRaw = useTransform(scrollYProgress, [0.4, 0.7], [12, 0]);
+  const browserShadowOpacity = useTransform(clampedProgress, [0.15, 0.35], [0.2, 1]);
+  const browserShadowScale = useTransform(clampedProgress, [0, 0.35], [0.88, 0.95]);
+  const browserShadowRotate = useTransform(clampedProgress, [0, 0.35], [-2, 0]);
+
+  const mobileOpacity = useTransform(clampedProgress, [0.4, 0.5], [0, 1]);
+  const mobileYRaw = useTransform(clampedProgress, [0.4, 0.7], [100, 0]);
+  const mobileScaleRaw = useTransform(clampedProgress, [0.4, 0.7], [0.85, 1]);
+  const mobileRotateXRaw = useTransform(clampedProgress, [0.4, 0.7], [12, 0]);
 
   const mobileY = useSpring(mobileYRaw, springConfig);
   const mobileScale = useSpring(mobileScaleRaw, springConfig);
   const mobileRotateX = useSpring(mobileRotateXRaw, springConfig);
 
-  const mobileZRaw = useTransform(scrollYProgress, [0.55, 0.75], [0, 50]);
+  const mobileZRaw = useTransform(clampedProgress, [0.55, 0.75], [0, 50]);
   const mobileZ = useSpring(mobileZRaw, springConfig);
-  const mobileShadowIntensity = useTransform(scrollYProgress, [0.5, 0.8], [0.2, 1]);
-  const mobileShadowScale = useTransform(scrollYProgress, [0.4, 0.8], [0.85, 0.92]);
-  const mobileShadowRotate = useTransform(scrollYProgress, [0.4, 0.8], [3, 0]);
+  const mobileShadowIntensity = useTransform(clampedProgress, [0.5, 0.8], [0.2, 1]);
+  const mobileShadowScale = useTransform(clampedProgress, [0.4, 0.8], [0.85, 0.92]);
+  const mobileShadowRotate = useTransform(clampedProgress, [0.4, 0.8], [3, 0]);
 
-  const bottomOpacityRaw = useTransform(scrollYProgress, [0.75, 0.95], [0, 1]);
+  const bottomOpacityRaw = useTransform(clampedProgress, [0.75, 0.95], [0, 1]);
   const bottomOpacity    = useSpring(bottomOpacityRaw, springConfig);
-  const bottomYRaw       = useTransform(scrollYProgress, [0.75, 0.95], [20, 0]);
+  const bottomYRaw       = useTransform(clampedProgress, [0.75, 0.95], [20, 0]);
   const bottomYText      = useSpring(bottomYRaw, springConfig);
 
   return (
-    <div ref={containerRef} className="relative w-full h-[220vh] sm:h-[230vh] -mt-8 sm:-mt-12">
+    <div ref={containerRef} className="relative w-full h-[320vh] sm:h-[330vh] -mt-8 sm:-mt-12">
       {/* Natively anchor the sticky lock near the top of the monitor. Provides robust unpin threshold geometry without mathematical clipping. */}
       {/* The pb-24 here guarantees a uniform visual padding exactly mimicking the required site-wide footer gap gracefully. */}
       <div className="sticky top-6 sm:top-10 flex flex-col items-center justify-start w-full overflow-hidden pb-24">
-        <div className="max-w-5xl mx-auto w-full px-4 relative z-0">
+        <div className="max-w-5xl mx-auto w-full px-2 sm:px-6 relative z-0">
           <div className="w-full mx-auto" style={{ perspective: "1500px" }}>
             <motion.div
               style={{ rotateX: browserRotateX, rotateY: browserRotateY, scale: browserScale, opacity: browserOpacity, y: browserY, transformStyle: "preserve-3d" }}
@@ -323,21 +327,21 @@ function MobileToolMockup() {
               />
 
               <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 relative shadow-2xl">
-                <div className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-1.5 py-1 sm:px-3 sm:py-2 flex items-center gap-1 sm:gap-2 relative z-10">
-                  <div className="flex items-center gap-0.5 sm:gap-1.5">
-                    <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full bg-red-400/80" />
-                    <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full bg-yellow-400/80" />
-                    <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full bg-green-400/80" />
+                <div className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-1.5 py-1 sm:px-3 sm:py-2 md:px-4 md:py-3 flex items-center gap-1 sm:gap-2 md:gap-3 relative z-10">
+                  <div className="flex items-center gap-[2px] sm:gap-1.5 md:gap-2">
+                    <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-red-400/80" />
+                    <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-yellow-400/80" />
+                    <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-green-400/80" />
                   </div>
                   <div className="flex-1 max-w-md mx-auto">
-                    <div className="bg-white/60 dark:bg-black/60 rounded px-1.5 py-0.5 sm:px-3 sm:py-1 text-[8px] sm:text-xs text-slate-500 text-center border border-slate-200/50 dark:border-slate-700/50">
+                    <div className="bg-white/60 dark:bg-black/60 rounded px-2 py-[2px] sm:px-3 sm:py-1 md:py-1.5 text-[7px] sm:text-xs md:text-sm text-slate-500 text-center border border-slate-200/50 dark:border-slate-700/50">
                       app.blanketsmith.com
                     </div>
                   </div>
-                  <div className="w-4 sm:w-10" />
+                  <div className="w-4 sm:w-10 md:w-14" />
                 </div>
 
-                <div className="relative bg-white dark:bg-slate-950">
+                <div className="relative bg-white dark:bg-slate-950 -mt-[1px] md:-mt-[2px] z-0">
                   <img src={betaUIScreenshot} alt="BlanketSmith Pattern Tool Interface" className="w-full h-auto block" />
                   <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white/80 dark:from-slate-950/80 to-transparent pointer-events-none" />
                 </div>
@@ -358,10 +362,10 @@ function MobileToolMockup() {
         </motion.div>
 
         <motion.div 
-          className="mt-8 text-center max-w-xl mx-auto px-4 relative z-40 pointer-events-auto"
+          className="mt-6 [@media(min-height:1000px)]:mt-24 text-center max-w-xl mx-auto px-4 relative z-40 pointer-events-auto"
           style={{ opacity: bottomOpacity, y: bottomYText }}
         >
-          <h3 className="font-display text-[24px] sm:text-[26px] font-bold tracking-tight text-foreground mb-3">
+          <h3 className="font-display text-[24px] sm:text-[26px] font-bold tracking-tight text-foreground mb-1">
             Design anywhere, on any device.
           </h3>
           <p className="font-sans text-[14px] sm:text-[15px] text-muted-foreground">

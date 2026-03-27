@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### [Unreleased]
+- **Landing Page Scroll Sequence, Hero & Visual Refinements (`feat/landing-scroll-freeze`)**:
+    - **Parallax "Freeze Frame" (`ToolMockup.tsx`)**: Extended scroll runway heights (`h-[280vh]` → `h-[350vh]` desktop, `h-[320vh]` mobile) and injected a `clampedProgress` interceptor (`useTransform([0, 0.75/0.80], [0, 1])`) to force all animations to complete at 75–80% of the track, leaving a 2–3 scroll-wheel non-animating freeze buffer before the section unpins.
+    - **Hero Viewport Maximization (`HeroSection.tsx`)**: Remapped from absolute padding to `vh`-based dynamic spacing with `min-h-[calc(100vh-4rem)]` so the hero fills the full viewport on load without clipping the CTA on 16:9 laptops.
+    - **Typography Margin Compression**: Surgically reduced `mb-3→mb-1` between heading and paragraph and `mt-8→mt-6` between mockup and text block to fully display the "Design anywhere, on any device." text on standard laptops without disturbing the mock layout.
+    - **Tall-Monitor Vertical Spacing**: Added explicit CSS height media queries (`[@media(min-height:1000px)]:mt-16`, `[@media(min-height:1200px)]:mt-32`) instead of width-based `xl:` breakpoints, correctly targeting physically tall desktop monitors only.
+    - **Browser Chrome Miniaturization (Mobile)**: Reduced base `<sm` traffic-light dot sizes (`w-1 h-1`), URL bar padding (`px-1 py-[1px]`), and text (`text-[5px]`) in both `ToolMockup.tsx` and `FeatureTourMockup.tsx` for proportionally correct mobile-scale chrome.
+    - **Blue Artifact Fix**: Added `relative z-10` to browser top-bar and `-mt-[1px] md:-mt-[2px] z-0` to the screenshot wrapper in both mockups to completely hide the 1-pixel blue border bleed from the UI screenshot assets.
+    - **Feature Tour / Tool Mockup Parity**: Removed the extra `max-w-4xl` constraining wrapper from `FeatureTourMockup.tsx` and standardized the perspective container to `max-w-5xl px-2 sm:px-4`. Unified the mobile profile across ALL three browser mockup instances (`px-1.5`, `text-[7px]`) to ensure 100% proportional consistency on handheld devices.
+    - **Mobile Mockup Width**: Reduced horizontal container padding in `ToolMockup.tsx` mobile section (`px-4→px-2`) so the mockup appears appropriately wider on phone screens.
+    - **Roadmap Parity**: Updated `docs/BETA_ROADMAP.md` to mark Mobile Responsiveness, Scroll Animations, and Hero Section tasks as complete.
 - **Email System Upgrade (fix/email-outlook-compatibility)**:
     - **Outlook Compatibility**: Implemented "Hybrid" design with VML background support for Outlook Desktop.
     - **Gmail Fixes**: Solved "Show Quoted Text" collapse by moving unique Ref ID to the top of the email body.
