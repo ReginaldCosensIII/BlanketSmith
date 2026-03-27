@@ -7,12 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### [Unreleased]
-- **Landing Page Scroll Sequence & Hero Refinements**:
-    - **Parallax Reading Freeze (`feat/landing-scroll-freeze`)**: Explicitly extended programmatic physics tracks (e.g., `h-[280vh]` bounds) and re-calculated scrolling keyframes (`[0.65, 0.85]`). Enforced a hard "freeze frame" natively across the final 15% scrolling threshold to drastically improve reading UX before unpinning.
-    - **Hero Viewport Maximization (`feat/landing-ui-refinements`)**: Remapped `HeroSection.tsx` from arbitrary absolute padding dependencies into algorithmically reactive Viewport Height (`vh`) percentages centered by dynamic `flex` bounds.
-    - **Wide-Screen Laptop Clipping Fixed**: Eradicated 16:9 laptop CTA clipping issues entirely by purging redundant vertical padding and enforcing strict mathematical percentages via `18vh` caps on primary SVG image assets entirely.
-    - **Mobile Scroll Sequence**: Restored explicit, streamlined single-tier parallax scrolling isolated purely for mobile resolutions within `ToolMockup.tsx`. Transplanted miniature 'browser chrome' UI dimensions from interactive features to prevent top-heaviness natively.
-    - **Sequential Whitespace Alignment**: Normalized the unpin boundary metrics inside `MobileMockup`, restoring uniform 1:1 gap alignments seamlessly with the footer natively using local `pb-` bounds inside the sticky lock.
+- **Landing Page Scroll Sequence, Hero & Visual Refinements (`feat/landing-scroll-freeze`)**:
+    - **Parallax "Freeze Frame" (`ToolMockup.tsx`)**: Extended scroll runway heights (`h-[280vh]` → `h-[350vh]` desktop, `h-[320vh]` mobile) and injected a `clampedProgress` interceptor (`useTransform([0, 0.75/0.80], [0, 1])`) to force all animations to complete at 75–80% of the track, leaving a 2–3 scroll-wheel non-animating freeze buffer before the section unpins.
+    - **Hero Viewport Maximization (`HeroSection.tsx`)**: Remapped from absolute padding to `vh`-based dynamic spacing with `min-h-[calc(100vh-4rem)]` so the hero fills the full viewport on load without clipping the CTA on 16:9 laptops.
+    - **Typography Margin Compression**: Surgically reduced `mb-3→mb-1` between heading and paragraph and `mt-8→mt-6` between mockup and text block to fully display the "Design anywhere, on any device." text on standard laptops without disturbing the mock layout.
+    - **Tall-Monitor Vertical Spacing**: Added explicit CSS height media queries (`[@media(min-height:1000px)]:mt-16`, `[@media(min-height:1200px)]:mt-32`) instead of width-based `xl:` breakpoints, correctly targeting physically tall desktop monitors only.
+    - **Browser Chrome Miniaturization (Mobile)**: Reduced base `<sm` traffic-light dot sizes (`w-1 h-1`), URL bar padding (`px-1 py-[1px]`), and text (`text-[5px]`) in both `ToolMockup.tsx` and `FeatureTourMockup.tsx` for proportionally correct mobile-scale chrome.
+    - **Blue Artifact Fix**: Added `relative z-10` to browser top-bar and `-mt-[1px] md:-mt-[2px] z-0` to the screenshot wrapper in both mockups to completely hide the 1-pixel blue border bleed from the UI screenshot assets.
+    - **Feature Tour Chrome Size Parity**: Removed the extra `max-w-4xl` constraining wrapper from `FeatureTourMockup.tsx` and standardized the perspective container to `max-w-5xl px-2 sm:px-4`, making the Feature Highlights browser mockup proportionally match the "What is BlanketSmith?" mockup on mobile devices.
+    - **Mobile Mockup Width**: Reduced horizontal container padding in `ToolMockup.tsx` mobile section (`px-4→px-2`) so the mockup appears appropriately wider on phone screens.
+    - **Roadmap Parity**: Updated `docs/BETA_ROADMAP.md` to mark Mobile Responsiveness, Scroll Animations, and Hero Section tasks as complete.
 - **Email System Upgrade (fix/email-outlook-compatibility)**:
     - **Outlook Compatibility**: Implemented "Hybrid" design with VML background support for Outlook Desktop.
     - **Gmail Fixes**: Solved "Show Quoted Text" collapse by moving unique Ref ID to the top of the email body.

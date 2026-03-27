@@ -142,20 +142,20 @@ function DesktopToolMockup() {
             className="absolute inset-0 -z-10 rounded-xl bg-slate-900/10 dark:bg-black/40 blur-2xl translate-y-8"
           />
           <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 relative shadow-2xl">
-            <div className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-2 py-1.5 sm:px-3 sm:py-2 md:px-4 md:py-3 flex items-center gap-2 md:gap-3 relative z-10">
-              <div className="flex items-center gap-1 sm:gap-1.5 md:gap-2">
-                <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-red-400/80" />
-                <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-yellow-400/80" />
-                <div className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-green-400/80" />
+            <div className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-1 py-0.5 sm:px-3 sm:py-2 md:px-4 md:py-3 flex items-center gap-[2px] sm:gap-2 md:gap-3 relative z-10">
+              <div className="flex items-center gap-[1px] sm:gap-1.5 md:gap-2">
+                <div className="w-1 h-1 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-red-400/80" />
+                <div className="w-1 h-1 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-yellow-400/80" />
+                <div className="w-1 h-1 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-green-400/80" />
               </div>
               <div className="flex-1 max-w-md mx-auto">
-                <div className="bg-white/60 dark:bg-black/60 rounded px-2 py-0.5 sm:px-3 sm:py-1 md:py-1.5 text-[10px] sm:text-xs md:text-sm text-slate-500 text-center border border-slate-200/50 dark:border-slate-700/50">
+                <div className="bg-white/60 dark:bg-black/60 rounded px-1 py-[1px] sm:px-3 sm:py-1 md:py-1.5 text-[5px] sm:text-xs md:text-sm text-slate-500 text-center border border-slate-200/50 dark:border-slate-700/50">
                   app.blanketsmith.com
                 </div>
               </div>
-              <div className="w-6 sm:w-10 md:w-14" />
+              <div className="w-2 sm:w-10 md:w-14" />
             </div>
-            <div className="relative bg-white dark:bg-slate-950">
+            <div className="relative bg-white dark:bg-slate-950 -mt-[1px] md:-mt-[2px] z-0">
               <img
                 src={betaUIScreenshot}
                 alt="BlanketSmith Pattern Tool Interface"
@@ -252,7 +252,7 @@ function DesktopToolMockup() {
             </div>
 
             <motion.div 
-              className="mt-6 md:mt-8 text-center max-w-xl mx-auto px-4 relative z-40 pointer-events-auto h-[100px]"
+              className="mt-6 md:mt-8 [@media(min-height:1000px)]:mt-16 [@media(min-height:1200px)]:mt-32 text-center max-w-xl mx-auto px-4 relative z-40 pointer-events-auto h-[100px]"
               style={{ opacity: bottomOpacity, y: bottomYText }}
             >
               <h3 className="font-display text-[26px] md:text-3xl font-bold tracking-tight text-foreground mb-1 md:mb-2">
@@ -316,7 +316,7 @@ function MobileToolMockup() {
       {/* Natively anchor the sticky lock near the top of the monitor. Provides robust unpin threshold geometry without mathematical clipping. */}
       {/* The pb-24 here guarantees a uniform visual padding exactly mimicking the required site-wide footer gap gracefully. */}
       <div className="sticky top-6 sm:top-10 flex flex-col items-center justify-start w-full overflow-hidden pb-24">
-        <div className="max-w-5xl mx-auto w-full px-4 relative z-0">
+        <div className="max-w-5xl mx-auto w-full px-2 sm:px-6 relative z-0">
           <div className="w-full mx-auto" style={{ perspective: "1500px" }}>
             <motion.div
               style={{ rotateX: browserRotateX, rotateY: browserRotateY, scale: browserScale, opacity: browserOpacity, y: browserY, transformStyle: "preserve-3d" }}
@@ -341,7 +341,7 @@ function MobileToolMockup() {
                   <div className="w-4 sm:w-10" />
                 </div>
 
-                <div className="relative bg-white dark:bg-slate-950">
+                <div className="relative bg-white dark:bg-slate-950 -mt-[1px] md:-mt-[2px] z-0">
                   <img src={betaUIScreenshot} alt="BlanketSmith Pattern Tool Interface" className="w-full h-auto block" />
                   <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-white/80 dark:from-slate-950/80 to-transparent pointer-events-none" />
                 </div>
@@ -362,7 +362,7 @@ function MobileToolMockup() {
         </motion.div>
 
         <motion.div 
-          className="mt-6 text-center max-w-xl mx-auto px-4 relative z-40 pointer-events-auto"
+          className="mt-6 [@media(min-height:1000px)]:mt-24 text-center max-w-xl mx-auto px-4 relative z-40 pointer-events-auto"
           style={{ opacity: bottomOpacity, y: bottomYText }}
         >
           <h3 className="font-display text-[24px] sm:text-[26px] font-bold tracking-tight text-foreground mb-1">
