@@ -142,18 +142,18 @@ function DesktopToolMockup() {
             className="absolute inset-0 -z-10 rounded-xl bg-slate-900/10 dark:bg-black/40 blur-2xl translate-y-8"
           />
           <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 relative shadow-2xl">
-            <div className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-1 py-0.5 sm:px-3 sm:py-2 md:px-4 md:py-3 flex items-center gap-[2px] sm:gap-2 md:gap-3 relative z-10">
-              <div className="flex items-center gap-[1px] sm:gap-1.5 md:gap-2">
-                <div className="w-1 h-1 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-red-400/80" />
-                <div className="w-1 h-1 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-yellow-400/80" />
-                <div className="w-1 h-1 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-green-400/80" />
+            <div className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-1.5 py-1 sm:px-3 sm:py-2 md:px-4 md:py-3 flex items-center gap-1 sm:gap-2 md:gap-3 relative z-10">
+              <div className="flex items-center gap-[2px] sm:gap-1.5 md:gap-2">
+                <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-red-400/80" />
+                <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-yellow-400/80" />
+                <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-green-400/80" />
               </div>
               <div className="flex-1 max-w-md mx-auto">
-                <div className="bg-white/60 dark:bg-black/60 rounded px-1 py-[1px] sm:px-3 sm:py-1 md:py-1.5 text-[5px] sm:text-xs md:text-sm text-slate-500 text-center border border-slate-200/50 dark:border-slate-700/50">
+                <div className="bg-white/60 dark:bg-black/60 rounded px-2 py-[2px] sm:px-3 sm:py-1 md:py-1.5 text-[7px] sm:text-xs md:text-sm text-slate-500 text-center border border-slate-200/50 dark:border-slate-700/50">
                   app.blanketsmith.com
                 </div>
               </div>
-              <div className="w-2 sm:w-10 md:w-14" />
+              <div className="w-4 sm:w-10 md:w-14" />
             </div>
             <div className="relative bg-white dark:bg-slate-950 -mt-[1px] md:-mt-[2px] z-0">
               <img
@@ -327,18 +327,18 @@ function MobileToolMockup() {
               />
 
               <div className="rounded-xl overflow-hidden border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 relative shadow-2xl">
-                <div className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-1.5 py-1 sm:px-3 sm:py-2 flex items-center gap-1 sm:gap-2 relative z-10">
-                  <div className="flex items-center gap-0.5 sm:gap-1.5">
-                    <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full bg-red-400/80" />
-                    <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full bg-yellow-400/80" />
-                    <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 rounded-full bg-green-400/80" />
+                <div className="bg-slate-100 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-1.5 py-1 sm:px-3 sm:py-2 md:px-4 md:py-3 flex items-center gap-1 sm:gap-2 md:gap-3 relative z-10">
+                  <div className="flex items-center gap-[2px] sm:gap-1.5 md:gap-2">
+                    <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-red-400/80" />
+                    <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-yellow-400/80" />
+                    <div className="w-1.5 h-1.5 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-full bg-green-400/80" />
                   </div>
                   <div className="flex-1 max-w-md mx-auto">
-                    <div className="bg-white/60 dark:bg-black/60 rounded px-1.5 py-0.5 sm:px-3 sm:py-1 text-[8px] sm:text-xs text-slate-500 text-center border border-slate-200/50 dark:border-slate-700/50">
+                    <div className="bg-white/60 dark:bg-black/60 rounded px-2 py-[2px] sm:px-3 sm:py-1 md:py-1.5 text-[7px] sm:text-xs md:text-sm text-slate-500 text-center border border-slate-200/50 dark:border-slate-700/50">
                       app.blanketsmith.com
                     </div>
                   </div>
-                  <div className="w-4 sm:w-10" />
+                  <div className="w-4 sm:w-10 md:w-14" />
                 </div>
 
                 <div className="relative bg-white dark:bg-slate-950 -mt-[1px] md:-mt-[2px] z-0">
