@@ -314,6 +314,13 @@ export const exportPixelGridToPDF = (
 
 ) => {
     try {
+        // --- GAUGE ASPECT RATIO (Placeholder) ---
+        // This variable is referenced throughout the PDF layout calculations.
+        // It is declared here as `1` (square cells) until the parked
+        // feat/gauge-aspect-ratio feature is implemented and the real
+        // stitch aspect ratio is passed in from project settings.
+        const exportAspectRatio = 1;
+
         // Defensive: Ensure RGB values exist
         // Note: We modifying the array elements in place, which is generally safe here as PatternColor objects are mutable references
         // and we are normalizing data for export.
