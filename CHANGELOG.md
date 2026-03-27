@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### [Unreleased]
+- **Critical Bug Fix — PDF Export Crash (`fix/pdf-export-aspect-ratio`):**
+    - **Root Cause:** `exportAspectRatio` was referenced in 6 places inside `exportPixelGridToPDF` in `exportService.ts` but was never declared in the function scope. The variable leaked from the parked `feat/gauge-aspect-ratio` branches. This caused a `ReferenceError` at runtime on every PDF export/preview attempt.
+    - **Fix:** Declared `const exportAspectRatio = 1;` at the top of the function body as a safe default (square cells). When the gauge feature is eventually implemented, this line will be replaced by the real stitch ratio from project settings.
+- **Minor Fix — 404 Page Back Arrow Icon:**
+    - Replaced the `PLACEHOLDER_PATH` (circle) with the correct Material Symbols arrow-left SVG path (`M20 11H7.83...`) for the `arrow-left` key in `SharedComponents.tsx`.
 - **Landing Page Scroll Sequence, Hero & Visual Refinements (`feat/landing-scroll-freeze`)**:
     - **Parallax "Freeze Frame" (`ToolMockup.tsx`)**: Extended scroll runway heights (`h-[280vh]` → `h-[350vh]` desktop, `h-[320vh]` mobile) and injected a `clampedProgress` interceptor (`useTransform([0, 0.75/0.80], [0, 1])`) to force all animations to complete at 75–80% of the track, leaving a 2–3 scroll-wheel non-animating freeze buffer before the section unpins.
     - **Hero Viewport Maximization (`HeroSection.tsx`)**: Remapped from absolute padding to `vh`-based dynamic spacing with `min-h-[calc(100vh-4rem)]` so the hero fills the full viewport on load without clipping the CTA on 16:9 laptops.
