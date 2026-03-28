@@ -335,6 +335,14 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
     const [isComboPaintMode, setIsComboPaintMode] = useState<boolean>(false);
     const [isStitchPaletteOpen, setIsStitchPaletteOpen] = useState(false);
 
+    // [GAUGE-001] Swatch-based gauge input state (local to modal UI, not persisted to project)
+    const [gaugeInputMode, setGaugeInputMode] = useState<'swatch' | 'direct'>('swatch');
+    const [swatchWidthCount, setSwatchWidthCount] = useState(20);
+    const [swatchWidthMeasure, setSwatchWidthMeasure] = useState(4);
+    const [swatchHeightCount, setSwatchHeightCount] = useState(20);
+    const [swatchHeightMeasure, setSwatchHeightMeasure] = useState(4);
+    const [sameCountForHeight, setSameCountForHeight] = useState(true);
+
     // Build stitch map for lookups
     const stitchMap = useMemo(
         () => new Map(DEFAULT_STITCH_LIBRARY.map(s => [s.id, s] as const)),
@@ -1560,7 +1568,30 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
     const requestMirror = (direction: MirrorDirection) => { setMirrorConfirm({ isOpen: true, direction }); };
     const confirmMirrorCanvas = useCallback(() => { const direction = mirrorConfirm.direction; if (!direction) return; const currentProjectState = projectStateRef.current; const projectToMirror = currentProjectState.project; if (!projectToMirror || projectToMirror.type !== 'pixel') { setMirrorConfirm({ isOpen: false, direction: null }); return; } const projectData = projectToMirror.data as PixelGridData; const { width, height, grid: originalGrid } = projectData; const newGrid = [...originalGrid]; switch (direction) { case 'left-to-right': for (let y = 0; y < height; y++) { for (let x = 0; x < Math.ceil(width / 2); x++) { const sourceIndex = y * width + x; const destIndex = y * width + (width - 1 - x); newGrid[destIndex] = originalGrid[sourceIndex]; } } break; case 'right-to-left': for (let y = 0; y < height; y++) { for (let x = 0; x < Math.ceil(width / 2); x++) { const sourceIndex = y * width + (width - 1 - x); const destIndex = y * width + x; newGrid[destIndex] = originalGrid[sourceIndex]; } } break; case 'top-to-bottom': for (let y = 0; y < Math.ceil(height / 2); y++) { for (let x = 0; x < width; x++) { const sourceIndex = y * width + x; const destIndex = (height - 1 - y) * width + x; newGrid[destIndex] = originalGrid[sourceIndex]; } } break; case 'bottom-to-top': for (let y = 0; y < Math.ceil(height / 2); y++) { for (let x = 0; x < width; x++) { const sourceIndex = (height - 1 - y) * width + x; const destIndex = y * width + x; newGrid[destIndex] = originalGrid[sourceIndex]; } } break; } updateGrid(newGrid); setMirrorConfirm({ isOpen: false, direction: null }); }, [mirrorConfirm.direction, updateGrid]);
 
-    const openSettingsModal = () => { setSettingsForm({ projectName: project?.name || '', unit: project?.settings?.unit || 'in', stitchesPerUnit: project?.settings?.stitchesPerUnit || 4, rowsPerUnit: project?.settings?.rowsPerUnit || 4, hookSize: project?.settings?.hookSize || '', yarnPerStitch: project?.settings?.yarnPerStitch || 1, applyGaugeToEditor: project?.settings?.visuals?.applyGaugeToEditor ?? false, applyGaugeToPDF: project?.settings?.visuals?.applyGaugeToPDF ?? false }); setIsSettingsModalOpen(true); };
+    const openSettingsModal = () => {
+        const s = project?.settings;
+        // Back-compute swatch fields from saved per-unit values if they exist
+        const savedSPU = s?.stitchesPerUnit || 0;
+        const savedRPU = s?.rowsPerUnit || 0;
+        setSettingsForm({
+            projectName: project?.name || '',
+            unit: s?.unit || 'in',
+            stitchesPerUnit: savedSPU,
+            rowsPerUnit: savedRPU,
+            hookSize: s?.hookSize || '',
+            yarnPerStitch: s?.yarnPerStitch || 1,
+            applyGaugeToEditor: s?.visuals?.applyGaugeToEditor ?? false,
+            applyGaugeToPDF: s?.visuals?.applyGaugeToPDF ?? false,
+        });
+        // Pre-populate swatch fields from saved per-unit averages (user may have set them directly before)
+        setSwatchWidthCount(20);
+        setSwatchWidthMeasure(savedSPU > 0 ? parseFloat((20 / savedSPU).toFixed(2)) : 4);
+        setSwatchHeightCount(20);
+        setSwatchHeightMeasure(savedRPU > 0 ? parseFloat((20 / savedRPU).toFixed(2)) : 4);
+        setSameCountForHeight(true);
+        setGaugeInputMode('swatch');
+        setIsSettingsModalOpen(true);
+    };
     const saveSettings = () => {
         dispatch({ type: 'UPDATE_PROJECT_NAME', payload: settingsForm.projectName });
         const { projectName, applyGaugeToEditor, applyGaugeToPDF, ...settingsPayload } = settingsForm;
@@ -2541,69 +2572,222 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
 
                     <div className="border-t pt-4">
                         <h4 className="font-medium text-gray-900 mb-1">Gauge &amp; Stitch Proportions</h4>
-                        <p className="text-xs text-gray-500 mb-2">Enter your swatch measurements to calculate physical size and enable true-proportion display in the editor and PDF exports.</p>
-                        <div className="space-y-3">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Unit</label>
-                                <select
-                                    value={settingsForm.unit}
-                                    onChange={(e) => setSettingsForm({ ...settingsForm, unit: e.target.value })}
-                                    className="mt-1 w-full border rounded px-2 py-1"
-                                >
-                                    <option value="in">Inches (in)</option>
-                                    <option value="cm">Centimeters (cm)</option>
-                                </select>
+                        <p className="text-xs text-gray-500 mb-3">Measure a finished swatch to calculate stitch proportions and estimated blanket size.</p>
+
+                        {/* Measurement Unit */}
+                        <div className="mb-3">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">Measurement unit</label>
+                            <select
+                                value={settingsForm.unit}
+                                onChange={(e) => setSettingsForm({ ...settingsForm, unit: e.target.value })}
+                                className="w-full border rounded px-2 py-1.5 text-sm"
+                            >
+                                <option value="in">Inches (in)</option>
+                                <option value="cm">Centimeters (cm)</option>
+                            </select>
+                        </div>
+
+                        {/* Input Mode Toggle */}
+                        <div className="flex rounded border border-gray-200 overflow-hidden mb-4">
+                            <button
+                                type="button"
+                                onClick={() => setGaugeInputMode('swatch')}
+                                className={`flex-1 py-1.5 text-xs font-medium transition-colors ${
+                                    gaugeInputMode === 'swatch' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
+                                }`}
+                            >
+                                Measure a Swatch
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setGaugeInputMode('direct')}
+                                className={`flex-1 py-1.5 text-xs font-medium transition-colors ${
+                                    gaugeInputMode === 'direct' ? 'bg-indigo-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
+                                }`}
+                            >
+                                Enter Averages Directly
+                            </button>
+                        </div>
+
+                        {gaugeInputMode === 'swatch' ? (
+                            <div className="space-y-4">
+                                {/* WIDTH SWATCH */}
+                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                    <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">Width (Horizontal)</p>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">Stitches in sample</label>
+                                            <input
+                                                type="number" min="1" step="1"
+                                                value={swatchWidthCount}
+                                                onChange={(e) => {
+                                                    const v = Number(e.target.value);
+                                                    setSwatchWidthCount(v);
+                                                    if (sameCountForHeight) setSwatchHeightCount(v);
+                                                    if (swatchWidthMeasure > 0) {
+                                                        const spu = parseFloat((v / swatchWidthMeasure).toFixed(4));
+                                                        setSettingsForm(f => ({ ...f, stitchesPerUnit: spu }));
+                                                    }
+                                                }}
+                                                className="w-full border rounded px-2 py-1.5 text-sm"
+                                                placeholder="e.g., 20"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">Sample width ({settingsForm.unit})</label>
+                                            <input
+                                                type="number" min="0.1" step="0.1"
+                                                value={swatchWidthMeasure}
+                                                onChange={(e) => {
+                                                    const v = Number(e.target.value);
+                                                    setSwatchWidthMeasure(v);
+                                                    if (v > 0 && swatchWidthCount > 0) {
+                                                        const spu = parseFloat((swatchWidthCount / v).toFixed(4));
+                                                        setSettingsForm(f => ({ ...f, stitchesPerUnit: spu }));
+                                                    }
+                                                }}
+                                                className="w-full border rounded px-2 py-1.5 text-sm"
+                                                placeholder="e.g., 4"
+                                            />
+                                        </div>
+                                    </div>
+                                    {settingsForm.stitchesPerUnit > 0 && swatchWidthMeasure > 0 && (
+                                        <p className="text-xs text-indigo-600 mt-1.5 font-medium">
+                                            = {settingsForm.stitchesPerUnit.toFixed(2)} stitches per {settingsForm.unit}
+                                        </p>
+                                    )}
+                                </div>
+
+                                {/* HEIGHT SWATCH */}
+                                <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Height (Vertical / Rows)</p>
+                                        <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={sameCountForHeight}
+                                                onChange={(e) => {
+                                                    setSameCountForHeight(e.target.checked);
+                                                    if (e.target.checked) setSwatchHeightCount(swatchWidthCount);
+                                                }}
+                                                className="rounded"
+                                            />
+                                            Same stitch count as width
+                                        </label>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">Rows in sample</label>
+                                            <input
+                                                type="number" min="1" step="1"
+                                                value={sameCountForHeight ? swatchWidthCount : swatchHeightCount}
+                                                disabled={sameCountForHeight}
+                                                onChange={(e) => {
+                                                    const v = Number(e.target.value);
+                                                    setSwatchHeightCount(v);
+                                                    if (swatchHeightMeasure > 0) {
+                                                        const rpu = parseFloat((v / swatchHeightMeasure).toFixed(4));
+                                                        setSettingsForm(f => ({ ...f, rowsPerUnit: rpu }));
+                                                    }
+                                                }}
+                                                className={`w-full border rounded px-2 py-1.5 text-sm ${
+                                                    sameCountForHeight ? 'bg-gray-100 text-gray-400' : ''
+                                                }`}
+                                                placeholder="e.g., 20"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs text-gray-500 mb-1">Sample height ({settingsForm.unit})</label>
+                                            <input
+                                                type="number" min="0.1" step="0.1"
+                                                value={swatchHeightMeasure}
+                                                onChange={(e) => {
+                                                    const v = Number(e.target.value);
+                                                    setSwatchHeightMeasure(v);
+                                                    const rows = sameCountForHeight ? swatchWidthCount : swatchHeightCount;
+                                                    if (v > 0 && rows > 0) {
+                                                        const rpu = parseFloat((rows / v).toFixed(4));
+                                                        setSettingsForm(f => ({ ...f, rowsPerUnit: rpu }));
+                                                    }
+                                                }}
+                                                className="w-full border rounded px-2 py-1.5 text-sm"
+                                                placeholder="e.g., 4"
+                                            />
+                                        </div>
+                                    </div>
+                                    {settingsForm.rowsPerUnit > 0 && swatchHeightMeasure > 0 && (
+                                        <p className="text-xs text-indigo-600 mt-1.5 font-medium">
+                                            = {settingsForm.rowsPerUnit.toFixed(2)} rows per {settingsForm.unit}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Stitches per unit</label>
-                                <input
-                                    type="number"
-                                    min="0.1"
-                                    step="0.1"
-                                    value={settingsForm.stitchesPerUnit}
-                                    onChange={(e) => setSettingsForm({ ...settingsForm, stitchesPerUnit: Number(e.target.value) })}
-                                    className="mt-1 w-full border rounded px-2 py-1"
-                                />
+                        ) : (
+                            /* DIRECT MODE */
+                            <div className="space-y-3">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Stitches per {settingsForm.unit}</label>
+                                    <input
+                                        type="number" min="0.1" step="0.1"
+                                        value={settingsForm.stitchesPerUnit}
+                                        onChange={(e) => setSettingsForm({ ...settingsForm, stitchesPerUnit: Number(e.target.value) })}
+                                        className="mt-1 w-full border rounded px-2 py-1.5 text-sm"
+                                        placeholder="e.g., 5"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700">Rows per {settingsForm.unit}</label>
+                                    <input
+                                        type="number" min="0.1" step="0.1"
+                                        value={settingsForm.rowsPerUnit}
+                                        onChange={(e) => setSettingsForm({ ...settingsForm, rowsPerUnit: Number(e.target.value) })}
+                                        className="mt-1 w-full border rounded px-2 py-1.5 text-sm"
+                                        placeholder="e.g., 4"
+                                    />
+                                </div>
                             </div>
+                        )}
+
+                        {/* Yarn & Hook (collapsible feel - below gauge) */}
+                        <div className="mt-3 space-y-2">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">Rows per unit</label>
+                                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Yarn per stitch (inches, optional)</label>
                                 <input
-                                    type="number"
-                                    min="0.1"
-                                    step="0.1"
-                                    value={settingsForm.rowsPerUnit}
-                                    onChange={(e) => setSettingsForm({ ...settingsForm, rowsPerUnit: Number(e.target.value) })}
-                                    className="mt-1 w-full border rounded px-2 py-1"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700">Yarn per stitch (inches)</label>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
+                                    type="number" min="0" step="0.01"
                                     value={settingsForm.yarnPerStitch}
                                     onChange={(e) => setSettingsForm({ ...settingsForm, yarnPerStitch: Number(e.target.value) })}
-                                    className="mt-1 w-full border rounded px-2 py-1"
+                                    className="w-full border rounded px-2 py-1.5 text-sm"
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">Hook / needle size (optional)</label>
+                                <label className="block text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Hook / needle size (optional)</label>
                                 <input
                                     type="text"
                                     value={settingsForm.hookSize}
                                     onChange={(e) => setSettingsForm({ ...settingsForm, hookSize: e.target.value })}
-                                    className="mt-1 w-full border rounded px-2 py-1"
+                                    className="w-full border rounded px-2 py-1.5 text-sm"
                                     placeholder="e.g., 5mm, H/8"
                                 />
                             </div>
                         </div>
-                        <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded mt-2">
-                            {physicalSizeString ? (
-                                <span>✓ Estimated size: <strong>{physicalSizeString}</strong></span>
-                            ) : (
-                                <span>Set stitches per unit and rows per unit to see the estimated size.</span>
-                            )}
+
+                        {/* Estimated size feedback */}
+                        <div className="text-sm text-gray-600 bg-blue-50 p-2 rounded mt-3">
+                            {(() => {
+                                const spu = settingsForm.stitchesPerUnit;
+                                const rpu = settingsForm.rowsPerUnit;
+                                const unit = settingsForm.unit;
+                                if (!spu || !rpu || !projectData) return <span>Enter gauge measurements above to see estimated blanket size.</span>;
+                                const pW = (projectData.width / spu).toFixed(1);
+                                const pH = (projectData.height / rpu).toFixed(1);
+                                const ratio = spu / rpu;
+                                return (
+                                    <>
+                                        <span>✓ Estimated size: <strong>{pW} × {pH} {unit}</strong></span>
+                                        <span className="ml-2 text-xs text-gray-500">(stitch ratio: {ratio.toFixed(2)}×)</span>
+                                    </>
+                                );
+                            })()}
                         </div>
                     </div>
 
