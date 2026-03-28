@@ -314,6 +314,11 @@ export const exportPixelGridToPDF = (
 
 ) => {
     try {
+        // --- GAUGE ASPECT RATIO (Stitch Proportions) ---
+        // Driven by project gauge settings (stitchesPerUnit / rowsPerUnit) when the user enables
+        // "Print true proportions in PDF exports". Falls back to 1 (square cells) when off or not configured.
+        const exportAspectRatio = options.stitchAspectRatio ?? 1;
+
         // Defensive: Ensure RGB values exist
         // Note: We modifying the array elements in place, which is generally safe here as PatternColor objects are mutable references
         // and we are normalizing data for export.
