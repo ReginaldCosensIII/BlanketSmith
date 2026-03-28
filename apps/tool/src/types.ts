@@ -221,4 +221,6 @@ export interface ExportOptions {
   branding?: BrandingOptions;
   chartVisual?: ChartVisualOptions;
   preview?: boolean;
+  // [GAUGE-001] Stitch aspect ratio for PDF cell height warping. 1 = square (default). > 1 = taller cells.
+  stitchAspectRatio?: number;
 }

@@ -982,6 +982,12 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
             }
         }
 
+        // [GAUGE-001] Compute stitch aspect ratio from gauge settings
+        const _applyToPDF = project?.settings?.visuals?.applyGaugeToPDF ?? false;
+        const _gaugeS = Number(project?.settings?.stitchesPerUnit ?? 0);
+        const _gaugeR = Number(project?.settings?.rowsPerUnit ?? 0);
+        const _stitchAspectRatio = (_applyToPDF && _gaugeS > 0 && _gaugeR > 0) ? _gaugeS / _gaugeR : 1;
+
         if (exportType === 'pattern-pack') {
             return {
                 exportType,
@@ -1013,6 +1019,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                 },
                 atlasMode: atlasMode,
                 atlasPages: atlasPages,
+                stitchAspectRatio: _stitchAspectRatio,
             };
         } else {
             // Chart Only
@@ -1045,6 +1052,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                 },
                 atlasMode: atlasMode,
                 atlasPages: atlasPages,
+                stitchAspectRatio: _stitchAspectRatio,
             };
         }
     };
@@ -2532,7 +2540,8 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                     </div>
 
                     <div className="border-t pt-4">
-                        <h4 className="font-medium text-gray-900 mb-2">Gauge & Yarn Settings</h4>
+                        <h4 className="font-medium text-gray-900 mb-1">Gauge &amp; Stitch Proportions</h4>
+                        <p className="text-xs text-gray-500 mb-2">Enter your swatch measurements to calculate physical size and enable true-proportion display in the editor and PDF exports.</p>
                         <div className="space-y-3">
                             <div>
                                 <label className="block text-sm font-medium text-gray-700">Unit</label>
@@ -2616,34 +2625,43 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                             <input type="checkbox" checked={isLeftHanded} onChange={onToggleLeftHanded} />
                             <span className="text-sm text-gray-700">Left-Handed Mode</span>
                         </label>
-                        {/* [GAUGE-001] Show True Proportions toggles */}
-                        {gaugeStitches > 0 && gaugeRows > 0 && (
-                            <>
-                                <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={settingsForm.applyGaugeToEditor}
-                                        onChange={(e) => setSettingsForm({ ...settingsForm, applyGaugeToEditor: e.target.checked })}
-                                    />
-                                    <span className="text-sm text-gray-700">
-                                        Show true proportions in Editor
-                                        <span className="ml-1 text-xs text-gray-400">
-                                            ({(gaugeStitches / gaugeRows).toFixed(2)}× height)
+                        {/* [GAUGE-001] Show True Proportions toggles — always rendered, disabled until gauge is entered */}
+                        {(() => {
+                            const formS = Number(settingsForm.stitchesPerUnit ?? 0);
+                            const formR = Number(settingsForm.rowsPerUnit ?? 0);
+                            const gaugeReady = formS > 0 && formR > 0;
+                            const ratio = gaugeReady ? (formS / formR).toFixed(2) : null;
+                            return (
+                                <>
+                                    <label className={`flex items-center gap-2 mt-3 ${gaugeReady ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}>
+                                        <input
+                                            type="checkbox"
+                                            disabled={!gaugeReady}
+                                            checked={settingsForm.applyGaugeToEditor}
+                                            onChange={(e) => setSettingsForm({ ...settingsForm, applyGaugeToEditor: e.target.checked })}
+                                        />
+                                        <span className="text-sm text-gray-700">
+                                            Show true proportions in Editor
+                                            {ratio && (
+                                                <span className="ml-1 text-xs text-gray-400">({ratio}× stitch height)</span>
+                                            )}
                                         </span>
-                                    </span>
-                                </label>
-                                <label className="flex items-center gap-2 mt-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={settingsForm.applyGaugeToPDF}
-                                        onChange={(e) => setSettingsForm({ ...settingsForm, applyGaugeToPDF: e.target.checked })}
-                                    />
-                                    <span className="text-sm text-gray-700">
-                                        Print true proportions in PDF exports
-                                    </span>
-                                </label>
-                            </>
-                        )}
+                                    </label>
+                                    <label className={`flex items-center gap-2 mt-2 ${gaugeReady ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}>
+                                        <input
+                                            type="checkbox"
+                                            disabled={!gaugeReady}
+                                            checked={settingsForm.applyGaugeToPDF}
+                                            onChange={(e) => setSettingsForm({ ...settingsForm, applyGaugeToPDF: e.target.checked })}
+                                        />
+                                        <span className="text-sm text-gray-700">Print true proportions in PDF exports</span>
+                                    </label>
+                                    {!gaugeReady && (
+                                        <p className="text-xs text-amber-600 mt-1">Enter Stitches per unit and Rows per unit above to enable these options.</p>
+                                    )}
+                                </>
+                            );
+                        })()}
                     </div>
 
                     <div className="flex justify-end pt-4 border-t">

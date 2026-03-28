@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### [Unreleased]
+- **Feature — Gauge / Stitch Proportion PDF Export (`fix/pdf-export-aspect-ratio`):**
+    - Added `stitchAspectRatio` to `ExportOptions` type in `types.ts`.
+    - Wired the computed ratio (stitchesPerUnit / rowsPerUnit) into `buildExportOptions()` in `PixelGraphPage.tsx` for both Pattern Pack and Chart-Only export paths.
+    - `exportService.ts` now reads `options.stitchAspectRatio ?? 1` instead of the hardcoded `= 1` placeholder — PDF cells render with true stitch proportions when the toggle is enabled.
+    - Fixed Settings modal: proportion checkboxes now always render (previously hidden until after save+reopen). Checkboxes are disabled with an amber hint when gauge hasn't been set yet.
+    - Renamed Settings modal section from "Gauge & Yarn Settings" → "Gauge & Stitch Proportions" with a descriptive subtitle.
 - **Critical Bug Fix — PDF Export Crash (`fix/pdf-export-aspect-ratio`):**
     - **Root Cause:** `exportAspectRatio` was referenced in 6 places inside `exportPixelGridToPDF` in `exportService.ts` but was never declared in the function scope. The variable leaked from the parked `feat/gauge-aspect-ratio` branches. This caused a `ReferenceError` at runtime on every PDF export/preview attempt.
     - **Fix:** Declared `const exportAspectRatio = 1;` at the top of the function body as a safe default (square cells). When the gauge feature is eventually implemented, this line will be replaced by the real stitch ratio from project settings.
