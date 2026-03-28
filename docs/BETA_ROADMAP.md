@@ -62,8 +62,8 @@
 ## 🧶 Phase 3: Application Core (Beta Blockers)
 **Goal:** Complete the essential features required for a viable product.
 
-### 1. Gauge & Proportions (Currently Parked)
-- [ ] **Stitch Aspect Ratio:** Finalize non-square pixel rendering and fix the PDF export distortion. *(Note: Currently parked on branches `feat/gauge-aspect-ratio` and `feat/gauge-aspect-ratio-pdf` to prioritize showcase features).*
+### 1. Gauge & Proportions
+- [x] **Stitch Aspect Ratio:** Non-square pixel rendering in the editor and PDF export both complete. Users can measure a swatch or enter averages directly to compute stitch proportions. Merged on `fix/pdf-export-aspect-ratio`.
 
 ### 2. Instructions Engine v3 (High Priority)
 - [ ] **Row-by-Row Generation:** Convert grid data to "Row 1: 5 SC Blue, 3 SC Red" text.

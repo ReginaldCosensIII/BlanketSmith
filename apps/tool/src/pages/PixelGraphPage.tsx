@@ -2726,24 +2726,42 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                             /* DIRECT MODE */
                             <div className="space-y-3">
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700">Stitches per {settingsForm.unit}</label>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Avg. stitch width ({settingsForm.unit})
+                                    </label>
+                                    <p className="text-xs text-gray-400 mb-1">Average width of one stitch in your swatch</p>
                                     <input
-                                        type="number" min="0.1" step="0.1"
-                                        value={settingsForm.stitchesPerUnit}
-                                        onChange={(e) => setSettingsForm({ ...settingsForm, stitchesPerUnit: Number(e.target.value) })}
+                                        type="number" min="0.01" step="0.01"
+                                        value={settingsForm.stitchesPerUnit > 0 ? parseFloat((1 / settingsForm.stitchesPerUnit).toFixed(4)) : ''}
+                                        onChange={(e) => {
+                                            const v = Number(e.target.value);
+                                            setSettingsForm({ ...settingsForm, stitchesPerUnit: v > 0 ? parseFloat((1 / v).toFixed(4)) : 0 });
+                                        }}
                                         className="mt-1 w-full border rounded px-2 py-1.5 text-sm"
-                                        placeholder="e.g., 5"
+                                        placeholder={`e.g., 0.20 ${settingsForm.unit}`}
                                     />
+                                    {settingsForm.stitchesPerUnit > 0 && (
+                                        <p className="text-xs text-indigo-600 mt-1">= {settingsForm.stitchesPerUnit.toFixed(2)} stitches per {settingsForm.unit}</p>
+                                    )}
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700">Rows per {settingsForm.unit}</label>
+                                    <label className="block text-sm font-medium text-gray-700">
+                                        Avg. stitch height ({settingsForm.unit})
+                                    </label>
+                                    <p className="text-xs text-gray-400 mb-1">Average height of one row in your swatch</p>
                                     <input
-                                        type="number" min="0.1" step="0.1"
-                                        value={settingsForm.rowsPerUnit}
-                                        onChange={(e) => setSettingsForm({ ...settingsForm, rowsPerUnit: Number(e.target.value) })}
+                                        type="number" min="0.01" step="0.01"
+                                        value={settingsForm.rowsPerUnit > 0 ? parseFloat((1 / settingsForm.rowsPerUnit).toFixed(4)) : ''}
+                                        onChange={(e) => {
+                                            const v = Number(e.target.value);
+                                            setSettingsForm({ ...settingsForm, rowsPerUnit: v > 0 ? parseFloat((1 / v).toFixed(4)) : 0 });
+                                        }}
                                         className="mt-1 w-full border rounded px-2 py-1.5 text-sm"
-                                        placeholder="e.g., 4"
+                                        placeholder={`e.g., 0.25 ${settingsForm.unit}`}
                                     />
+                                    {settingsForm.rowsPerUnit > 0 && (
+                                        <p className="text-xs text-indigo-600 mt-1">= {settingsForm.rowsPerUnit.toFixed(2)} rows per {settingsForm.unit}</p>
+                                    )}
                                 </div>
                             </div>
                         )}
