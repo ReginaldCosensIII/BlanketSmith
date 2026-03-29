@@ -1,0 +1,19 @@
+name: Supabase Keep-Alive
+
+on:
+  schedule:
+    # Runs at 00:00 UTC every 3 days
+    - cron: '0 0 */3 * *'
+  workflow_dispatch: # Allows manual triggering from the GitHub UI
+
+jobs:
+  ping-supabase:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase REST API
+        # We query a known table (contact_submissions) with limit=1 just to register API activity.
+        # --fail ensures the action fails (and notifies you) if the request returns an HTTP error.
+        run: |
+          curl -s --fail -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/contact_submissions?select=id&limit=1" \
+          -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
