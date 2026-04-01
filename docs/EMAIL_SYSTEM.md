@@ -144,6 +144,10 @@ The Supabase project restoration **disables the database webhook**. To fix:
 3. **Re-create** it with the settings in Section 4 above
 4. Submit a test form — email should arrive within seconds
 
+### Prevention: Project Keep-Alive
+To prevent the project from pausing (which causes the webhooks to break in the first place), we run a scheduled GitHub Action that pings the Supabase REST API every 3 days.
+- **Documentation**: See [SUPABASE_KEEP_ALIVE.md](./SUPABASE_KEEP_ALIVE.md) for architecture and setup instructions.
+- **Workflow File**: `.github/workflows/supabase-keep-alive.yml`
 ### Fix: Edge Function Not Deployed / Wrong Code
 If the function is triggered (logs appear) but emails fail or images are broken:
 ```powershell
