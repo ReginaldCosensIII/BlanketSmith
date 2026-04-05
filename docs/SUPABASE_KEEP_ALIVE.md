@@ -17,14 +17,26 @@ To prevent the project from pausing without requiring manual intervention, we ut
 ## Technical Details
 The `supabase-keep-alive.yml` workflow is scheduled to run every **3 days** (using cron `0 0 */3 * *`). This frequency provides a comfortable buffer (ensuring the action fires twice before the 7-day cutoff), but keeps resource consumption practically invisible.
 
-The action runs a lightweight `curl` command using standard HTTP `GET`:
+The action runs a robust `curl` command to capture the response and status code for better error reporting:
 ```bash
-curl -s --fail -X GET "https://<PROJECT_URL>/rest/v1/contact_submissions?select=id&limit=1" \
+RESPONSE=$(curl -s -w "\n%{http_code}" -X GET "https://<PROJECT_URL>/rest/v1/contact_submissions?select=id&limit=1" \
   -H "apikey: <ANON_KEY>" \
-  -H "Authorization: Bearer <ANON_KEY>"
+  -H "Authorization: Bearer <ANON_KEY>")
+
+BODY=$(echo "$RESPONSE" | sed '$d')
+STATUS=$(echo "$RESPONSE" | tail -n1)
+
+if [[ "$STATUS" -ge 200 && "$STATUS" -lt 300 ]]; then
+  echo "✅ Successfully pinged Supabase. Status: $STATUS"
+  echo "Response: $BODY"
+else
+  echo "❌ Failed to ping Supabase. Status: $STATUS"
+  echo "Response: $BODY"
+  exit 1
+fi
 ```
 
-By querying the public `contact_submissions` table for a single ID, we successfully register an event on the Data API, resetting the 7-day inactivity clock. The `--fail` flag ensures the GitHub Action reports a failure if the request is unauthorized or the server is down.
+By querying the public `contact_submissions` table for a single ID, we successfully register an event on the Data API, resetting the 7-day inactivity clock. The workflow captures the HTTP status code and response body, ensuring that any failures (e.g., 401 Unauthorized, 500 Server Error) are explicitly logged and cause the action to fail with context.
 
 ---
 

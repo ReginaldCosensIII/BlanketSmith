@@ -14,6 +14,18 @@ jobs:
         # We query a known table (contact_submissions) with limit=1 just to register API activity.
         # --fail ensures the action fails (and notifies you) if the request returns an HTTP error.
         run: |
-          curl -s --fail -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/contact_submissions?select=id&limit=1" \
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X GET "${{ secrets.SUPABASE_URL }}/rest/v1/contact_submissions?select=id&limit=1" \
           -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+          
+          BODY=$(echo "$RESPONSE" | sed '$d')
+          STATUS=$(echo "$RESPONSE" | tail -n1)
+          
+          if [[ "$STATUS" -ge 200 && "$STATUS" -lt 300 ]]; then
+            echo "✅ Successfully pinged Supabase. Status: $STATUS"
+            echo "Response: $BODY"
+          else
+            echo "❌ Failed to ping Supabase. Status: $STATUS"
+            echo "Response: $BODY"
+            exit 1
+          fi
