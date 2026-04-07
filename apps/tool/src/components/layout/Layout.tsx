@@ -2,23 +2,33 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, NavLink } from 'react-router-dom';
 import { useProject } from '../../context/ProjectContext';
 import { useFloatingSelection } from '../../context/FloatingSelectionContext';
+import { useAuth } from '../../context/AuthContext';
 import { Button, Icon } from '../ui/SharedComponents';
 import { MIN_ZOOM, MAX_ZOOM } from '../../constants';
 import '../../styles/footer.css';
 
 import { FeedbackModal } from '../modals/FeedbackModal';
+import { AuthModal } from '../modals/AuthModal';
+import { supabase } from '../../lib/supabase';
 
 export const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () => void; }> = ({ isSidebarVisible, onToggleSidebar }) => {
     const { state, saveCurrentProject } = useProject();
+    const { user } = useAuth();
     const navigate = useNavigate();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
+    const userMenuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
                 setIsDropdownOpen(false);
+            }
+            if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+                setIsUserMenuOpen(false);
             }
         };
 
@@ -76,10 +86,43 @@ export const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () =
             </div>
 
             <FeedbackModal isOpen={isFeedbackOpen} onClose={() => setIsFeedbackOpen(false)} />
+            <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
             {state.project && <div className="text-gray-600 font-semibold hidden md:block">{state.project.name}</div>}
             <div className="flex items-center gap-2">
                 {state.project && <Button variant="secondary" onClick={saveCurrentProject}><Icon name="save" size="md" /> <span className="hidden md:inline">Save</span></Button>}
                 <Button variant="primary" onClick={() => navigate('/projects')}><Icon name="pattern-book" size="md" /> <span className="hidden md:inline">My Pattern Book</span></Button>
+
+                {/* Auth UI: Sign In button or User chip */}
+                {!user ? (
+                    <Button variant="primary" onClick={() => setIsAuthModalOpen(true)}>
+                        <Icon name="unlock" size="md" />
+                        <span className="hidden md:inline">Sign In</span>
+                    </Button>
+                ) : (
+                    <div className="relative" ref={userMenuRef}>
+                        <button
+                            onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                            className="flex items-center gap-2 px-3 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-sm font-medium text-gray-700 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-purple focus:ring-offset-2"
+                        >
+                            <Icon name="lock" size="md" />
+                            <span className="hidden md:inline max-w-[140px] truncate">{user.email}</span>
+                        </button>
+                        {isUserMenuOpen && (
+                            <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 z-30 p-1">
+                                <div className="px-3 py-2 text-xs text-gray-500 truncate border-b border-gray-100 mb-1">
+                                    {user.email}
+                                </div>
+                                <button
+                                    onClick={() => { supabase.auth.signOut(); setIsUserMenuOpen(false); }}
+                                    className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                >
+                                    <Icon name="close" size="sm" />
+                                    Log Out
+                                </button>
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
         </header>
     );

@@ -49,7 +49,7 @@
 
 ### 1. The Dual Auth Funnel
 - [ ] **Beta-to-Account Pipeline:** Connect Beta Welcome email verification to the account creation flow.
-- [ ] **In-Tool Authentication:** Implement Supabase Auth (Sign Up / Log In) modals directly within the tool UI.
+- [x] **In-Tool Authentication:** Implement Supabase Auth (Sign Up / Log In) modals directly within the tool UI.
 - [ ] **Password Set:** Implement secure password creation and reset flows.
 
 ### 2. Local-to-Cloud Data Bridge

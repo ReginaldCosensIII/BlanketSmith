@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import { ProjectProvider } from './context/ProjectContext';
 import { FloatingSelectionProvider } from './context/FloatingSelectionContext';
 import { Header, Sidebar, Footer } from './components/layout/Layout';
@@ -71,6 +72,7 @@ const App: React.FC = () => {
 
 
     return (
+        <AuthProvider>
         <ProjectProvider>
             <FloatingSelectionProvider>
                 <HashRouter>
@@ -120,6 +122,7 @@ const App: React.FC = () => {
                 </HashRouter>
             </FloatingSelectionProvider>
         </ProjectProvider>
+        </AuthProvider>
     );
 };
 

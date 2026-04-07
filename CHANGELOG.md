@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### [Unreleased]
+### Added
+- **Auth Infrastructure (Phase 1)**:
+    - Implemented a global `AuthProvider` Context and Supabase singleton client in the tool workspace.
+    - Added a sleek Glassmorphism `AuthModal` for handling Sign In and Account Creation natively within the tool.
+    - Integrated authenticated user state into the Header (displays Email chip and Log Out dropdown when logged in).
+
+### Security
+- **Environment Hardening**: Locked down monorepo environment variable management by enforcing `.env` exclusions in all `.gitignore` files and sanitizing `.env.example` templates.
+
 - **Feature — Gauge / Stitch Proportion PDF Export (`fix/pdf-export-aspect-ratio`):**
     - Added `stitchAspectRatio` to `ExportOptions` type in `types.ts`.
     - Wired the computed ratio (stitchesPerUnit / rowsPerUnit) into `buildExportOptions()` in `PixelGraphPage.tsx` for both Pattern Pack and Chart-Only export paths.
