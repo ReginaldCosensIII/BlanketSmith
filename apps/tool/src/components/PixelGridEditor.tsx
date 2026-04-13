@@ -288,6 +288,37 @@ export const PixelGridEditor: React.FC<PixelGridEditorProps> = ({
 
     const [isDrawing, setIsDrawing] = useState(false);
     const [drawingButton, setDrawingButton] = useState<'left' | 'right' | null>(null);
+
+
+    // Let's create a ref for latest deps to avoid stale closures on unmount
+    const latestGridPropsRef = useRef({ grid, isComboPaintMode, primaryColorId, secondaryColorId, primaryStitchId, secondaryStitchId, activeTool, drawingButton, onGridChange });
+    useEffect(() => {
+        latestGridPropsRef.current = { grid, isComboPaintMode, primaryColorId, secondaryColorId, primaryStitchId, secondaryStitchId, activeTool, drawingButton, onGridChange };
+    });
+
+    useEffect(() => {
+        return () => {
+            if (currentStrokeRef.current && currentStrokeRef.current.size > 0) {
+                const p = latestGridPropsRef.current;
+                if (p.activeTool !== 'brush') return;
+
+                const newGrid = [...p.grid];
+                const colorToApply = p.drawingButton === 'right' ? p.secondaryColorId : p.primaryColorId;
+                const stitchToApply = p.drawingButton === 'right' ? p.secondaryStitchId : p.primaryStitchId;
+
+                currentStrokeRef.current.forEach(index => {
+                    const cell = newGrid[index];
+                    if (p.isComboPaintMode) {
+                        newGrid[index] = { ...cell, colorId: colorToApply, stitchId: stitchToApply };
+                    } else {
+                        newGrid[index] = { ...cell, colorId: colorToApply, stitchId: null };
+                    }
+                });
+                p.onGridChange(newGrid);
+            }
+        };
+    }, []);
+
     const [paintedCells, setPaintedCells] = useState<Set<number>>(new Set());
     // SYNC STROKE TRACKING: Fixes stale closure issues during rapid mouse moves
     const currentStrokeRef = useRef<Set<number>>(new Set());

@@ -1,11 +1,14 @@
-import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo, useRef } from 'react';
 import { ProjectState, ProjectAction, PixelGridData, PatternColor } from '../types';
 import { saveProject, getProjects } from '../services/projectService';
+import { useAuth } from './AuthContext';
+import { saveProjectToCloud, getCloudProjects } from '../services/cloudSyncService';
 
 const ProjectContext = createContext<{
   state: ProjectState;
   dispatch: React.Dispatch<ProjectAction>;
   saveCurrentProject: () => void;
+  updateProjectData: (grid: any[], history?: any[], palette?: any[]) => void;
 } | null>(null);
 
 const projectReducer = (state: ProjectState, action: ProjectAction): ProjectState => {
@@ -187,18 +190,57 @@ const projectReducer = (state: ProjectState, action: ProjectAction): ProjectStat
 
 export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(projectReducer, { project: null, history: [], historyIndex: 0 });
+  const { user, isLoading } = useAuth();
+
+  const projectRef = useRef(state.project);
+  const gridRef = useRef(state.project?.data && 'grid' in state.project.data ? state.project.data.grid : []);
+  const paletteRef = useRef(state.project?.yarnPalette);
+  const historyRef = useRef(state.history);
+  const historyIndexRef = useRef(state.historyIndex);
+  const userRef = useRef(user);
+  const hasAttemptedMigrationRef = useRef(false);
+
+  useEffect(() => {
+    projectRef.current = state.project;
+    gridRef.current = state.project?.data && 'grid' in state.project.data ? (state.project.data as any).grid : [];
+    paletteRef.current = state.project?.yarnPalette;
+    historyRef.current = state.history;
+    historyIndexRef.current = state.historyIndex;
+    userRef.current = user;
+  }, [
+    state.project, 
+    state.project?.data, 
+    state.project?.data && 'grid' in state.project.data ? (state.project.data as any).grid : undefined,
+    state.project?.yarnPalette, 
+    state.project?.settings, 
+    state.history, 
+    state.historyIndex, 
+    user
+  ]);
 
   // Load active project on mount
   useEffect(() => {
+    if (isLoading) return; // Wait until auth state resolves
     const lastActiveId = localStorage.getItem('active_project_id');
-    if (lastActiveId && !state.project) {
-      const projects = getProjects();
-      const found = projects.find(p => p.id === lastActiveId);
-      if (found) {
-        dispatch({ type: 'LOAD_PROJECT', payload: found });
+    const projectLoaded = !!projectRef.current;
+
+    if (lastActiveId && !projectLoaded) {
+      if (userRef.current) {
+        getCloudProjects(userRef.current.id).then(projects => {
+          const found = projects.find(p => p.id === lastActiveId);
+          if (found && !projectRef.current) {
+            dispatch({ type: 'LOAD_PROJECT', payload: found });
+          }
+        });
+      } else {
+        const projects = getProjects();
+        const found = projects.find(p => p.id === lastActiveId);
+        if (found && !projectRef.current) {
+          dispatch({ type: 'LOAD_PROJECT', payload: found });
+        }
       }
     }
-  }, []);
+  }, [isLoading]);
 
   // Save active project ID
   useEffect(() => {
@@ -207,22 +249,86 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [state.project?.id]);
 
-  const saveCurrentProject = useCallback(() => {
-    if (state.project) {
-      saveProject(state.project);
+  // Migration Engine
+  useEffect(() => {
+    if (isLoading) return;
+    if (user && !hasAttemptedMigrationRef.current) {
+      hasAttemptedMigrationRef.current = true; // Lock migration to prevent infinite loops
+
+      const migrateAndLoad = async () => {
+        try {
+          const localProjects = getProjects();
+          if (localProjects.length > 0) {
+            // Push each local project to Supabase
+            await Promise.all(
+              localProjects.map(p => saveProjectToCloud(p, user.id, [p], 0))
+            );
+            // Clear successfully migrated projects from local storage
+            localStorage.removeItem('blanketsmith_projects');
+          }
+
+          // Fetch the combined list of Cloud Projects
+          const cloudProjects = await getCloudProjects(user.id);
+
+          // Update active project if it matches a loaded cloud project
+          const lastActiveId = localStorage.getItem('active_project_id');
+          if (lastActiveId) {
+            const found = cloudProjects.find(p => p.id === lastActiveId);
+            const currentProject = projectRef.current;
+            if (found && (!currentProject || currentProject.id !== found.id)) {
+              dispatch({ type: 'LOAD_PROJECT', payload: found });
+            }
+          } else if (cloudProjects.length > 0) {
+            // Fresh browser hydration bypassing local storage - populate UI with newest project
+            const currentProject = projectRef.current;
+            if (!currentProject) {
+              const latest = cloudProjects.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
+              dispatch({ type: 'LOAD_PROJECT', payload: latest });
+            }
+          }
+        } catch (error) {
+          console.error("Migration Engine Failed: ", error);
+        }
+      };
+      migrateAndLoad();
     }
-  }, [state.project]);
+  }, [user, isLoading]);
+
+  const saveCurrentProject = useCallback(async () => {
+    const activeProject = projectRef.current;
+    const currentUser = userRef.current;
+
+    try {
+      if (activeProject) {
+        // We use activeProject directly as it is guaranteed fresh via projectRef.current
+        const latestProjectState = { ...activeProject };
+
+        if (currentUser) {
+          await saveProjectToCloud(latestProjectState as any, currentUser.id, historyRef.current, historyIndexRef.current);
+        } else {
+          saveProject(latestProjectState as any);
+        }
+      }
+    } catch (e) {
+      console.error('Autosave Error:', e);
+    }
+  }, []);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (state.project) {
-        saveProject(state.project);
-      }
+      saveCurrentProject();
     }, 2000);
     return () => clearTimeout(timer);
-  }, [state.project]);
+  }, [state.project, saveCurrentProject]);
 
-  const value = useMemo(() => ({ state, dispatch, saveCurrentProject }), [state, dispatch, saveCurrentProject]);
+  const updateProjectData = useCallback((grid: any[], history?: any[], palette?: any[]) => {
+    dispatch({ type: 'UPDATE_PROJECT_DATA', payload: { grid, _replace: false } });
+    if (palette) {
+        dispatch({ type: 'SET_PALETTE', payload: palette });
+    }
+  }, [dispatch]);
+
+  const value = useMemo(() => ({ state, dispatch, saveCurrentProject, updateProjectData }), [state, dispatch, saveCurrentProject, updateProjectData]);
   return <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>;
 };
 
