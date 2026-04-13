@@ -231,7 +231,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
           if (found && !projectRef.current) {
             dispatch({ type: 'LOAD_PROJECT', payload: found });
           }
-        });
+        }).catch(err => console.error("HYDRATION FATAL ERROR:", err));
       } else {
         const projects = getProjects();
         const found = projects.find(p => p.id === lastActiveId);
@@ -268,7 +268,10 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
           }
 
           // Fetch the combined list of Cloud Projects
-          const cloudProjects = await getCloudProjects(user.id);
+          const cloudProjects = await getCloudProjects(user.id).catch(err => {
+            console.error("HYDRATION FATAL ERROR:", err);
+            throw err;
+          });
 
           // Update active project if it matches a loaded cloud project
           const lastActiveId = localStorage.getItem('active_project_id');
@@ -300,8 +303,15 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
 
     try {
       if (activeProject) {
-        // We use activeProject directly as it is guaranteed fresh via projectRef.current
-        const latestProjectState = { ...activeProject };
+        // Construct cleanly from absolute current state refs
+        const latestProjectState = {
+          ...activeProject,
+          data: {
+            ...(activeProject.data || {}),
+            grid: gridRef.current
+          },
+          yarnPalette: paletteRef.current || activeProject.yarnPalette
+        };
 
         if (currentUser) {
           await saveProjectToCloud(latestProjectState as any, currentUser.id, historyRef.current, historyIndexRef.current);
@@ -314,12 +324,13 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, []);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      saveCurrentProject();
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [state.project, saveCurrentProject]);
+  // DISABLE AUTOSAVE: Rely explicitly on manual UI save
+  // useEffect(() => {
+  //   const timer = setTimeout(() => {
+  //     saveCurrentProject();
+  //   }, 2000);
+  //   return () => clearTimeout(timer);
+  // }, [state.project, saveCurrentProject]);
 
   const updateProjectData = useCallback((grid: any[], history?: any[], palette?: any[]) => {
     dispatch({ type: 'UPDATE_PROJECT_DATA', payload: { grid, _replace: false } });

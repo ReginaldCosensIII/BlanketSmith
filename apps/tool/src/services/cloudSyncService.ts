@@ -18,17 +18,15 @@ export const serializeForDB = (project: AnyProject, userId: string, history: Any
 };
 
 export const deserializeFromDB = (row: any): AnyProject => {
-  const safeParse = (data: any) => typeof data === 'string' ? JSON.parse(data) : data;
-
   return {
     id: row.id,
     name: row.name,
     type: 'pixel', // Basic DB schema fallback
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    settings: safeParse(row.settings) || {},
-    data: safeParse(row.grid),             // Rehydrate structured object back to project.data
-    yarnPalette: safeParse(row.palette),   // Rehydrate array back to project.yarnPalette
+    settings: row.settings || {},
+    data: row.grid,             // Rehydrate structured object back to project.data
+    yarnPalette: row.palette,   // Rehydrate array back to project.yarnPalette
   };
 };
 
