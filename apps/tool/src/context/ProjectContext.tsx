@@ -1,21 +1,33 @@
-import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useMemo, useRef, useState } from 'react';
 import { ProjectState, ProjectAction, PixelGridData, PatternColor } from '../types';
 import { saveProject, getProjects } from '../services/projectService';
 import { useAuth } from './AuthContext';
 import { saveProjectToCloud, getCloudProjects } from '../services/cloudSyncService';
+import { logger } from '../services/logger';
 
 const ProjectContext = createContext<{
   state: ProjectState;
   dispatch: React.Dispatch<ProjectAction>;
   saveCurrentProject: () => void;
   updateProjectData: (grid: any[], history?: any[], palette?: any[]) => void;
+  isLoadingProjects: boolean;
 } | null>(null);
 
 const projectReducer = (state: ProjectState, action: ProjectAction): ProjectState => {
   switch (action.type) {
+    case 'SET_PROJECTS':
+      return { ...state, projects: action.payload };
+    case 'SYNC_SAVED_PROJECT' as any: {
+      const savedProject = (action as any).payload;
+      const isExisting = state.projects.some(p => p.id === savedProject.id);
+      const updatedProjects = isExisting
+        ? state.projects.map(p => p.id === savedProject.id ? savedProject : p)
+        : [savedProject, ...state.projects];
+      return { ...state, projects: updatedProjects };
+    }
     case 'NEW_PROJECT':
     case 'LOAD_PROJECT':
-      return { project: action.payload, history: [action.payload], historyIndex: 0 };
+      return { ...state, project: action.payload, history: [action.payload], historyIndex: 0 };
     case 'UPDATE_PROJECT_DATA': {
       if (!state.project) return state;
 
@@ -189,7 +201,8 @@ const projectReducer = (state: ProjectState, action: ProjectAction): ProjectStat
 };
 
 export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [state, dispatch] = useReducer(projectReducer, { project: null, history: [], historyIndex: 0 });
+  const [state, dispatch] = useReducer(projectReducer, { projects: [], project: null, history: [], historyIndex: 0 });
+  const [isLoadingProjects, setIsLoadingProjects] = useState(true);
   const { user, isLoading } = useAuth();
 
   const projectRef = useRef(state.project);
@@ -198,104 +211,31 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const historyRef = useRef(state.history);
   const historyIndexRef = useRef(state.historyIndex);
   const userRef = useRef(user);
-  const hasAttemptedMigrationRef = useRef(false);
 
+  // Sync state refs to cleanly capture the absolute latest state
   useEffect(() => {
     projectRef.current = state.project;
-    gridRef.current = state.project?.data && 'grid' in state.project.data ? (state.project.data as any).grid : [];
+    gridRef.current = state.project?.data && 'grid' in state.project.data ? state.project.data.grid : [];
     paletteRef.current = state.project?.yarnPalette;
     historyRef.current = state.history;
     historyIndexRef.current = state.historyIndex;
     userRef.current = user;
-  }, [
-    state.project, 
-    state.project?.data, 
-    state.project?.data && 'grid' in state.project.data ? (state.project.data as any).grid : undefined,
-    state.project?.yarnPalette, 
-    state.project?.settings, 
-    state.history, 
-    state.historyIndex, 
-    user
-  ]);
+  }, [state, user]);
 
   // Load active project on mount
   useEffect(() => {
     if (isLoading) return; // Wait until auth state resolves
-    const lastActiveId = localStorage.getItem('active_project_id');
-    const projectLoaded = !!projectRef.current;
 
-    if (lastActiveId && !projectLoaded) {
-      if (userRef.current) {
-        getCloudProjects(userRef.current.id).then(projects => {
-          const found = projects.find(p => p.id === lastActiveId);
-          if (found && !projectRef.current) {
-            dispatch({ type: 'LOAD_PROJECT', payload: found });
-          }
-        }).catch(err => console.error("HYDRATION FATAL ERROR:", err));
-      } else {
-        const projects = getProjects();
-        const found = projects.find(p => p.id === lastActiveId);
-        if (found && !projectRef.current) {
-          dispatch({ type: 'LOAD_PROJECT', payload: found });
-        }
-      }
+    if (user?.id) {
+      setIsLoadingProjects(true);
+      getCloudProjects(user.id).then(projects => {
+        dispatch({ type: 'SET_PROJECTS', payload: projects });
+      }).catch(err => logger.error("HYDRATION ERROR", { err }))
+        .finally(() => setIsLoadingProjects(false));
+    } else {
+      setIsLoadingProjects(false);
     }
-  }, [isLoading]);
-
-  // Save active project ID
-  useEffect(() => {
-    if (state.project) {
-      localStorage.setItem('active_project_id', state.project.id);
-    }
-  }, [state.project?.id]);
-
-  // Migration Engine
-  useEffect(() => {
-    if (isLoading) return;
-    if (user && !hasAttemptedMigrationRef.current) {
-      hasAttemptedMigrationRef.current = true; // Lock migration to prevent infinite loops
-
-      const migrateAndLoad = async () => {
-        try {
-          const localProjects = getProjects();
-          if (localProjects.length > 0) {
-            // Push each local project to Supabase
-            await Promise.all(
-              localProjects.map(p => saveProjectToCloud(p, user.id, [p], 0))
-            );
-            // Clear successfully migrated projects from local storage
-            localStorage.removeItem('blanketsmith_projects');
-          }
-
-          // Fetch the combined list of Cloud Projects
-          const cloudProjects = await getCloudProjects(user.id).catch(err => {
-            console.error("HYDRATION FATAL ERROR:", err);
-            throw err;
-          });
-
-          // Update active project if it matches a loaded cloud project
-          const lastActiveId = localStorage.getItem('active_project_id');
-          if (lastActiveId) {
-            const found = cloudProjects.find(p => p.id === lastActiveId);
-            const currentProject = projectRef.current;
-            if (found && (!currentProject || currentProject.id !== found.id)) {
-              dispatch({ type: 'LOAD_PROJECT', payload: found });
-            }
-          } else if (cloudProjects.length > 0) {
-            // Fresh browser hydration bypassing local storage - populate UI with newest project
-            const currentProject = projectRef.current;
-            if (!currentProject) {
-              const latest = cloudProjects.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())[0];
-              dispatch({ type: 'LOAD_PROJECT', payload: latest });
-            }
-          }
-        } catch (error) {
-          console.error("Migration Engine Failed: ", error);
-        }
-      };
-      migrateAndLoad();
-    }
-  }, [user, isLoading]);
+  }, [isLoading, user?.id]);
 
   const saveCurrentProject = useCallback(async () => {
     const activeProject = projectRef.current;
@@ -314,13 +254,16 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
         };
 
         if (currentUser) {
-          await saveProjectToCloud(latestProjectState as any, currentUser.id, historyRef.current, historyIndexRef.current);
+          await saveProjectToCloud(latestProjectState as any, currentUser.id);
+          dispatch({ type: 'SYNC_SAVED_PROJECT' as any, payload: latestProjectState });
         } else {
           saveProject(latestProjectState as any);
+          dispatch({ type: 'SYNC_SAVED_PROJECT' as any, payload: latestProjectState });
         }
       }
     } catch (e) {
-      console.error('Autosave Error:', e);
+      logger.error('Failed to save project', { error: e });
+      alert('Failed to save project. Please check your connection and try again.');
     }
   }, []);
 
@@ -335,11 +278,11 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const updateProjectData = useCallback((grid: any[], history?: any[], palette?: any[]) => {
     dispatch({ type: 'UPDATE_PROJECT_DATA', payload: { grid, _replace: false } });
     if (palette) {
-        dispatch({ type: 'SET_PALETTE', payload: palette });
+      dispatch({ type: 'SET_PALETTE', payload: palette });
     }
   }, [dispatch]);
 
-  const value = useMemo(() => ({ state, dispatch, saveCurrentProject, updateProjectData }), [state, dispatch, saveCurrentProject, updateProjectData]);
+  const value = useMemo(() => ({ state, dispatch, saveCurrentProject, updateProjectData, isLoadingProjects }), [state, dispatch, saveCurrentProject, updateProjectData, isLoadingProjects]);
   return <ProjectContext.Provider value={value}>{children}</ProjectContext.Provider>;
 };
 
