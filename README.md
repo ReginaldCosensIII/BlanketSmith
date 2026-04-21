@@ -31,6 +31,15 @@ The system supports both **quick reference exports** and **full pattern packs** 
 
 ## Core Concepts
 
+### Data Architecture & State Management
+
+BlanketSmith uses a unified **Supabase (PostgreSQL)** backend as the absolute source of truth for project data, interacting via PostgREST. 
+
+* **Cloud-First Persistence**: Projects are synchronized bidirectionally with the cloud. Local history is maintained for performance during high-frequency edits, but the project state lives in the database.
+* **URL Routing (`/editor/:projectId`)**: The browser URL acts as the single source of truth for the active project state. The application uses intelligent hydration to load the correct project directly from the URL.
+
+---
+
 ### Deterministic Export Engine (v3)
 
 The Export Engine is the heart of BlanketSmith. Version 3 establishes a strict, documented contract for PDF generation:

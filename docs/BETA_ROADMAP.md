@@ -53,8 +53,8 @@
 - [ ] **Password Set:** Implement secure password creation and reset flows.
 
 ### 2. Local-to-Cloud Data Bridge
-- [ ] **Local-First Persistence:** Ensure guest users can save projects to `localStorage`.
-- [ ] **Cloud Migration:** Automatically push local blanket data to Supabase upon successful account creation/login.
+- [x] **Local-First Persistence:** (Deprecated) Browser-bound `localStorage` saving has been fully replaced by cloud persistence.
+- [x] **Cloud Pipeline:** Bidirectional Supabase Data Bridge implemented. `cloudSyncService` natively handles serialization and URL logic acts as Single Source of Truth.
 - [ ] **Access Control:** Restrict high-value features (Export, Pattern Gen) to logged-in users.
 
 ---
@@ -78,3 +78,9 @@
 
 ## 🔮 Beta Wishlist (Post-Launch)
 - [ ] **Local Storage Autosave:** Prevent data loss on refresh.
+
+---
+
+## 🛠️ Technical Debt
+- **Auth Race Conditions:** Implement `AbortControllers` for cloud fetches to prevent overlapping data states when users switch authentication contexts rapidly.
+- **State Tearing:** Refactor `ProjectContext` to eliminate synchronous ref-tearing vulnerabilities during `useEffect` global shortcuts.

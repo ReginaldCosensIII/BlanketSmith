@@ -24,7 +24,12 @@ The Export Engine (`exportService.ts`) is the core PDF generation system. It imp
 ### QA Harness
 The QA Harness (`ExportEngineTestPage.tsx`) is a development-only tool for visual regression testing. It provides a suite of standardized scenarios that verify export behavior across different configurations and edge cases.
 
-## Data Flow
+## Data Architecture
+1. **Single Source of Truth**: BlanketSmith uses a unified **Supabase (PostgreSQL)** backend via PostgREST to persist all project data. LocalStorage is deprecated.
+2. **URL Routing**: The browser URL (`/editor/:projectId`) is the explicit state orchestrator. The `PixelGraphPage` extracts the project ID and hydrates the editor from the cloud array, ensuring deep-links and F5-refreshes work perfectly.
+3. **Optimistic Cloud Sync**: The system maintains local `refs` during rapid interactive edits and flushes to Supabase on manual saves via `cloudSyncService`.
+
+## Export Data Flow
 1. **Pattern Creation**: User creates/edits pattern in the Editor.
 2. **Export Configuration**: User selects export options in the Export Center UI.
 3. **Export Execution**: Export Engine processes grid data + options → generates PDF.
