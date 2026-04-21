@@ -1,26 +1,30 @@
+# Pull Request Template
+
 ## Summary
 
-* Resolves responsive rendering anomalies spanning the "What is BlanketSmith" scrolling sequence and the Hero section block. Upgrades static padding frameworks and fixed UI constraints into dynamic fractional variables, optimizing native layout flow across wide-but-short laptops, vertical tablets, and 4K displays.
+* feat(tool): implement phase 1 supabase auth infrastructure and security hardening
 
 ## Changes
 
-* **Mobile Parallax Restoration:** Extracted and fully isolated the uncluttered legacy tracking sequence strictly for Mobile viewports. Restructured absolute viewport constraints (`offset: ["start end", "end end"]`) and removed 176 pixels of redundant nested padding, naturally syncing the trailing white space identical to the globally unified `py-20` standard padding variables.
-* **Browser Chrome Top-Weight Scaling:** Transplanted the intense aesthetic miniature CSS map from the `Feature Highlights` Interactive Tour directly onto the `MobileToolMockup` component. Scaled all elements (`px-1.5`, `w-1.5` mac dots, `text-[8px]` URL pill) downward natively resolving its disproportionate vertical bloat on small screens.
-* **Hero Viewport Maximization:** Restructured the topmost Hero element to autonomously subsume essentially 100% of the visible vertical space using explicitly bounded `min-h-[calc(100vh-4rem)]` frames wrapped around dynamically responsive `flex flex-col center` geometries to cleanly suspend assets symmetrically.
-* **Intelligent Viewport Spacing Vectors:** Removed flat internal padding arrays triggering off tall-screen breakpoints, migrating layout spread spacing strictly to explicit percentage matrices (`md:mb-[3vh] lg:mb-[6vh]`). These elements natively squeeze and extend proportionately mapped strictly to the user's specific monitor height.
-* **Wide 16:9 Laptop Sub-Fold Clipping Prevention:** Audited aspect ratios on horizontal wide screens possessing abnormally short vertical heights. Aggressively purged 80+ pixels of vertical gap margin properties natively and appended an explicit `lg:max-h-[160px]` size ceiling strictly onto the Hero SVG, definitively maintaining 100% of the Call To Action geometry correctly above the fold upon immediate page load on generic laptops.
+* **Infrastructure**: Created `apps/tool/src/lib/supabase.ts` for the Supabase client singleton.
+* **State Management**: Built `AuthContext.tsx` to handle global session state hydration and live subscription events.
+* **Component**: Implemented a modern `AuthModal` with glassmorphism styling, clean inputs, and basic error handling connecting seamlessly to the BlanketSmith UI design tokens.
+* **Layout**: Wired the `Header` to reflect authentication state, showing a "Sign In" button when logged out and a user dropdown when logged in.
+* **Security**: Standardized and locked down `.gitignore` across the root and app boundaries for `.env*` files, and sanitized `.env.example` files to prevent future secret leaks.
 
 ## Testing
 
 * [x] `npm run build`
 * [ ] `npm run test` (if applicable)
-* [ ] `npm run lint` (if applicable)
-* ## [x] Manual verification: Verified locally on DevTools emulation targeting iPad Portrait, iPhone XR constraints, generic 16:9 Laptop orientations, and Ultrawide arrays. Tested unpin track transitions comprehensively.
+* [x] `npm run type-check` (Verified no new TS errors)
+* ## [x] Manual verification:
+  * Manually verified local spin-up of both landing-page and tool workspaces.
+  * Attempting to log in/sign up correctly passes the inputs to Supabase and handles validation logic.
 
 ## Notes / Screenshots (if UI)
 
-* Due to `vh` parameterization mapped directly onto horizontal width boundaries, physical UI blocks adjust intelligently to specific device types purely dynamically, without requiring explicitly scoped dimensional media breakpoints. 
+* N/A
 
 ## Risks / Follow-ups
 
-* N/A - Proceed with staging.
+* Need to implement the full Beta-to-Account Pipeline and restrict usage based on account state.

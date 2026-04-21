@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { HashRouter, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 import { ProjectProvider } from './context/ProjectContext';
 import { FloatingSelectionProvider } from './context/FloatingSelectionContext';
 import { Header, Sidebar, Footer } from './components/layout/Layout';
@@ -71,6 +72,7 @@ const App: React.FC = () => {
 
 
     return (
+        <AuthProvider>
         <ProjectProvider>
             <FloatingSelectionProvider>
                 <HashRouter>
@@ -96,11 +98,20 @@ const App: React.FC = () => {
                                         onToggleZoomLock={() => setIsZoomLocked(!isZoomLocked)}
                                     />
                                 } />
+                                <Route path="/editor/:projectId" element={
+                                    <PixelGraphPage
+                                        zoom={zoom}
+                                        onZoomChange={setZoom}
+                                        isLeftHanded={isLeftHanded}
+                                        onToggleLeftHanded={() => setIsLeftHanded(!isLeftHanded)}
+                                        isZoomLocked={isZoomLocked}
+                                        onToggleZoomLock={() => setIsZoomLocked(!isZoomLocked)}
+                                    />
+                                } />
                                 <Route path="/projects" element={<PatternBookPage />} />
                                 <Route path="/c2c" element={<PlaceholderPage title="C2C Crochet" />} />
                                 <Route path="/stripes" element={<PlaceholderPage title="Stripe Generator" />} />
                                 <Route path="/granny" element={<PlaceholderPage title="Granny Square Planner" />} />
-                                <Route path="/contact" element={<ContactPage />} />
                                 <Route path="/contact" element={<ContactPage />} />
                                 <Route path="/partner" element={<PartnerPage />} />
                                 {/* Dev Only Routes */}
@@ -120,6 +131,7 @@ const App: React.FC = () => {
                 </HashRouter>
             </FloatingSelectionProvider>
         </ProjectProvider>
+        </AuthProvider>
     );
 };
 

@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 
 ### [Unreleased]
+
+## [1.2.0] - The Cloud Data Bridge
+### Added
+- **Bidirectional Cloud Sync**: BlanketSmith now uses a unified Supabase (PostgreSQL) backend as the central source of truth for all project data, interacting via PostgREST.
+- **URL-Based State Hydration**: The active project state is now strictly governed by the browser URL (`/editor/:projectId`). The editor extracts the ID and intelligently hydrates the data, resolving "F5 Amnesia."
+- **Local-Only History Architecture**: Removed cloud-sync for undo/redo history arrays to optimize payload size and minimize database bloat. History is now locally maintained per-session.
+- **Safe Deserialization Pipeline**: Built-in array validation and fallback logic to gracefully handle and repair legacy `localStorage` corrupted data fields.
+
+### Removed
+- **`localStorage` Dependency**: Fully deprecated the legacy, browser-bound `localStorage` saving mechanism in favor of cloud persistence for authenticated users.
+
+### Added
+- **Auth Infrastructure (Phase 1)**:
+    - Implemented a global `AuthProvider` Context and Supabase singleton client in the tool workspace.
+    - Added a sleek Glassmorphism `AuthModal` for handling Sign In and Account Creation natively within the tool.
+    - Integrated authenticated user state into the Header (displays Email chip and Log Out dropdown when logged in).
+
+### Security
+- **Environment Hardening**: Locked down monorepo environment variable management by enforcing `.env` exclusions in all `.gitignore` files and sanitizing `.env.example` templates.
+
 - **Feature — Gauge / Stitch Proportion PDF Export (`fix/pdf-export-aspect-ratio`):**
     - Added `stitchAspectRatio` to `ExportOptions` type in `types.ts`.
     - Wired the computed ratio (stitchesPerUnit / rowsPerUnit) into `buildExportOptions()` in `PixelGraphPage.tsx` for both Pattern Pack and Chart-Only export paths.

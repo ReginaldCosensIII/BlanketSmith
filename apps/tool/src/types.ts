@@ -113,12 +113,14 @@ export interface Project<T> {
 export type AnyProject = Project<PixelGridData | C2CData | StripesData | GrannySquareData>;
 
 export type ProjectState = {
+  projects: AnyProject[];
   project: AnyProject | null;
   history: AnyProject[];
   historyIndex: number;
 };
 
 export type ProjectAction =
+  | { type: 'SET_PROJECTS'; payload: AnyProject[] }
   | { type: 'LOAD_PROJECT'; payload: AnyProject }
   | { type: 'NEW_PROJECT'; payload: AnyProject }
   | { type: 'UPDATE_PROJECT_DATA'; payload: Partial<PixelGridData | C2CData | StripesData | GrannySquareData> }

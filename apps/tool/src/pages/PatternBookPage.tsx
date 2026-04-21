@@ -1,13 +1,17 @@
 import React, { useState, useEffect, useRef, ChangeEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AnyProject, PatternType, PixelGridData } from '../types';
-import { createNewProject, getProjects, saveProject, deleteProject } from '../services/projectService';
+import { createNewProject } from '../services/projectService';
+import { saveProjectToCloud, deleteCloudProject, getCloudProjects } from '../services/cloudSyncService';
 import { useProject } from '../context/ProjectContext';
+import { useAuth } from '../context/AuthContext';
 import { BLANKET_SIZES } from '../constants';
 import { Button, Modal, Icon } from '../components/ui/SharedComponents';
 
 export const PatternBookPage: React.FC = () => {
-    const [projects, setProjects] = useState<AnyProject[]>(getProjects());
+    const { state, dispatch, isLoadingProjects } = useProject();
+    const projects = state.projects;
+    const { user } = useAuth();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [newProjectName, setNewProjectName] = useState('');
     const importFileRef = useRef<HTMLInputElement>(null);
@@ -17,12 +21,7 @@ export const PatternBookPage: React.FC = () => {
     const [selectedSizeKey, setSelectedSizeKey] = useState('Throw');
     const [customWidth, setCustomWidth] = useState<number | string>(throwSize.width);
     const [customHeight, setCustomHeight] = useState<number | string>(throwSize.height);
-    const { dispatch } = useProject();
     const navigate = useNavigate();
-
-    useEffect(() => {
-        setProjects(getProjects());
-    }, []);
 
     const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
     const [editingName, setEditingName] = useState('');
@@ -37,13 +36,14 @@ export const PatternBookPage: React.FC = () => {
         setEditingName('');
     };
 
-    const saveRenaming = () => {
-        if (!editingProjectId || !editingName.trim()) return;
+    const saveRenaming = async () => {
+        if (!editingProjectId || !editingName.trim() || !user) return;
         const project = projects.find(p => p.id === editingProjectId);
         if (project) {
             const updated = { ...project, name: editingName };
-            saveProject(updated);
-            setProjects(getProjects());
+            await saveProjectToCloud(updated, user.id);
+            // Re-fetch to sync
+            getCloudProjects(user.id).then(ps => dispatch({ type: 'SET_PROJECTS', payload: ps }));
         }
         cancelRenaming();
     };
@@ -74,31 +74,31 @@ export const PatternBookPage: React.FC = () => {
         }
     }
 
-    const handleCreateProject = () => {
+    const handleCreateProject = async () => {
         const width = Number(customWidth);
         const height = Number(customHeight);
 
-        if (newProjectName.trim() && width > 0 && height > 0 && selectedProjectType) {
+        if (newProjectName.trim() && width > 0 && height > 0 && selectedProjectType && user) {
             const newProject = createNewProject(selectedProjectType, newProjectName, width, height);
-            saveProject(newProject);
-            setProjects(getProjects());
+            await saveProjectToCloud(newProject, user.id);
             setIsModalOpen(false);
             dispatch({ type: 'NEW_PROJECT', payload: newProject });
-            navigate('/');
+            getCloudProjects(user.id).then(ps => dispatch({ type: 'SET_PROJECTS', payload: ps }));
+            navigate(`/editor/${newProject.id}`);
         }
     };
 
-    const handleDeleteProject = (e: React.MouseEvent, projectId: string) => {
+    const handleDeleteProject = async (e: React.MouseEvent, projectId: string) => {
         e.stopPropagation();
-        if (window.confirm("Are you sure you want to delete this project?")) {
-            deleteProject(projectId);
-            setProjects(getProjects());
+        if (window.confirm("Are you sure you want to delete this project?") && user) {
+            await deleteCloudProject(projectId);
+            getCloudProjects(user.id).then(ps => dispatch({ type: 'SET_PROJECTS', payload: ps }));
         }
     }
 
     const handleLoadProject = (project: AnyProject) => {
         dispatch({ type: 'LOAD_PROJECT', payload: project });
-        navigate('/');
+        navigate(`/editor/${project.id}`);
     }
 
     const handleExportProject = (e: React.MouseEvent, project: AnyProject) => {
@@ -122,9 +122,9 @@ export const PatternBookPage: React.FC = () => {
 
     const handleFileImport = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
-        if (!file) return;
+        if (!file || !user) return;
         const reader = new FileReader();
-        reader.onload = (e) => {
+        reader.onload = async (e) => {
             try {
                 const text = e.target?.result;
                 if (typeof text !== 'string') throw new Error("File content is not a string");
@@ -136,8 +136,8 @@ export const PatternBookPage: React.FC = () => {
                 importedProject.name = `${importedProject.name} (Imported)`;
                 importedProject.createdAt = new Date().toISOString();
                 importedProject.updatedAt = new Date().toISOString();
-                saveProject(importedProject);
-                setProjects(getProjects());
+                await saveProjectToCloud(importedProject, user.id);
+                getCloudProjects(user.id).then(ps => dispatch({ type: 'SET_PROJECTS', payload: ps }));
                 alert("Project imported successfully!");
             } catch (error) {
                 console.error("Failed to import project:", error);
@@ -178,11 +178,17 @@ export const PatternBookPage: React.FC = () => {
 
             {/* Scrollable Content Section */}
             <div className="flex-1 overflow-y-auto min-h-0 px-4 sm:px-6 lg:px-8 pb-4 sm:pb-6 lg:pb-8">
-                {projects.length === 0 ? (
+                {isLoadingProjects ? (
+                    // Loading State
+                    <div className="flex flex-col items-center justify-center h-64 text-gray-400">
+                        <Icon name="loading" size="xl" className="mb-4 animate-spin text-indigo-500" />
+                        <h3 className="text-xl font-medium">Loading Patterns...</h3>
+                    </div>
+                ) : (projects || []).length === 0 ? (
                     // Empty State - Simplified
                     <div className="flex flex-col items-center justify-center h-64 text-gray-400">
                         <Icon name="pattern-book" size="xl" className="mb-4 opacity-20" />
-                        <h3 className="text-xl font-medium">No patterns yet</h3>
+                        <h3 className="text-xl font-medium">No patterns found</h3>
                         <p className="mt-2 text-sm">Create or import a pattern to get started.</p>
                     </div>
                 ) : (
