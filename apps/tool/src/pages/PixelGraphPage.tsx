@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo, ChangeEvent } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { PixelGridData, PatternColor, CellData, Symmetry, ContextMenuItem, ExportType, ExportOptions, InstructionDoc } from '../types';
 import { useProject } from '../context/ProjectContext';
 import { PixelGridEditor } from '../components/PixelGridEditor';
@@ -43,8 +44,25 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
     isZoomLocked,
     onToggleZoomLock
 }) => {
-    const { state, dispatch } = useProject();
+    const { state, dispatch, isLoadingProjects } = useProject();
     const { project } = state;
+    const { projectId } = useParams<{ projectId: string }>();
+    const navigate = useNavigate();
+
+    // Hydrate project from URL if necessary
+    useEffect(() => {
+        if (projectId && !isLoadingProjects) {
+            const found = state.projects.find(p => p.id === projectId);
+            if (found) {
+                if (project?.id !== projectId) {
+                    dispatch({ type: 'LOAD_PROJECT', payload: found });
+                }
+            } else {
+                // Fallback: project ID in URL does not exist
+                navigate('/projects', { replace: true });
+            }
+        }
+    }, [projectId, state.projects, project?.id, dispatch, navigate, isLoadingProjects]);
 
     // Derived State
     const primaryColorId = project?.activePrimaryColorId || null;
@@ -437,7 +455,7 @@ export const PixelGraphPage: React.FC<PixelGraphPageProps> = ({
                 dispatch({ type: 'REDO' });
             }
         },
-        'system-save': () => console.log('Save triggered (shortcut)'), // Placeholder as requested
+        'system-save': () => {}, // Placeholder as requested
         'system-select-all': () => {
             handleToolChange('select');
             handleSelectAll();

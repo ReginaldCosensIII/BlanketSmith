@@ -98,11 +98,20 @@ const App: React.FC = () => {
                                         onToggleZoomLock={() => setIsZoomLocked(!isZoomLocked)}
                                     />
                                 } />
+                                <Route path="/editor/:projectId" element={
+                                    <PixelGraphPage
+                                        zoom={zoom}
+                                        onZoomChange={setZoom}
+                                        isLeftHanded={isLeftHanded}
+                                        onToggleLeftHanded={() => setIsLeftHanded(!isLeftHanded)}
+                                        isZoomLocked={isZoomLocked}
+                                        onToggleZoomLock={() => setIsZoomLocked(!isZoomLocked)}
+                                    />
+                                } />
                                 <Route path="/projects" element={<PatternBookPage />} />
                                 <Route path="/c2c" element={<PlaceholderPage title="C2C Crochet" />} />
                                 <Route path="/stripes" element={<PlaceholderPage title="Stripe Generator" />} />
                                 <Route path="/granny" element={<PlaceholderPage title="Granny Square Planner" />} />
-                                <Route path="/contact" element={<ContactPage />} />
                                 <Route path="/contact" element={<ContactPage />} />
                                 <Route path="/partner" element={<PartnerPage />} />
                                 {/* Dev Only Routes */}
