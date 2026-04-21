@@ -2,59 +2,96 @@ import { supabase } from '../lib/supabase';
 import { AnyProject } from '../types';
 import { logger } from './logger';
 
-export const serializeForDB = (project: AnyProject, userId: string, history: AnyProject[] = [], historyIndex: number = 0) => {
+/**
+ * Robust JSON parser with highly visible error logging for the Architect.
+ * Prevents hydration crashes from mangled DB data.
+ */
+const safeJSONParse = (data: any, fieldName: string, projectId: string) => {
+  if (data === undefined || data === null) {
+    return fieldName === 'grid' || fieldName === 'palette' ? [] : {};
+  }
+
+  try {
+    // SMART PARSE: Only parse if the driver returned a string. If the JSONB driver 
+    // natively parsed it into an object/array, use it directly to prevent Double Parse crashes.
+    const parsed = typeof data === 'string' ? JSON.parse(data) : data;
+    return parsed;
+  } catch (e) {
+    logger.error(`SERIALIZATION ERROR`, { projectId, fieldName, error: e, data });
+    return fieldName === 'grid' || fieldName === 'palette' ? [] : {};
+  }
+};
+
+export const serializeForDB = (project: AnyProject, userId: string) => {
+  const data = project.data as any;
   return {
     id: project.id,
     user_id: userId,
     name: project.name,
-    grid: project.data,          // Map structured data exactly to 'grid' JSONB col
-    history: history,            // History arrays
-    history_index: historyIndex, 
-    palette: project.yarnPalette,// Map yarnPalette to 'palette' col
-    settings: project.settings || {}, 
+    project_type: project.type,
+    width: data.width || 50,
+    height: data.height || 60,
+    // STRICT SERIALIZATION: Prevent Postgres string coercion
+    grid: JSON.stringify(data.grid || []),
+    palette: JSON.stringify(project.yarnPalette || []),
+    settings: JSON.stringify(project.settings || {}),
+    // DEFUSE HISTORY BLOAT: History is now local-only
+    history: [],
+    history_index: 0,
     created_at: project.createdAt,
     updated_at: project.updatedAt || new Date().toISOString(),
   };
 };
 
 export const deserializeFromDB = (row: any): AnyProject => {
+  let gridData = safeJSONParse(row.grid, 'grid', row.id);
+  
+  if (!Array.isArray(gridData) && gridData?.grid) {
+    gridData = gridData.grid;
+  }
+  if (!Array.isArray(gridData)) {
+    gridData = [];
+  }
+
+  const paletteData = safeJSONParse(row.palette, 'palette', row.id);
+  const settingsData = safeJSONParse(row.settings, 'settings', row.id);
+
   return {
     id: row.id,
     name: row.name,
-    type: 'pixel', // Basic DB schema fallback
+    type: row.project_type || 'pixel',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
-    settings: row.settings || {},
-    data: row.grid,             // Rehydrate structured object back to project.data
-    yarnPalette: row.palette,   // Rehydrate array back to project.yarnPalette
+    settings: settingsData || {},
+    data: {
+      width: row.width || 50,
+      height: row.height || 60,
+      grid: gridData
+    } as any,
+    yarnPalette: paletteData || [],
   };
 };
 
 /**
  * Persists a project to Supabase.
- * The schema maps the local project fields heavily into JSONB columns.
+ * Strictly serializes JSONB columns to avoid Postgres malformed string coercion.
  */
 export const saveProjectToCloud = async (
   project: AnyProject,
-  userId: string,
-  history: AnyProject[] = [],
-  historyIndex: number = 0
+  userId: string
 ): Promise<void> => {
   try {
-    const payload = serializeForDB(project, userId, history, historyIndex);
+    const payload = serializeForDB(project, userId);
 
     const { error } = await supabase
       .from('projects')
       .upsert(payload, { onConflict: 'id' });
 
     if (error) {
-      console.error('❌ Supabase Upsert Error:', error);
+      logger.error('Supabase Upsert Error', { error });
       throw error;
     }
-
-    console.log('✅ Successfully saved to Supabase', payload);
   } catch (error) {
-    console.error('❌ Failed to save project to cloud', { error, projectId: project.id });
     logger.error('Failed to save project to cloud', { error, projectId: project.id });
     throw error;
   }
