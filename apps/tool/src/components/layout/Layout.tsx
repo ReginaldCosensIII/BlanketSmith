@@ -13,7 +13,7 @@ import { supabase } from '../../lib/supabase';
 
 export const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () => void; }> = ({ isSidebarVisible, onToggleSidebar }) => {
     const { state, saveCurrentProject } = useProject();
-    const { user } = useAuth();
+    const { user, isRecoveryEvent } = useAuth();
     const navigate = useNavigate();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
@@ -42,6 +42,12 @@ export const Header: React.FC<{ isSidebarVisible: boolean; onToggleSidebar: () =
             window.removeEventListener('blanketsmith:open-feedback', handleOpenFeedback);
         };
     }, []);
+
+    useEffect(() => {
+        if (isRecoveryEvent) {
+            setIsAuthModalOpen(true);
+        }
+    }, [isRecoveryEvent]);
 
     const DropdownLink: React.FC<{ to: string, children: React.ReactNode }> = ({ to, children }) => (
         <Link to={to} onClick={() => setIsDropdownOpen(false)} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 rounded-md">

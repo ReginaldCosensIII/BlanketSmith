@@ -276,7 +276,7 @@ export const ProjectProvider: React.FC<{ children: React.ReactNode }> = ({ child
   // }, [state.project, saveCurrentProject]);
 
   const updateProjectData = useCallback((grid: any[], history?: any[], palette?: any[]) => {
-    dispatch({ type: 'UPDATE_PROJECT_DATA', payload: { grid, _replace: false } });
+    dispatch({ type: 'UPDATE_PROJECT_DATA', payload: { grid, _replace: false } as any });
     if (palette) {
       dispatch({ type: 'SET_PALETTE', payload: palette });
     }

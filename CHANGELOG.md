@@ -23,6 +23,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - Implemented a global `AuthProvider` Context and Supabase singleton client in the tool workspace.
     - Added a sleek Glassmorphism `AuthModal` for handling Sign In and Account Creation natively within the tool.
     - Integrated authenticated user state into the Header (displays Email chip and Log Out dropdown when logged in).
+    - Added "Forgot Password" and "Update Password" modes to the `AuthModal` with dynamic responsive UI switching.
+    - Extended `AuthContext` to capture and manage `PASSWORD_RECOVERY` events natively.
+
+### Fixed
+- **Type Stability**: Fixed an interface mismatch in `ProjectContext` regarding the internal `_replace` payload flag.
+
 
 ### Security
 - **Environment Hardening**: Locked down monorepo environment variable management by enforcing `.env` exclusions in all `.gitignore` files and sanitizing `.env.example` templates.
